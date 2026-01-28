@@ -23,7 +23,6 @@ import {
   HelpCircle,
   Settings,
   LogOut,
-  Menu,
   X,
 } from 'lucide-react';
 
