@@ -49,18 +49,9 @@ function App() {
               <Route path="/applications/new" element={<NewApplicationPage />} />
               <Route path="/sponsors" element={<SponsorsPage />} />
               <Route path="/bbbee" element={<BBBEEPage />} />
-              <Route
-                path="/projects"
-                element={<PlaceholderPage title="Projects" description="Manage your projects" icon={FolderKanban} />}
-              />
-              <Route
-                path="/tasks"
-                element={<PlaceholderPage title="Tasks" description="Track and manage tasks" icon={CheckSquare} />}
-              />
-              <Route
-                path="/leads"
-                element={<PlaceholderPage title="Leads" description="Manage leads and prospects" icon={UserPlus} />}
-              />
+              <Route path="/projects" element={<PlaceholderPage title="Projects" description="Manage your projects" icon={FolderKanban} />} />
+              <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/leads" element={<PlaceholderPage title="Leads" description="Manage leads and prospects" icon={UserPlus} />} />
               <Route
                 path="/prospects"
                 element={<PlaceholderPage title="Prospects" description="Track potential sponsors" icon={Users2} />}
