@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
   FileText,
