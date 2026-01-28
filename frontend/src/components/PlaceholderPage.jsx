@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent } from '../components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { FolderKanban } from 'lucide-react';
 
 const PlaceholderPage = ({ title, description, icon: Icon }) => {
