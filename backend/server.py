@@ -248,10 +248,11 @@ async def register(user_data: UserCreate):
     user_dict['created_at'] = user_dict['created_at'].isoformat()
     user_dict['updated_at'] = user_dict['updated_at'].isoformat()
     
-    await db.users.insert_one(user_dict)
+    insert_doc = {**user_dict}
+    await db.users.insert_one(insert_doc)
     
     access_token = create_access_token(data={"sub": user.id})
-    user_response = {k: v for k, v in user_dict.items() if k != 'password_hash'}
+    user_response = {k: v for k, v in user_dict.items() if k != 'password_hash' and k != '_id'}
     
     return TokenResponse(access_token=access_token, user=user_response)
 
