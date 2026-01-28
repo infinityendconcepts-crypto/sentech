@@ -313,6 +313,4 @@ const LoginPage = () => {
   );
 };
 
-import { FileText, Users } from 'lucide-react';
-
 export default LoginPage;
