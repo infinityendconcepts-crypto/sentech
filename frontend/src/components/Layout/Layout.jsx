@@ -69,10 +69,12 @@ const Layout = () => {
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between h-16 px-6 border-b border-slate-200">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Award className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-heading font-bold text-lg text-slate-900">BursaryFlow</span>
+              <img 
+                src="https://customer-assets.emergentagent.com/job_35f4e68b-f8a6-438f-aaff-cead03553ebb/artifacts/a17j70a0_HeCFT4bk_400x400.jpg" 
+                alt="Sentech Logo" 
+                className="w-10 h-10 rounded-lg"
+              />
+              <span className="font-heading font-bold text-lg text-slate-900">Sentech</span>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
