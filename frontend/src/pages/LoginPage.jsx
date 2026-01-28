@@ -60,12 +60,14 @@ const LoginPage = () => {
       <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8 items-center">
         <div className="hidden md:flex flex-col justify-center space-y-6">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center">
-              <Award className="w-10 h-10 text-white" />
-            </div>
+            <img 
+              src="https://customer-assets.emergentagent.com/job_35f4e68b-f8a6-438f-aaff-cead03553ebb/artifacts/a17j70a0_HeCFT4bk_400x400.jpg" 
+              alt="Sentech Logo" 
+              className="w-16 h-16 rounded-xl"
+            />
             <div>
-              <h1 className="text-4xl font-heading font-bold text-slate-900">BursaryFlow</h1>
-              <p className="text-lg text-slate-600">Enterprise Management System</p>
+              <h1 className="text-4xl font-heading font-bold text-slate-900">Sentech</h1>
+              <p className="text-lg text-slate-600">Bursary Management System</p>
             </div>
           </div>
           <div className="space-y-4">
