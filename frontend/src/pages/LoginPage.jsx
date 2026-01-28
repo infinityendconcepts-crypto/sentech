@@ -1,0 +1,318 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Alert, AlertDescription } from '../ui/alert';
+import { authAPI } from '../../services/api';
+import { Award, Mail, Lock, User, KeyRound } from 'lucide-react';
+
+const LoginPage = () => {
+  const [activeTab, setActiveTab] = useState('email');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [registerData, setRegisterData] = useState({
+    email: '',
+    password: '',
+    full_name: '',
+    student_id: '',
+  });
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await authAPI.login(loginData);
+      login(response.data.access_token, response.data.user);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await authAPI.register(registerData);
+      login(response.data.access_token, response.data.user);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8 items-center">
+        <div className="hidden md:flex flex-col justify-center space-y-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center">
+              <Award className="w-10 h-10 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-heading font-bold text-slate-900">BursaryFlow</h1>
+              <p className="text-lg text-slate-600">Enterprise Management System</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <FileText className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-heading font-semibold text-slate-900">Track Applications</h3>
+                <p className="text-sm text-slate-600">Monitor your bursary applications step-by-step</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Award className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-heading font-semibold text-slate-900">BBBEE Compliance</h3>
+                <p className="text-sm text-slate-600">Manage compliance and verification records</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-heading font-semibold text-slate-900">Sponsor Management</h3>
+                <p className="text-sm text-slate-600">Connect with sponsors and track contributions</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Card className="w-full shadow-lg border-slate-200" data-testid="login-card">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-2xl font-heading font-bold text-center">Welcome</CardTitle>
+            <CardDescription className="text-center">Sign in to access your account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4" data-testid="error-alert">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mb-6">
+                <TabsTrigger value="email" data-testid="tab-email-password">
+                  Email/Password
+                </TabsTrigger>
+                <TabsTrigger value="otp" data-testid="tab-email-otp">
+                  Email OTP
+                </TabsTrigger>
+                <TabsTrigger value="microsoft" data-testid="tab-microsoft">
+                  Microsoft
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="email" className="space-y-4">
+                <Tabs defaultValue="login">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="login">Login</TabsTrigger>
+                    <TabsTrigger value="register">Register</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="login">
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="login-email">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                          <Input
+                            id="login-email"
+                            type="email"
+                            placeholder="your.email@university.edu"
+                            value={loginData.email}
+                            onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                            className="pl-10"
+                            required
+                            data-testid="login-email-input"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="login-password">Password</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                          <Input
+                            id="login-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={loginData.password}
+                            onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                            className="pl-10"
+                            required
+                            data-testid="login-password-input"
+                          />
+                        </div>
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading} data-testid="login-submit-btn">
+                        {loading ? 'Signing in...' : 'Sign In'}
+                      </Button>
+                    </form>
+                  </TabsContent>
+
+                  <TabsContent value="register">
+                    <form onSubmit={handleRegister} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="register-name">Full Name</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                          <Input
+                            id="register-name"
+                            type="text"
+                            placeholder="John Doe"
+                            value={registerData.full_name}
+                            onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
+                            className="pl-10"
+                            required
+                            data-testid="register-name-input"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="register-email">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                          <Input
+                            id="register-email"
+                            type="email"
+                            placeholder="your.email@university.edu"
+                            value={registerData.email}
+                            onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                            className="pl-10"
+                            required
+                            data-testid="register-email-input"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="register-student-id">Student ID (Optional)</Label>
+                        <div className="relative">
+                          <KeyRound className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                          <Input
+                            id="register-student-id"
+                            type="text"
+                            placeholder="STU-2024-001"
+                            value={registerData.student_id}
+                            onChange={(e) => setRegisterData({ ...registerData, student_id: e.target.value })}
+                            className="pl-10"
+                            data-testid="register-student-id-input"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="register-password">Password</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                          <Input
+                            id="register-password"
+                            type="password"
+                            placeholder="••••••••"
+                            value={registerData.password}
+                            onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                            className="pl-10"
+                            required
+                            data-testid="register-password-input"
+                          />
+                        </div>
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading} data-testid="register-submit-btn">
+                        {loading ? 'Creating account...' : 'Create Account'}
+                      </Button>
+                    </form>
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+
+              <TabsContent value="otp" className="space-y-4">
+                <div className="text-center py-8 space-y-4">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
+                    <Mail className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-semibold text-lg text-slate-900">Email OTP Authentication</h3>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Sign in with a one-time password sent to your email
+                    </p>
+                  </div>
+                  <div className="bg-slate-100 p-4 rounded-lg text-left space-y-2">
+                    <p className="text-sm text-slate-700 font-medium">Integration Setup Required:</p>
+                    <ul className="text-xs text-slate-600 space-y-1 ml-4 list-disc">
+                      <li>Configure email service (SendGrid/SMTP)</li>
+                      <li>Add email credentials to backend/.env</li>
+                      <li>Implement OTP verification flow</li>
+                    </ul>
+                  </div>
+                  <Button variant="outline" disabled className="w-full">
+                    Coming Soon
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="microsoft" className="space-y-4">
+                <div className="text-center py-8 space-y-4">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
+                    <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
+                      <rect x="1" y="1" width="10" height="10" fill="#F25022" />
+                      <rect x="13" y="1" width="10" height="10" fill="#7FBA00" />
+                      <rect x="1" y="13" width="10" height="10" fill="#00A4EF" />
+                      <rect x="13" y="13" width="10" height="10" fill="#FFB900" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-semibold text-lg text-slate-900">
+                      Microsoft Entra ID Authentication
+                    </h3>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Sign in with your Microsoft organizational account
+                    </p>
+                  </div>
+                  <div className="bg-slate-100 p-4 rounded-lg text-left space-y-2">
+                    <p className="text-sm text-slate-700 font-medium">Integration Setup Required:</p>
+                    <ul className="text-xs text-slate-600 space-y-1 ml-4 list-disc">
+                      <li>Register app in Azure Portal</li>
+                      <li>Configure OAuth2 redirect URIs</li>
+                      <li>Add Azure credentials to backend/.env</li>
+                      <li>Implement MSAL authentication flow</li>
+                    </ul>
+                  </div>
+                  <Button variant="outline" disabled className="w-full">
+                    Coming Soon
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <div className="mt-6 text-center text-xs text-slate-500">
+              <p>By signing in, you agree to our Terms of Service and Privacy Policy</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+import { FileText, Users } from 'lucide-react';
+
+export default LoginPage;
