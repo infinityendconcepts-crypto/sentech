@@ -1,0 +1,152 @@
+{
+  "design_system": {
+    "identity": {
+      "name": "BursaryFlow Enterprise",
+      "archetype": "The Soft Utility (Archetype 2/4 Hybrid)",
+      "core_philosophy": "Professional clarity meets human warmth. Data-heavy but breathable.",
+      "anti_patterns": [
+        "No generic 'SaaS Purple' or 'Teal'.",
+        "No center-aligned heavy text blocks.",
+        "No default 20px margins - use 32px+ for breathing room.",
+        "No 'Inter' for headings - use Manrope."
+      ]
+    },
+    "typography": {
+      "font_family": {
+        "headings": "Manrope, sans-serif",
+        "body": "Inter, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "scale": {
+        "h1": "text-4xl font-bold tracking-tight lg:text-5xl",
+        "h2": "text-3xl font-semibold tracking-tight",
+        "h3": "text-2xl font-semibold tracking-tight",
+        "p": "leading-7 [&:not(:first-child)]:mt-6"
+      },
+      "rules": [
+        "Headings must be 'Manrope'. Import it in index.css.",
+        "Use 'tracking-tight' for all headings larger than 24px.",
+        "Never use pure black (#000000) for text. Use Slate-900 (#0f172a)."
+      ]
+    },
+    "colors": {
+      "palette": {
+        "primary": {
+          "DEFAULT": "#0056B3",
+          "foreground": "#FFFFFF",
+          "hover": "#004494",
+          "active": "#003377"
+        },
+        "secondary": {
+          "DEFAULT": "#F1F5F9",
+          "foreground": "#0F172A"
+        },
+        "accent": {
+          "DEFAULT": "#E0F2FE",
+          "foreground": "#0056B3"
+        },
+        "background": {
+          "DEFAULT": "#F8FAFC",
+          "paper": "#FFFFFF"
+        },
+        "muted": {
+          "DEFAULT": "#F1F5F9",
+          "foreground": "#64748B"
+        },
+        "border": "#E2E8F0"
+      },
+      "usage_rules": [
+        "Primary Blue (#0056B3) is for Primary Actions and Active States ONLY.",
+        "Sidebar background should be White (#FFFFFF) or very pale Slate (#F8FAFC) to keep it clean.",
+        "Use 'Slate' scale for neutrals, not 'Gray' or 'Zinc' to maintain a cool, professional tone.",
+        "Success/Error colors must be muted, not neon. (e.g., text-emerald-700 bg-emerald-50)."
+      ]
+    },
+    "layout": {
+      "spacing": {
+        "container_padding": "p-6 md:p-8 lg:p-12",
+        "grid_gap": "gap-6 md:gap-8",
+        "section_spacing": "py-12 md:py-16"
+      },
+      "grid_system": {
+        "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6",
+        "bento_hero": "col-span-12 md:col-span-8 lg:col-span-9",
+        "bento_sidebar": "col-span-12 md:col-span-4 lg:col-span-3"
+      },
+      "sidebar": {
+        "width": "w-64",
+        "behavior": "Fixed left, collapsible on mobile.",
+        "style": "Border-r border-slate-200 bg-white"
+      }
+    },
+    "components": {
+      "cards": {
+        "style": "bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200",
+        "padding": "p-6"
+      },
+      "buttons": {
+        "primary": "bg-[#0056B3] hover:bg-[#004494] text-white rounded-md px-6 py-2.5 font-medium shadow-sm transition-all active:scale-95",
+        "secondary": "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-md px-6 py-2.5 font-medium transition-all"
+      },
+      "inputs": {
+        "style": "rounded-md border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0056B3] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+      },
+      "tables": {
+        "style": "w-full caption-bottom text-sm",
+        "header": "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+        "row": "border-b transition-colors hover:bg-slate-50/50 data-[state=selected]:bg-muted"
+      }
+    },
+    "visual_enhancers": {
+      "glassmorphism": "backdrop-blur-md bg-white/80 border-b border-white/20 (Use for Sticky Header only)",
+      "shadows": "shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)]",
+      "gradients": "No background gradients. Use subtle mesh gradients only for 'Premium' or 'AI' feature cards if absolutely necessary."
+    },
+    "assets": {
+      "images": {
+        "login_bg": "https://images.unsplash.com/photo-1764263996452-d8498c9b0ce8?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "team_meeting": "https://images.unsplash.com/photo-1758518729685-f88df7890776?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "business_deal": "https://images.unsplash.com/photo-1758518726869-01aff69a56e3?crop=entropy&cs=srgb&fm=jpg&q=85",
+        "logo_placeholder": "https://placehold.co/400x400/0056B3/FFFFFF?text=Bursary+Logo"
+      },
+      "icons": "Use 'lucide-react' for all UI icons. Use 'phosphor-icons' (Duotone) for Feature Cards if available."
+    },
+    "motion": {
+      "transitions": "transition-all duration-200 ease-in-out",
+      "hover_lift": "hover:-translate-y-1",
+      "page_transition": "initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}"
+    },
+    "accessibility": {
+      "contrast": "Ensure text is Slate-600 or darker on white backgrounds.",
+      "focus": "All interactive elements must have a visible focus ring (#0056B3).",
+      "testing": "All interactive elements must have 'data-testid' attributes."
+    }
+  },
+  "instructions_to_main_agent": {
+    "setup": [
+      "Install 'lucide-react' and 'recharts' immediately.",
+      "Configure Tailwind theme to match the 'colors' section exactly.",
+      "Create a 'Layout' component that handles the Sidebar and Header structure."
+    ],
+    "implementation_order": [
+      "1. Setup Theme & Layout (Sidebar/Header)",
+      "2. Dashboard (Bento Grid)",
+      "3. Applications (Step Wizard)",
+      "4. Sponsors & BBBEE (Data Tables)",
+      "5. Other Modules"
+    ],
+    "critical_rules": [
+      "DO NOT use 'lorem ipsum'. Use realistic data (e.g., 'University of Cape Town', 'Engineering Bursary 2025').",
+      "DO NOT make the sidebar dark mode by default. Keep it light/white for a clean enterprise look.",
+      "Ensure the 'Application Form' has a clear progress indicator (Step 1 of 4)."
+    ]
+  },
+  "universal_guidelines": {
+    "general": [
+      "Avoid 'AI slop' - generic, centered, low-contrast designs.",
+      "Use 2-3x more spacing than you think is necessary.",
+      "Every interaction needs a micro-state (hover, active, focus).",
+      "Use 'sonner' for toasts."
+    ]
+  }
+}
