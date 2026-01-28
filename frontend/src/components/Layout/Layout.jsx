@@ -135,23 +135,7 @@ const Layout = () => {
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 text-slate-500 hover:text-slate-700"
-            data-testid="open-sidebar-btn"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-          <div className="hidden lg:block">
-            <h1 className="text-xl font-heading font-semibold text-slate-900">
-              {navigation.find((item) => item.href === location.pathname)?.name || 'Dashboard'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-600">Welcome back, {user?.full_name || 'User'}</span>
-          </div>
-        </header>
+        <Header />
 
         <main className="flex-1 overflow-y-auto bg-background">
           <div className="p-6 md:p-8">
