@@ -455,56 +455,20 @@ const TasksPage = () => {
 
         {/* Kanban View */}
         <TabsContent value="kanban">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {kanbanColumns.map(column => {
-              const columnTasks = filteredTasks.filter(task => task.status === column.status);
-              return (
-                <div key={column.id} className="space-y-3">
-                  <Card className="bg-slate-50 border-slate-200">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                        <span>{column.title}</span>
-                        <Badge variant="secondary" className="ml-2">{columnTasks.length}</Badge>
-                      </CardTitle>
-                    </CardHeader>
-                  </Card>
-                  <div className="space-y-3">
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {kanbanColumns.map(column => {
+                const columnTasks = filteredTasks.filter(task => task.status === column.status);
+                return (
+                  <DroppableColumn key={column.id} id={column.status} title={column.title} count={columnTasks.length}>
                     {columnTasks.map(task => (
-                      <Card key={task.id} className="bg-white border-slate-200 hover:shadow-md transition-all duration-200 cursor-move" data-testid={`kanban-task-${task.id}`}>
-                        <CardContent className="p-4">
-                          <h4 className="font-semibold text-slate-900 mb-2">{task.title}</h4>
-                          <p className="text-xs text-slate-600 mb-3 line-clamp-2">{task.description}</p>
-                          <div className="space-y-2">
-                            <Badge className={`${getPriorityColor(task.priority)} text-xs`}>
-                              {task.priority}
-                            </Badge>
-                            <div className="flex items-center gap-2 text-xs text-slate-600">
-                              <User className="w-3 h-3" />
-                              {task.assignee.split(' ')[0]}
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-slate-600">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            </div>
-                            {task.status === 'in_progress' && (
-                              <div className="pt-2">
-                                <div className="w-full bg-slate-200 rounded-full h-1.5">
-                                  <div
-                                    className="bg-primary h-1.5 rounded-full"
-                                    style={{ width: `${task.progress}%` }}
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
+                      <DraggableTaskCard key={task.id} task={task} />
                     ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  </DroppableColumn>
+                );
+              })}
+            </div>
+          </DndContext>
         </TabsContent>
 
         {/* Gantt View */}
