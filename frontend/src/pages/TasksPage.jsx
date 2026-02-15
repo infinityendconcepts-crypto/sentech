@@ -52,6 +52,14 @@ const TasksPage = () => {
     search: ''
   });
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
   useEffect(() => {
     fetchTasks();
   }, []);
