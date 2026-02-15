@@ -421,9 +421,31 @@ const TasksPage = () => {
                         </div>
                       )}
                     </div>
-                    <Button variant="ghost" size="sm">
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" data-testid={`task-menu-${task.id}`}>
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'todo')}>
+                          <Circle className="w-4 h-4 mr-2" />
+                          Mark as To Do
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'in_progress')}>
+                          <Clock className="w-4 h-4 mr-2" />
+                          Mark as In Progress
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'blocked')}>
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Mark as Blocked
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleStatusChange(task.id, 'completed')}>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Mark as Completed
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </CardContent>
               </Card>
