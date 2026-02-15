@@ -286,6 +286,87 @@ async def get_me(current_user: dict = Depends(get_current_user)):
     user_response = {k: v for k, v in current_user.items() if k != 'password_hash'}
     return user_response
 
+@api_router.get("/auth/microsoft/login")
+async def microsoft_login():
+    """Initiate Microsoft OAuth login"""
+    msal_app = msal.ConfidentialClientApplication(
+        MICROSOFT_CLIENT_ID,
+        authority=MICROSOFT_AUTHORITY,
+        client_credential=MICROSOFT_CLIENT_SECRET,
+    )
+    
+    redirect_uri = f"{os.getenv('REACT_APP_BACKEND_URL')}/auth/microsoft/callback"
+    
+    auth_url = msal_app.get_authorization_request_url(
+        MICROSOFT_SCOPE,
+        redirect_uri=redirect_uri,
+        state=secrets.token_urlsafe(16)
+    )
+    
+    return {"auth_url": auth_url}
+
+@api_router.get("/auth/microsoft/callback")
+async def microsoft_callback(code: str, state: str):
+    """Handle Microsoft OAuth callback"""
+    try:
+        msal_app = msal.ConfidentialClientApplication(
+            MICROSOFT_CLIENT_ID,
+            authority=MICROSOFT_AUTHORITY,
+            client_credential=MICROSOFT_CLIENT_SECRET,
+        )
+        
+        redirect_uri = f"{os.getenv('REACT_APP_BACKEND_URL')}/auth/microsoft/callback"
+        
+        result = msal_app.acquire_token_by_authorization_code(
+            code,
+            scopes=MICROSOFT_SCOPE,
+            redirect_uri=redirect_uri
+        )
+        
+        if "access_token" not in result:
+            raise HTTPException(status_code=400, detail="Failed to acquire token")
+        
+        # Get user info from Microsoft Graph
+        graph_response = requests.get(
+            "https://graph.microsoft.com/v1.0/me",
+            headers={"Authorization": f"Bearer {result['access_token']}"}
+        )
+        
+        if graph_response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to get user info")
+        
+        user_info = graph_response.json()
+        
+        # Check if user exists
+        user = await db.users.find_one({"email": user_info.get("mail") or user_info.get("userPrincipalName")}, {"_id": 0})
+        
+        if not user:
+            # Create new user
+            new_user = User(
+                email=user_info.get("mail") or user_info.get("userPrincipalName"),
+                full_name=user_info.get("displayName"),
+                is_verified=True,
+                roles=["student"]
+            )
+            user_dict = new_user.model_dump()
+            user_dict['created_at'] = user_dict['created_at'].isoformat()
+            user_dict['updated_at'] = user_dict['updated_at'].isoformat()
+            
+            insert_doc = {**user_dict}
+            await db.users.insert_one(insert_doc)
+            user = user_dict
+        
+        # Create JWT token
+        access_token = create_access_token(data={"sub": user["id"]})
+        
+        # Redirect to frontend with token
+        frontend_redirect = f"{FRONTEND_URL}/auth/callback?token={access_token}&user={user['id']}"
+        return RedirectResponse(url=frontend_redirect)
+        
+    except Exception as e:
+        logger.error(f"Microsoft auth error: {str(e)}")
+        return RedirectResponse(url=f"{FRONTEND_URL}/login?error=auth_failed")
+
 @api_router.post("/applications", response_model=BursaryApplication)
 async def create_application(app_data: ApplicationCreate, current_user: dict = Depends(get_current_user)):
     application = BursaryApplication(
