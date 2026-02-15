@@ -55,11 +55,8 @@ function App() {
               <Route path="/bbbee" element={<BBBEEPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/tasks" element={<TasksPage />} />
-              <Route path="/leads" element={<PlaceholderPage title="Leads" description="Manage leads and prospects" icon={UserPlus} />} />
-              <Route
-                path="/prospects"
-                element={<PlaceholderPage title="Prospects" description="Track potential sponsors" icon={Users2} />}
-              />
+              <Route path="/leads" element={<LeadsPage />} />
+              <Route path="/prospects" element={<PlaceholderPage title="Prospects" description="Track potential sponsors" icon={Users2} />} />
               <Route
                 path="/meetings"
                 element={<PlaceholderPage title="Meetings" description="Schedule and manage meetings" icon={Calendar} />}
