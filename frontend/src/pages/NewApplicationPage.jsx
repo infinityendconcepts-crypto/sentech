@@ -242,46 +242,64 @@ const NewApplicationPage = () => {
 
           {currentStep === 2 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="division">Division *</Label>
+                <Input
+                  id="division"
+                  placeholder="e.g., Operations, Finance, HR"
+                  value={formData.employment_info.division}
+                  onChange={(e) => updateField('employment_info', 'division', e.target.value)}
+                  data-testid="input-division"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Department *</Label>
+                <Input
+                  id="department"
+                  placeholder="e.g., Accounting, IT, Procurement"
+                  value={formData.employment_info.department}
+                  onChange={(e) => updateField('employment_info', 'department', e.target.value)}
+                  data-testid="input-department"
+                  required
+                />
+              </div>
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="institution">Educational Institution</Label>
+                <Label htmlFor="position_description">Position Description *</Label>
                 <Input
-                  id="institution"
-                  placeholder="University of Cape Town"
-                  value={formData.academic_info.institution}
-                  onChange={(e) => updateField('academic_info', 'institution', e.target.value)}
-                  data-testid="input-institution"
+                  id="position_description"
+                  placeholder="Enter your job title or position"
+                  value={formData.employment_info.position_description}
+                  onChange={(e) => updateField('employment_info', 'position_description', e.target.value)}
+                  data-testid="input-position-description"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="program">Program of Study</Label>
+                <Label htmlFor="date_of_appointment">Date of Appointment *</Label>
                 <Input
-                  id="program"
-                  placeholder="Bachelor of Engineering"
-                  value={formData.academic_info.program}
-                  onChange={(e) => updateField('academic_info', 'program', e.target.value)}
-                  data-testid="input-program"
+                  id="date_of_appointment"
+                  type="date"
+                  value={formData.employment_info.date_of_appointment}
+                  onChange={(e) => updateField('employment_info', 'date_of_appointment', e.target.value)}
+                  data-testid="input-date-of-appointment"
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="year_of_study">Year of Study</Label>
+                <Label htmlFor="performance_score">Performance Score *</Label>
                 <Input
-                  id="year_of_study"
+                  id="performance_score"
                   type="number"
-                  placeholder="2"
-                  value={formData.academic_info.year_of_study}
-                  onChange={(e) => updateField('academic_info', 'year_of_study', e.target.value)}
-                  data-testid="input-year-of-study"
+                  placeholder="Enter score (0-100)"
+                  min="0"
+                  max="100"
+                  value={formData.employment_info.performance_score}
+                  onChange={(e) => updateField('employment_info', 'performance_score', e.target.value)}
+                  data-testid="input-performance-score"
+                  required
                 />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="gpa">Grade Point Average / Percentage</Label>
-                <Input
-                  id="gpa"
-                  placeholder="75%"
-                  value={formData.academic_info.gpa}
-                  onChange={(e) => updateField('academic_info', 'gpa', e.target.value)}
-                  data-testid="input-gpa"
-                />
+                <p className="text-xs text-slate-600">Enter your most recent performance evaluation score</p>
               </div>
             </div>
           )}
