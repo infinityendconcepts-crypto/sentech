@@ -154,54 +154,88 @@ const NewApplicationPage = () => {
           {currentStep === 1 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="id_number">ID Number</Label>
+                <Label htmlFor="surname">Surname *</Label>
+                <Input
+                  id="surname"
+                  placeholder="Enter surname"
+                  value={formData.personal_info.surname}
+                  onChange={(e) => updateField('personal_info', 'surname', e.target.value)}
+                  data-testid="input-surname"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Name(s) *</Label>
+                <Input
+                  id="name"
+                  placeholder="Enter first and middle names"
+                  value={formData.personal_info.name}
+                  onChange={(e) => updateField('personal_info', 'name', e.target.value)}
+                  data-testid="input-name"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="id_number">ID Number *</Label>
                 <Input
                   id="id_number"
-                  placeholder="9001015009087"
+                  placeholder="Enter 13-digit ID number"
                   value={formData.personal_info.id_number}
                   onChange={(e) => updateField('personal_info', 'id_number', e.target.value)}
                   data-testid="input-id-number"
+                  maxLength={13}
+                  required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  placeholder="+27 12 345 6789"
-                  value={formData.personal_info.phone}
-                  onChange={(e) => updateField('personal_info', 'phone', e.target.value)}
-                  data-testid="input-phone"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Street Address</Label>
-                <Input
-                  id="address"
-                  placeholder="123 Main Street"
-                  value={formData.personal_info.address}
-                  onChange={(e) => updateField('personal_info', 'address', e.target.value)}
-                  data-testid="input-address"
-                />
+                <Label htmlFor="race">Race *</Label>
+                <select
+                  id="race"
+                  value={formData.personal_info.race}
+                  onChange={(e) => updateField('personal_info', 'race', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  data-testid="select-race"
+                  required
+                >
+                  <option value="">Select race</option>
+                  <option value="Black">Black</option>
+                  <option value="Coloured">Coloured</option>
+                  <option value="Indian">Indian</option>
+                  <option value="White">White</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  placeholder="Cape Town"
-                  value={formData.personal_info.city}
-                  onChange={(e) => updateField('personal_info', 'city', e.target.value)}
-                  data-testid="input-city"
-                />
+                <Label htmlFor="gender">Gender *</Label>
+                <select
+                  id="gender"
+                  value={formData.personal_info.gender}
+                  onChange={(e) => updateField('personal_info', 'gender', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  data-testid="select-gender"
+                  required
+                >
+                  <option value="">Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="postal_code">Postal Code</Label>
-                <Input
-                  id="postal_code"
-                  placeholder="8001"
-                  value={formData.personal_info.postal_code}
-                  onChange={(e) => updateField('personal_info', 'postal_code', e.target.value)}
-                  data-testid="input-postal-code"
-                />
+                <Label htmlFor="disability">Disability *</Label>
+                <select
+                  id="disability"
+                  value={formData.personal_info.disability}
+                  onChange={(e) => updateField('personal_info', 'disability', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  data-testid="select-disability"
+                  required
+                >
+                  <option value="">Select option</option>
+                  <option value="No">No</option>
+                  <option value="Yes">Yes</option>
+                </select>
               </div>
             </div>
           )}
