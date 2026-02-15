@@ -41,6 +41,99 @@ import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 
+// Draggable Task Card Component
+const DraggableTaskCard = ({ task }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-rose-100 text-rose-700 border-rose-200';
+      case 'medium':
+        return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'low':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="bg-white border-slate-200 hover:shadow-md transition-all duration-200 cursor-move"
+      data-testid={`kanban-task-${task.id}`}
+    >
+      <CardContent className="p-4">
+        <h4 className="font-semibold text-slate-900 mb-2">{task.title}</h4>
+        <p className="text-xs text-slate-600 mb-3 line-clamp-2">{task.description}</p>
+        <div className="space-y-2">
+          <Badge className={`${getPriorityColor(task.priority)} text-xs`}>
+            {task.priority}
+          </Badge>
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <User className="w-3 h-3" />
+            {task.assignee.split(' ')[0]}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <Calendar className="w-3 h-3" />
+            {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </div>
+          {task.status === 'in_progress' && (
+            <div className="pt-2">
+              <div className="w-full bg-slate-200 rounded-full h-1.5">
+                <div
+                  className="bg-primary h-1.5 rounded-full"
+                  style={{ width: `${task.progress}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Droppable Column Component
+const DroppableColumn = ({ id, title, count, children }) => {
+  const { setNodeRef } = useSortable({ id });
+
+  return (
+    <div ref={setNodeRef} className="space-y-3">
+      <Card className="bg-slate-50 border-slate-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center justify-between">
+            <span>{title}</span>
+            <Badge variant="secondary" className="ml-2">{count}</Badge>
+          </CardTitle>
+        </CardHeader>
+      </Card>
+      <SortableContext items={React.Children.map(children, child => child.key)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-3 min-h-[200px]">
+          {children}
+        </div>
+      </SortableContext>
+    </div>
+  );
+};
+
 const TasksPage = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
