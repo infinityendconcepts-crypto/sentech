@@ -52,7 +52,7 @@ function App() {
               <Route path="/applications/new" element={<NewApplicationPage />} />
               <Route path="/sponsors" element={<SponsorsPage />} />
               <Route path="/bbbee" element={<BBBEEPage />} />
-              <Route path="/projects" element={<PlaceholderPage title="Projects" description="Manage your projects" icon={FolderKanban} />} />
+              <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/leads" element={<PlaceholderPage title="Leads" description="Manage leads and prospects" icon={UserPlus} />} />
               <Route
