@@ -10,10 +10,10 @@ import { CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 const steps = [
-  { number: 1, name: 'Personal Information', description: 'Basic personal details' },
-  { number: 2, name: 'Academic Information', description: 'Education and qualifications' },
-  { number: 3, name: 'Financial Information', description: 'Financial background' },
-  { number: 4, name: 'Documents', description: 'Required documents' },
+  { number: 1, name: 'Personal Information', description: 'Basic personal and demographic details' },
+  { number: 2, name: 'Employment Details', description: 'Current employment information' },
+  { number: 3, name: 'Academic & Bursary Details', description: 'Study and bursary information' },
+  { number: 4, name: 'Documents & Submission', description: 'Required documents and final submission' },
 ];
 
 const NewApplicationPage = () => {
