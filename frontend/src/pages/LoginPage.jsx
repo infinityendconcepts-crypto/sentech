@@ -25,6 +25,15 @@ const LoginPage = () => {
     student_id: '',
   });
 
+  const handleMicrosoftLogin = async () => {
+    try {
+      const response = await authAPI.getMicrosoftAuthUrl();
+      window.location.href = response.data.auth_url;
+    } catch (err) {
+      setError('Failed to initiate Microsoft login');
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
