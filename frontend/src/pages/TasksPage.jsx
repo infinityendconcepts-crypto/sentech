@@ -253,6 +253,26 @@ const TasksPage = () => {
     return { left: daysSinceStart * 40, width: duration * 40 };
   };
 
+  const handleStatusChange = (taskId, newStatus) => {
+    // In a real app, this would update the backend
+    console.log(`Changing task ${taskId} to status ${newStatus}`);
+    toast.success(`Task status changed to ${newStatus.replace('_', ' ')}`);
+  };
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeTask = mockTasks.find(t => t.id === active.id);
+    const overColumnStatus = over.id;
+
+    if (activeTask && activeTask.status !== overColumnStatus) {
+      handleStatusChange(active.id, overColumnStatus);
+      toast.success(`Task moved to ${overColumnStatus.replace('_', ' ')}`);
+    }
+  };
+
   return (
     <div className="space-y-6" data-testid="tasks-page">
       <div className="flex justify-between items-center">
