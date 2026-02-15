@@ -298,17 +298,19 @@ const LoginPage = () => {
                       Sign in with your Microsoft organizational account
                     </p>
                   </div>
-                  <div className="bg-slate-100 p-4 rounded-lg text-left space-y-2">
-                    <p className="text-sm text-slate-700 font-medium">Integration Setup Required:</p>
-                    <ul className="text-xs text-slate-600 space-y-1 ml-4 list-disc">
-                      <li>Register app in Azure Portal</li>
-                      <li>Configure OAuth2 redirect URIs</li>
-                      <li>Add Azure credentials to backend/.env</li>
-                      <li>Implement MSAL authentication flow</li>
-                    </ul>
-                  </div>
-                  <Button variant="outline" disabled className="w-full">
-                    Coming Soon
+                  <Button 
+                    onClick={handleMicrosoftLogin}
+                    className="w-full gap-2 bg-[#2F2F2F] hover:bg-[#1F1F1F]" 
+                    disabled={loading}
+                    data-testid="microsoft-login-btn"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <rect x="1" y="1" width="10" height="10" fill="#F25022" />
+                      <rect x="13" y="1" width="10" height="10" fill="#7FBA00" />
+                      <rect x="1" y="13" width="10" height="10" fill="#00A4EF" />
+                      <rect x="13" y="13" width="10" height="10" fill="#FFB900" />
+                    </svg>
+                    {loading ? 'Connecting...' : 'Sign in with Microsoft'}
                   </Button>
                 </div>
               </TabsContent>
