@@ -16,6 +16,7 @@ import SponsorsPage from './pages/SponsorsPage';
 import BBBEEPage from './pages/BBBEEPage';
 import TasksPage from './pages/TasksPage';
 import ProjectsPage from './pages/ProjectsPage';
+import LeadsPage from './pages/LeadsPage';
 import PlaceholderPage from './components/PlaceholderPage';
 
 import {
