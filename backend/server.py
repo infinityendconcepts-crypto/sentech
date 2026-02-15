@@ -35,6 +35,14 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production-m
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
+MICROSOFT_CLIENT_ID = os.getenv("MICROSOFT_CLIENT_ID")
+MICROSOFT_TENANT_ID = os.getenv("MICROSOFT_TENANT_ID")
+MICROSOFT_CLIENT_SECRET = os.getenv("MICROSOFT_CLIENT_SECRET")
+MICROSOFT_AUTHORITY = f"https://login.microsoftonline.com/{MICROSOFT_TENANT_ID}"
+MICROSOFT_SCOPE = ["User.Read"]
+
+FRONTEND_URL = os.getenv("REACT_APP_BACKEND_URL", "http://localhost:3000").replace("/api", "")
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
