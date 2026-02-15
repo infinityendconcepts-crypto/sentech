@@ -11,6 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { tasksAPI } from '../services/api';
 import { 
   Plus, 
@@ -27,8 +33,13 @@ import {
   ChevronRight,
   Circle,
   CheckCircle,
-  XCircle
+  XCircle,
+  MoreVertical
 } from 'lucide-react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { toast } from 'sonner';
 
 const TasksPage = () => {
   const [tasks, setTasks] = useState([]);
