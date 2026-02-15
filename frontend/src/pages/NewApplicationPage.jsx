@@ -23,28 +23,32 @@ const NewApplicationPage = () => {
 
   const [formData, setFormData] = useState({
     personal_info: {
+      surname: '',
+      name: '',
       id_number: '',
-      phone: '',
-      address: '',
-      city: '',
-      postal_code: '',
+      race: '',
+      gender: '',
+      disability: '',
     },
-    academic_info: {
+    employment_info: {
+      division: '',
+      department: '',
+      position_description: '',
+      date_of_appointment: '',
+      performance_score: '',
+    },
+    academic_bursary_info: {
+      bursary_status: '',
       institution: '',
-      program: '',
-      year_of_study: '',
-      gpa: '',
-    },
-    financial_info: {
-      household_income: '',
-      dependents: '',
-      employed: false,
-      additional_info: '',
+      course_of_study: '',
+      total_amount_requested: '',
+      applicant_type: '',
     },
     documents: {
       id_document: '',
       academic_transcript: '',
-      proof_of_income: '',
+      proof_of_registration: '',
+      other_documents: '',
     },
   });
 
