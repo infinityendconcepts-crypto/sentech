@@ -386,44 +386,65 @@ const NewApplicationPage = () => {
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="id_document">ID Document / Passport</Label>
+                  <Label htmlFor="id_document">ID Document / Passport *</Label>
                   <Input
                     id="id_document"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     onChange={(e) => updateField('documents', 'id_document', e.target.files[0]?.name || '')}
                     data-testid="input-id-document"
+                    required
                   />
-                  <p className="text-xs text-slate-600">Upload a copy of your ID document or passport</p>
+                  <p className="text-xs text-slate-600">Upload a certified copy of your ID document or passport</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="academic_transcript">Academic Transcript</Label>
+                  <Label htmlFor="academic_transcript">Academic Transcript / Statement of Results *</Label>
                   <Input
                     id="academic_transcript"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     onChange={(e) => updateField('documents', 'academic_transcript', e.target.files[0]?.name || '')}
                     data-testid="input-academic-transcript"
+                    required
                   />
-                  <p className="text-xs text-slate-600">Upload your most recent academic transcript</p>
+                  <p className="text-xs text-slate-600">Upload your most recent academic transcript or statement of results</p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="proof_of_income">Proof of Income</Label>
+                  <Label htmlFor="proof_of_registration">Proof of Registration *</Label>
                   <Input
-                    id="proof_of_income"
+                    id="proof_of_registration"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'proof_of_income', e.target.files[0]?.name || '')}
-                    data-testid="input-proof-of-income"
+                    onChange={(e) => updateField('documents', 'proof_of_registration', e.target.files[0]?.name || '')}
+                    data-testid="input-proof-of-registration"
+                    required
                   />
-                  <p className="text-xs text-slate-600">Upload proof of household income (payslips, tax returns, etc.)</p>
+                  <p className="text-xs text-slate-600">Upload your proof of registration or acceptance letter from the institution</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="other_documents">Other Supporting Documents (Optional)</Label>
+                  <Input
+                    id="other_documents"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    multiple
+                    onChange={(e) => updateField('documents', 'other_documents', e.target.files[0]?.name || '')}
+                    data-testid="input-other-documents"
+                  />
+                  <p className="text-xs text-slate-600">Upload any other relevant supporting documents</p>
                 </div>
               </div>
               <div className="bg-accent/50 p-4 rounded-lg">
-                <p className="text-sm text-slate-700">
-                  <strong>Note:</strong> By submitting this application, you confirm that all information provided is
-                  accurate and complete.
+                <h4 className="font-semibold text-slate-900 mb-2">Declaration</h4>
+                <p className="text-sm text-slate-700 mb-3">
+                  By submitting this application, I declare that:
                 </p>
+                <ul className="text-sm text-slate-700 space-y-1 ml-4 list-disc">
+                  <li>All information provided is accurate, complete, and truthful</li>
+                  <li>I understand that providing false information may result in the cancellation of my bursary</li>
+                  <li>I consent to the verification of the information provided</li>
+                  <li>I agree to comply with all bursary terms and conditions</li>
+                </ul>
               </div>
             </div>
           )}
