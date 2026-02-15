@@ -308,37 +308,76 @@ const NewApplicationPage = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="household_income">Household Income (Annual)</Label>
-                  <Input
-                    id="household_income"
-                    placeholder="R 150,000"
-                    value={formData.financial_info.household_income}
-                    onChange={(e) => updateField('financial_info', 'household_income', e.target.value)}
-                    data-testid="input-household-income"
-                  />
+                  <Label htmlFor="applicant_type">Applicant Type *</Label>
+                  <select
+                    id="applicant_type"
+                    value={formData.academic_bursary_info.applicant_type}
+                    onChange={(e) => updateField('academic_bursary_info', 'applicant_type', e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    data-testid="select-applicant-type"
+                    required
+                  >
+                    <option value="">Select type</option>
+                    <option value="NEW APPLICANT">NEW APPLICANT</option>
+                    <option value="CONTINUATION APPLICANT">CONTINUATION APPLICANT</option>
+                  </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="dependents">Number of Dependents</Label>
-                  <Input
-                    id="dependents"
-                    type="number"
-                    placeholder="3"
-                    value={formData.financial_info.dependents}
-                    onChange={(e) => updateField('financial_info', 'dependents', e.target.value)}
-                    data-testid="input-dependents"
-                  />
+                  <Label htmlFor="bursary_status">Bursary Status *</Label>
+                  <select
+                    id="bursary_status"
+                    value={formData.academic_bursary_info.bursary_status}
+                    onChange={(e) => updateField('academic_bursary_info', 'bursary_status', e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    data-testid="select-bursary-status"
+                    required
+                  >
+                    <option value="">Select status</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Not Applicable">Not Applicable</option>
+                  </select>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="additional_info">Additional Financial Information</Label>
-                <Textarea
-                  id="additional_info"
-                  placeholder="Provide any additional details about your financial situation..."
-                  value={formData.financial_info.additional_info}
-                  onChange={(e) => updateField('financial_info', 'additional_info', e.target.value)}
-                  rows={4}
-                  data-testid="textarea-additional-info"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="institution">Institution *</Label>
+                  <Input
+                    id="institution"
+                    placeholder="e.g., University of Cape Town, UNISA"
+                    value={formData.academic_bursary_info.institution}
+                    onChange={(e) => updateField('academic_bursary_info', 'institution', e.target.value)}
+                    data-testid="input-institution"
+                    required
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="course_of_study">Course of Study *</Label>
+                  <Input
+                    id="course_of_study"
+                    placeholder="e.g., Bachelor of Commerce in Accounting"
+                    value={formData.academic_bursary_info.course_of_study}
+                    onChange={(e) => updateField('academic_bursary_info', 'course_of_study', e.target.value)}
+                    data-testid="input-course-of-study"
+                    required
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="total_amount_requested">Total Amount Requested (R) *</Label>
+                  <Input
+                    id="total_amount_requested"
+                    type="number"
+                    placeholder="e.g., 50000"
+                    min="0"
+                    step="0.01"
+                    value={formData.academic_bursary_info.total_amount_requested}
+                    onChange={(e) => updateField('academic_bursary_info', 'total_amount_requested', e.target.value)}
+                    data-testid="input-total-amount-requested"
+                    required
+                  />
+                  <p className="text-xs text-slate-600">Enter the total bursary amount you are requesting in Rands</p>
+                </div>
               </div>
             </div>
           )}
