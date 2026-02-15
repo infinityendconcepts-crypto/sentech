@@ -41,6 +41,7 @@ function App() {
         <Toaster position="top-right" />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
           <Route element={<ProtectedRoute />}>
