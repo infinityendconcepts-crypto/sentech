@@ -34,7 +34,10 @@ import {
   Circle,
   CheckCircle,
   XCircle,
-  MoreVertical
+  MoreVertical,
+  Download,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-react';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
