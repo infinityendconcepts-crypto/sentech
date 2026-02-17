@@ -330,8 +330,45 @@ const TasksPage = () => {
     if (filters.priority !== 'all' && task.priority !== filters.priority) return false;
     if (filters.assignee !== 'all' && task.assignee !== filters.assignee) return false;
     if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    if (filters.dateFrom && task.dueDate < filters.dateFrom) return false;
+    if (filters.dateTo && task.dueDate > filters.dateTo) return false;
     return true;
   });
+
+  const handleExport = async (format) => {
+    setExporting(true);
+    try {
+      const params = {};
+      if (filters.status !== 'all') params.status = filters.status;
+      if (filters.priority !== 'all') params.priority = filters.priority;
+      if (filters.dateFrom) params.date_from = filters.dateFrom;
+      if (filters.dateTo) params.date_to = filters.dateTo;
+
+      const response = format === 'excel'
+        ? await tasksAPI.exportExcel(params)
+        : await tasksAPI.exportPdf(params);
+
+      const blob = new Blob([response.data], {
+        type: format === 'excel'
+          ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          : 'application/pdf',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = format === 'excel' ? 'tasks_export.xlsx' : 'tasks_export.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success(`Tasks exported as ${format.toUpperCase()} successfully`);
+    } catch (error) {
+      toast.error('Export failed. Please try again.');
+      console.error('Export error:', error);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const kanbanColumns = [
     { id: 'todo', title: 'To Do', status: 'todo' },
