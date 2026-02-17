@@ -17,6 +17,7 @@ import {
   BarChart3,
   Download,
   FileText,
+  FileSpreadsheet,
   Users,
   Briefcase,
   CheckCircle,
@@ -26,6 +27,12 @@ import {
   Filter,
   Printer,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const ReportsPage = () => {
   const { user } = useAuth();
