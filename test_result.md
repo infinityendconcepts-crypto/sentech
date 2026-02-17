@@ -131,6 +131,18 @@ backend:
 
   - task: "Tasks CRUD API"
     implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Full CRUD for tasks verified - create task returned ID, getAll returned count 1, update changed status to in_progress. All working correctly."
+
+  - task: "Reports Export Excel/PDF endpoints"
+    implemented: true
     working: "NA"
     file: "backend/server.py"
     stuck_count: 0
@@ -139,7 +151,7 @@ backend:
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Full CRUD for tasks is in server.py: GET /api/tasks, GET /api/tasks/{id}, POST /api/tasks, PUT /api/tasks/{id}, DELETE /api/tasks/{id}"
+        comment: "Updated /api/reports/export/{report_type} to support format=excel and format=pdf using generate_excel() and generate_pdf() helpers. Returns proper StreamingResponse with correct content-type."
 
   - task: "Backend Auth"
     implemented: true
