@@ -361,17 +361,16 @@ const TasksPage = () => {
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-
     if (!over) return;
-
-    const activeTask = mockTasks.find(t => t.id === active.id);
+    const activeTask = tasks.find(t => t.id === active.id);
     const overColumnStatus = over.id;
-
     if (activeTask && activeTask.status !== overColumnStatus) {
       handleStatusChange(active.id, overColumnStatus);
       toast.success(`Task moved to ${overColumnStatus.replace('_', ' ')}`);
     }
   };
+
+  const uniqueAssignees = [...new Set(tasks.map(t => t.assignee_name || t.assignee).filter(Boolean))];
 
   return (
     <div className="space-y-6" data-testid="tasks-page">
