@@ -121,6 +121,8 @@ export const tasksAPI = {
   create: (data) => api.post('/tasks', data),
   update: (id, data) => api.put(`/tasks/${id}`, data),
   delete: (id) => api.delete(`/tasks/${id}`),
+  exportExcel: (params) => api.get('/tasks/export/excel', { params, responseType: 'blob' }),
+  exportPdf: (params) => api.get('/tasks/export/pdf', { params, responseType: 'blob' }),
 };
 
 export const projectsAPI = {
