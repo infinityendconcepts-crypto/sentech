@@ -481,14 +481,17 @@ class Task(BaseModel):
     updated_at: datetime = Field(default_factory=current_time)
 
 class TaskCreate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     title: str
     description: Optional[str] = None
     status: str = "todo"
     priority: str = "medium"
     assigned_to: Optional[str] = None
+    assignee_name: Optional[str] = None
     due_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     project_id: Optional[str] = None
+    project_name: Optional[str] = None
     tags: List[str] = []
 
 class TaskUpdate(BaseModel):
