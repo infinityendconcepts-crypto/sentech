@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { authAPI } from '../services/api';
-import { Award, Mail, Lock, User, KeyRound, FileText, Users } from 'lucide-react';
+import { Award, Mail, Lock, User, KeyRound, FileText, Users, ShieldCheck, RefreshCw } from 'lucide-react';
 
 const LoginPage = () => {
   const [activeTab, setActiveTab] = useState('email');
@@ -24,6 +24,13 @@ const LoginPage = () => {
     full_name: '',
     student_id: '',
   });
+
+  // OTP state
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpDevCode, setOtpDevCode] = useState('');
+  const [otpCountdown, setOtpCountdown] = useState(0);
 
   const handleMicrosoftLogin = async () => {
     try {
@@ -49,7 +56,41 @@ const LoginPage = () => {
     }
   };
 
-  const handleRegister = async (e) => {
+  const handleRequestOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!otpEmail.trim()) { setError('Please enter your email'); return; }
+    setLoading(true);
+    try {
+      const res = await authAPI.requestOtp(otpEmail.trim().toLowerCase());
+      setOtpSent(true);
+      if (res.data.dev_note) setOtpDevCode(res.data.dev_note);
+      // Start 60s countdown for resend
+      setOtpCountdown(60);
+      const timer = setInterval(() => {
+        setOtpCountdown(c => { if (c <= 1) { clearInterval(timer); return 0; } return c - 1; });
+      }, 1000);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to send OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!otpCode.trim()) { setError('Please enter the OTP code'); return; }
+    setLoading(true);
+    try {
+      const res = await authAPI.verifyOtp(otpEmail.trim().toLowerCase(), otpCode.trim());
+      login(res.data.access_token, res.data.user);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'OTP verification failed');
+    } finally {
+      setLoading(false);
+    }
+  };
     e.preventDefault();
     setError('');
     setLoading(true);
