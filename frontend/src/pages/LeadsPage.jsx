@@ -157,9 +157,6 @@ const DroppableColumn = ({ id, title, count, children }) => {
     </div>
   );
 };
-    </div>
-  );
-};
 
 const LeadsPage = () => {
   const [leads, setLeads] = useState([]);
