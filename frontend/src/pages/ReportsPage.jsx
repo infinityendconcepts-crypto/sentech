@@ -134,14 +134,28 @@ const ReportsPage = () => {
             <Printer className="w-4 h-4" />
             Print
           </Button>
-          <Button variant="outline" onClick={() => handleExport('csv')} className="gap-2" data-testid="export-csv-btn">
-            <Download className="w-4 h-4" />
-            Export CSV
-          </Button>
-          <Button onClick={() => handleExport('json')} className="gap-2" data-testid="export-json-btn">
-            <Download className="w-4 h-4" />
-            Export JSON
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="gap-2" disabled={exporting} data-testid="export-report-btn">
+                <Download className="w-4 h-4" />
+                {exporting ? 'Exporting...' : 'Export'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport('excel')} data-testid="export-excel-btn">
+                <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />
+                Export to Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('pdf')} data-testid="export-pdf-btn">
+                <FileText className="w-4 h-4 mr-2 text-red-600" />
+                Export to PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('csv')} data-testid="export-csv-btn">
+                <Download className="w-4 h-4 mr-2 text-blue-600" />
+                Export to CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
