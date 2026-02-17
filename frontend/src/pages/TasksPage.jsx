@@ -341,8 +341,6 @@ const TasksPage = () => {
     { id: 'completed', title: 'Completed', status: 'completed' }
   ];
 
-  const uniqueAssignees = [...new Set(mockTasks.map(t => t.assignee))];
-
   // Gantt chart helper - calculate position
   const getGanttPosition = (startDate, dueDate) => {
     const start = new Date(startDate);
