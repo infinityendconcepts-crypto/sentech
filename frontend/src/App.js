@@ -17,24 +17,17 @@ import BBBEEPage from './pages/BBBEEPage';
 import TasksPage from './pages/TasksPage';
 import ProjectsPage from './pages/ProjectsPage';
 import LeadsPage from './pages/LeadsPage';
-import PlaceholderPage from './components/PlaceholderPage';
-
-import {
-  FolderKanban,
-  CheckSquare,
-  UserPlus,
-  Users2,
-  Calendar,
-  StickyNote,
-  MessageSquare,
-  UsersRound,
-  Ticket,
-  Receipt,
-  BarChart3,
-  FolderOpen,
-  HelpCircle,
-  Settings,
-} from 'lucide-react';
+import ProspectsPage from './pages/ProspectsPage';
+import MeetingsPage from './pages/MeetingsPage';
+import NotesPage from './pages/NotesPage';
+import MessagesPage from './pages/MessagesPage';
+import TeamPage from './pages/TeamPage';
+import TicketsPage from './pages/TicketsPage';
+import ExpensesPage from './pages/ExpensesPage';
+import ReportsPage from './pages/ReportsPage';
+import FilesPage from './pages/FilesPage';
+import HelpPage from './pages/HelpPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
@@ -56,47 +49,17 @@ function App() {
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/leads" element={<LeadsPage />} />
-              <Route path="/prospects" element={<PlaceholderPage title="Prospects" description="Track potential sponsors" icon={Users2} />} />
-              <Route
-                path="/meetings"
-                element={<PlaceholderPage title="Meetings" description="Schedule and manage meetings" icon={Calendar} />}
-              />
-              <Route
-                path="/notes"
-                element={<PlaceholderPage title="Notes" description="Create and manage notes" icon={StickyNote} />}
-              />
-              <Route
-                path="/messages"
-                element={<PlaceholderPage title="Messages" description="Internal messaging system" icon={MessageSquare} />}
-              />
-              <Route
-                path="/team"
-                element={<PlaceholderPage title="Team" description="Manage team members" icon={UsersRound} />}
-              />
-              <Route
-                path="/tickets"
-                element={<PlaceholderPage title="Tickets" description="Support ticket system" icon={Ticket} />}
-              />
-              <Route
-                path="/expenses"
-                element={<PlaceholderPage title="Expenses" description="Track and manage expenses" icon={Receipt} />}
-              />
-              <Route
-                path="/reports"
-                element={<PlaceholderPage title="Reports" description="Generate and view reports" icon={BarChart3} />}
-              />
-              <Route
-                path="/files"
-                element={<PlaceholderPage title="Files" description="Document management" icon={FolderOpen} />}
-              />
-              <Route
-                path="/help"
-                element={<PlaceholderPage title="Help & Support" description="Get help and support" icon={HelpCircle} />}
-              />
-              <Route
-                path="/settings"
-                element={<PlaceholderPage title="Settings" description="System settings" icon={Settings} />}
-              />
+              <Route path="/prospects" element={<ProspectsPage />} />
+              <Route path="/meetings" element={<MeetingsPage />} />
+              <Route path="/notes" element={<NotesPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/team" element={<TeamPage />} />
+              <Route path="/tickets" element={<TicketsPage />} />
+              <Route path="/expenses" element={<ExpensesPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/files" element={<FilesPage />} />
+              <Route path="/help" element={<HelpPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
         </Routes>
