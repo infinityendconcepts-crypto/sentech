@@ -2643,6 +2643,189 @@ async def export_report(
             headers={"Content-Disposition": f"attachment; filename={report_type}_report.json"}
         )
 
+# ============== EXPORT HELPERS ==============
+
+def generate_excel(data: list, title: str = "Export") -> io.BytesIO:
+    """Generate an Excel file from a list of dicts"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = title[:31]
+
+    if not data:
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return output
+
+    headers = list(data[0].keys())
+    header_fill = PatternFill(start_color="0056B3", end_color="0056B3", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+
+    for col_idx, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx, value=header.replace("_", " ").title())
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    alt_fill = PatternFill(start_color="E8F0FE", end_color="E8F0FE", fill_type="solid")
+    for row_idx, row_data in enumerate(data, 2):
+        for col_idx, header in enumerate(headers, 1):
+            val = row_data.get(header, "")
+            if isinstance(val, list):
+                val = ", ".join(str(v) for v in val)
+            elif isinstance(val, dict):
+                val = str(val)
+            cell = ws.cell(row=row_idx, column=col_idx, value=val)
+            if row_idx % 2 == 0:
+                cell.fill = alt_fill
+
+    for col_idx, header in enumerate(headers, 1):
+        max_len = max(len(str(header)), max((len(str(row_data.get(header, ""))) for row_data in data), default=0))
+        ws.column_dimensions[get_column_letter(col_idx)].width = min(max_len + 4, 50)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
+
+def generate_pdf(data: list, title: str = "Export") -> io.BytesIO:
+    """Generate a PDF file from a list of dicts"""
+    output = io.BytesIO()
+    doc = SimpleDocTemplate(output, pagesize=A4, rightMargin=0.5*inch, leftMargin=0.5*inch,
+                            topMargin=0.5*inch, bottomMargin=0.5*inch, title=title)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle('title', parent=styles['Heading1'], fontSize=16,
+                                  textColor=colors.HexColor('#0056B3'), spaceAfter=12, alignment=1)
+    elements.append(Paragraph(title, title_style))
+    elements.append(Spacer(1, 0.1*inch))
+    meta = f"<font size=9>Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')} &nbsp;&nbsp; Total: {len(data)} records</font>"
+    elements.append(Paragraph(meta, styles['Normal']))
+    elements.append(Spacer(1, 0.15*inch))
+
+    if not data:
+        elements.append(Paragraph("No data available.", styles['Normal']))
+        doc.build(elements)
+        output.seek(0)
+        return output
+
+    headers = list(data[0].keys())
+    display_headers = [h.replace("_", " ").title() for h in headers]
+    table_data = [display_headers]
+    for row in data:
+        r = []
+        for h in headers:
+            val = row.get(h, "")
+            if isinstance(val, list):
+                val = ", ".join(str(v) for v in val)
+            elif isinstance(val, dict):
+                val = str(val)
+            r.append(str(val)[:80])
+        table_data.append(r)
+
+    col_width = (A4[0] - inch) / len(headers)
+    table = Table(table_data, colWidths=[col_width]*len(headers), repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0056B3')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#E8F0FE')]),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('PADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(table)
+    doc.build(elements)
+    output.seek(0)
+    return output
+
+
+# ============== TASKS EXPORT ROUTES ==============
+
+@api_router.get("/tasks/export/excel")
+async def export_tasks_excel(
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    if priority:
+        query["priority"] = priority
+
+    tasks = await db.tasks.find(query, {"_id": 0}).to_list(10000)
+
+    if date_from:
+        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] >= date_from]
+    if date_to:
+        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] <= date_to + "T23:59:59"]
+
+    export_data = [{
+        "Title": t.get("title", ""),
+        "Status": t.get("status", "").replace("_", " ").title(),
+        "Priority": t.get("priority", "").title(),
+        "Assignee": t.get("assignee_name", ""),
+        "Project": t.get("project_name", ""),
+        "Due Date": t.get("due_date", "")[:10] if t.get("due_date") else "",
+        "Progress": f"{t.get('progress', 0)}%",
+        "Tags": ", ".join(t.get("tags", [])),
+    } for t in tasks]
+
+    excel_stream = generate_excel(export_data, title="Tasks")
+    return StreamingResponse(
+        iter([excel_stream.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=tasks_export.xlsx"}
+    )
+
+
+@api_router.get("/tasks/export/pdf")
+async def export_tasks_pdf(
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    if priority:
+        query["priority"] = priority
+
+    tasks = await db.tasks.find(query, {"_id": 0}).to_list(10000)
+
+    if date_from:
+        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] >= date_from]
+    if date_to:
+        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] <= date_to + "T23:59:59"]
+
+    export_data = [{
+        "Title": t.get("title", ""),
+        "Status": t.get("status", "").replace("_", " ").title(),
+        "Priority": t.get("priority", "").title(),
+        "Assignee": t.get("assignee_name", ""),
+        "Due Date": t.get("due_date", "")[:10] if t.get("due_date") else "",
+        "Progress": f"{t.get('progress', 0)}%",
+    } for t in tasks]
+
+    pdf_stream = generate_pdf(export_data, title="Tasks Report")
+    return StreamingResponse(
+        iter([pdf_stream.getvalue()]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=tasks_export.pdf"}
+    )
+
+
 # ============== DASHBOARD STATS ==============
 
 @api_router.get("/dashboard/stats")
