@@ -670,6 +670,100 @@ const TasksPage = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Add Task Dialog */}
+      <Dialog open={addTaskDialog} onOpenChange={setAddTaskDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create New Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>Title *</Label>
+              <Input
+                placeholder="Task title"
+                value={newTask.title}
+                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                data-testid="new-task-title"
+              />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                placeholder="Describe the task..."
+                value={newTask.description}
+                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Status</Label>
+                <Select value={newTask.status} onValueChange={(v) => setNewTask({ ...newTask, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todo">To Do</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="blocked">Blocked</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Priority</Label>
+                <Select value={newTask.priority} onValueChange={(v) => setNewTask({ ...newTask, priority: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Assignee</Label>
+                <Input
+                  placeholder="Assignee name"
+                  value={newTask.assignee_name}
+                  onChange={(e) => setNewTask({ ...newTask, assignee_name: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Due Date</Label>
+                <Input
+                  type="date"
+                  value={newTask.due_date}
+                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Project</Label>
+              <Input
+                placeholder="Project name"
+                value={newTask.project_name}
+                onChange={(e) => setNewTask({ ...newTask, project_name: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Tags (comma separated)</Label>
+              <Input
+                placeholder="e.g. urgent, review, compliance"
+                value={newTask.tags}
+                onChange={(e) => setNewTask({ ...newTask, tags: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddTaskDialog(false)}>Cancel</Button>
+            <Button onClick={handleCreateTask} disabled={savingTask} data-testid="save-task-btn">
+              {savingTask ? 'Creating...' : 'Create Task'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
