@@ -55,31 +55,20 @@ import { toast } from 'sonner';
 
 // Draggable Task Card Component
 const DraggableTaskCard = ({ task }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: task.id });
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0 : 1,
+    touchAction: 'none',
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high':
-        return 'bg-rose-100 text-rose-700 border-rose-200';
-      case 'medium':
-        return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'low':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'high': return 'bg-rose-100 text-rose-700 border-rose-200';
+      case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'low': return 'bg-blue-100 text-blue-700 border-blue-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
@@ -89,19 +78,17 @@ const DraggableTaskCard = ({ task }) => {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white border-slate-200 hover:shadow-md transition-all duration-200 cursor-move"
+      className="bg-white border-slate-200 hover:shadow-md transition-shadow duration-200 cursor-grab active:cursor-grabbing"
       data-testid={`kanban-task-${task.id}`}
     >
       <CardContent className="p-4">
         <h4 className="font-semibold text-slate-900 mb-2">{task.title}</h4>
         <p className="text-xs text-slate-600 mb-3 line-clamp-2">{task.description}</p>
         <div className="space-y-2">
-          <Badge className={`${getPriorityColor(task.priority)} text-xs`}>
-            {task.priority}
-          </Badge>
+          <Badge className={`${getPriorityColor(task.priority)} text-xs`}>{task.priority}</Badge>
           <div className="flex items-center gap-2 text-xs text-slate-600">
             <User className="w-3 h-3" />
-            {(task.assignee_name || task.assignee || '').split(' ')[0]}
+            {(task.assignee_name || task.assignee || 'Unassigned').split(' ')[0]}
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-600">
             <Calendar className="w-3 h-3" />
@@ -110,10 +97,7 @@ const DraggableTaskCard = ({ task }) => {
           {task.status === 'in_progress' && (
             <div className="pt-2">
               <div className="w-full bg-slate-200 rounded-full h-1.5">
-                <div
-                  className="bg-primary h-1.5 rounded-full"
-                  style={{ width: `${task.progress || 0}%` }}
-                />
+                <div className="bg-primary h-1.5 rounded-full" style={{ width: `${task.progress || 0}%` }} />
               </div>
             </div>
           )}
@@ -123,12 +107,32 @@ const DraggableTaskCard = ({ task }) => {
   );
 };
 
+// Task Card Clone for DragOverlay
+const TaskCardOverlay = ({ task }) => {
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return 'bg-rose-100 text-rose-700';
+      case 'medium': return 'bg-amber-100 text-amber-700';
+      case 'low': return 'bg-blue-100 text-blue-700';
+      default: return 'bg-slate-100 text-slate-700';
+    }
+  };
+  return (
+    <Card className="bg-white border-slate-300 shadow-2xl rotate-2 opacity-95 cursor-grabbing w-64">
+      <CardContent className="p-4">
+        <h4 className="font-semibold text-slate-900 text-sm">{task.title}</h4>
+        <Badge className={`${getPriorityColor(task.priority)} text-xs mt-2`}>{task.priority}</Badge>
+      </CardContent>
+    </Card>
+  );
+};
+
 // Droppable Column Component
 const DroppableColumn = ({ id, title, count, children }) => {
-  const { setNodeRef } = useSortable({ id });
+  const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
-    <div ref={setNodeRef} className="space-y-3">
+    <div className="flex flex-col gap-3">
       <Card className="bg-slate-50 border-slate-200">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center justify-between">
@@ -137,11 +141,14 @@ const DroppableColumn = ({ id, title, count, children }) => {
           </CardTitle>
         </CardHeader>
       </Card>
-      <SortableContext items={React.Children.map(children, child => child.key)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3 min-h-[200px]">
-          {children}
-        </div>
-      </SortableContext>
+      <div
+        ref={setNodeRef}
+        className={`flex flex-col gap-3 min-h-[200px] rounded-lg p-2 transition-colors duration-150 ${
+          isOver ? 'bg-blue-50 border-2 border-dashed border-blue-300' : 'bg-transparent'
+        }`}
+      >
+        {children}
+      </div>
     </div>
   );
 };
