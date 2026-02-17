@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -14,12 +15,15 @@ import {
   Bell,
   Plus,
   CheckSquare,
-  Clock,
   FolderKanban,
-  ListTodo,
   StickyNote,
   Calendar,
   Ticket,
+  MessageSquare,
+  UserPlus,
+  DollarSign,
+  TrendingUp,
+  ChevronRight,
 } from 'lucide-react';
 
 const navigation = [
@@ -45,10 +49,30 @@ const navigation = [
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const currentPage = navigation.find((item) => item.href === location.pathname)?.name || 'Dashboard';
+
+  const quickAddItems = [
+    { label: 'New Task', icon: CheckSquare, href: '/tasks', testId: 'add-task-quick' },
+    { label: 'New Note', icon: StickyNote, href: '/notes', testId: 'add-note-quick' },
+    { label: 'New Meeting', icon: Calendar, href: '/meetings', testId: 'add-meeting-quick' },
+    { label: 'New Ticket', icon: Ticket, href: '/tickets', testId: 'add-ticket-quick' },
+    { label: 'New Lead', icon: TrendingUp, href: '/leads', testId: 'add-lead-quick' },
+    { label: 'New Expense', icon: DollarSign, href: '/expenses', testId: 'add-expense-quick' },
+    { label: 'New Message', icon: MessageSquare, href: '/messages', testId: 'add-message-quick' },
+    { label: 'New Project', icon: FolderKanban, href: '/projects', testId: 'add-project-quick' },
+  ];
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      setSearchOpen(false);
+      setSearchQuery('');
+    }
+  };
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
@@ -63,10 +87,13 @@ const Header = () => {
             <div className="flex items-center gap-2">
               <Input
                 type="text"
-                placeholder="Search..."
-                className="w-64"
+                placeholder="Search anything..."
+                className="w-72 bg-white"
                 autoFocus
-                onBlur={() => setSearchOpen(false)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearch}
+                onBlur={() => { setSearchOpen(false); setSearchQuery(''); }}
                 data-testid="header-search-input"
               />
             </div>
@@ -82,42 +109,30 @@ const Header = () => {
           )}
         </div>
 
-        {/* Add Dropdown */}
+        {/* Quick Add Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" data-testid="header-add-btn">
+            <Button variant="ghost" size="icon" data-testid="header-add-btn" title="Quick Add">
               <Plus className="w-5 h-5 text-slate-600" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem className="cursor-pointer" data-testid="add-task-btn">
-              <CheckSquare className="w-4 h-4 mr-2" />
-              Add Task
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" data-testid="add-reminder-btn">
-              <Clock className="w-4 h-4 mr-2" />
-              Add Reminder
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" data-testid="add-project-time-btn">
-              <FolderKanban className="w-4 h-4 mr-2" />
-              Add Project Time
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" data-testid="add-todo-btn">
-              <ListTodo className="w-4 h-4 mr-2" />
-              Add To Do
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" data-testid="add-note-btn">
-              <StickyNote className="w-4 h-4 mr-2" />
-              Add Note
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" data-testid="add-event-btn">
-              <Calendar className="w-4 h-4 mr-2" />
-              Add Event
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer" data-testid="add-ticket-btn">
-              <Ticket className="w-4 h-4 mr-2" />
-              Add Ticket
-            </DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-52 bg-white">
+            <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Quick Add</div>
+            <DropdownMenuSeparator />
+            {quickAddItems.map((item) => (
+              <DropdownMenuItem
+                key={item.href}
+                className="cursor-pointer flex items-center justify-between group"
+                onClick={() => navigate(item.href)}
+                data-testid={item.testId}
+              >
+                <div className="flex items-center gap-2">
+                  <item.icon className="w-4 h-4 text-slate-500" />
+                  <span>{item.label}</span>
+                </div>
+                <ChevronRight className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </DropdownMenuItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -131,8 +146,8 @@ const Header = () => {
 
         {/* User Profile */}
         <div className="flex items-center gap-2 ml-2">
-          <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
-            <span className="text-sm font-semibold text-slate-700">
+          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+            <span className="text-sm font-semibold text-white">
               {user?.full_name?.charAt(0) || 'U'}
             </span>
           </div>
