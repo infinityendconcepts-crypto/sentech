@@ -554,12 +554,12 @@ const TasksPage = () => {
                         <div className="ml-7">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-xs text-slate-600">Progress</span>
-                            <span className="text-xs font-semibold text-slate-900">{task.progress}%</span>
+                            <span className="text-xs font-semibold text-slate-900">{task.progress || 0}%</span>
                           </div>
                           <div className="w-full bg-slate-200 rounded-full h-2">
                             <div
                               className="bg-primary h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${task.progress}%` }}
+                              style={{ width: `${task.progress || 0}%` }}
                             />
                           </div>
                         </div>
