@@ -538,13 +538,13 @@ const TasksPage = () => {
                             </Badge>
                             <div className="flex items-center gap-2 text-sm text-slate-600">
                               <User className="w-4 h-4" />
-                              {task.assignee}
+                              {task.assignee_name || task.assignee || 'Unassigned'}
                             </div>
                             <div className="flex items-center gap-2 text-sm text-slate-600">
                               <Calendar className="w-4 h-4" />
-                              Due: {new Date(task.dueDate).toLocaleDateString()}
+                              Due: {(task.due_date || task.dueDate) ? new Date(task.due_date || task.dueDate).toLocaleDateString() : 'No date'}
                             </div>
-                            {task.tags.map(tag => (
+                            {(task.tags || []).map(tag => (
                               <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
                             ))}
                           </div>
