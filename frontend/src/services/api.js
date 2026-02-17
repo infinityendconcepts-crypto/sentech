@@ -34,6 +34,8 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
   getMicrosoftAuthUrl: () => api.get('/auth/microsoft/login'),
+  requestOtp: (email) => api.post('/auth/request-otp', { email }),
+  verifyOtp: (email, otp) => api.post('/auth/verify-otp', { email, otp }),
 };
 
 export const usersAPI = {
