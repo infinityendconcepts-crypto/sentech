@@ -351,12 +351,6 @@ const TasksPage = () => {
     return { left: daysSinceStart * 40, width: duration * 40 };
   };
 
-  const handleStatusChange = (taskId, newStatus) => {
-    // In a real app, this would update the backend
-    console.log(`Changing task ${taskId} to status ${newStatus}`);
-    toast.success(`Task status changed to ${newStatus.replace('_', ' ')}`);
-  };
-
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (!over) return;
