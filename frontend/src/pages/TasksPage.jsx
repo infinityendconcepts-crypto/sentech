@@ -148,6 +148,7 @@ const DroppableColumn = ({ id, title, count, children }) => {
 };
 
 const TasksPage = () => {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState('list');
@@ -160,6 +161,19 @@ const TasksPage = () => {
     dateTo: '',
   });
   const [exporting, setExporting] = useState(false);
+  const [addTaskDialog, setAddTaskDialog] = useState(false);
+  const [savingTask, setSavingTask] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    status: 'todo',
+    priority: 'medium',
+    assignee_name: '',
+    due_date: '',
+    project_name: '',
+    tags: '',
+    progress: 0,
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -174,123 +188,61 @@ const TasksPage = () => {
   }, []);
 
   const fetchTasks = async () => {
+    setLoading(true);
     try {
       const response = await tasksAPI.getAll();
       setTasks(response.data);
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
+      toast.error('Failed to load tasks');
     } finally {
       setLoading(false);
     }
   };
 
-  // Mock tasks data
-  const mockTasks = [
-    {
-      id: '1',
-      title: 'Review bursary applications',
-      description: 'Review and approve pending bursary applications for Q1',
-      status: 'in_progress',
-      priority: 'high',
-      assignee: 'John Smith',
-      dueDate: '2026-02-15',
-      startDate: '2026-01-20',
-      progress: 60,
-      project: 'Bursary Management',
-      tags: ['Review', 'Urgent']
-    },
-    {
-      id: '2',
-      title: 'Update sponsor database',
-      description: 'Add new sponsor contacts and update existing information',
-      status: 'todo',
-      priority: 'medium',
-      assignee: 'Sarah Johnson',
-      dueDate: '2026-02-20',
-      startDate: '2026-02-01',
-      progress: 0,
-      project: 'Sponsor Relations',
-      tags: ['Database', 'Maintenance']
-    },
-    {
-      id: '3',
-      title: 'Prepare BBBEE compliance report',
-      description: 'Compile BBBEE verification documents and scoring reports',
-      status: 'completed',
-      priority: 'high',
-      assignee: 'Michael Chen',
-      dueDate: '2026-01-30',
-      startDate: '2026-01-15',
-      progress: 100,
-      project: 'Compliance',
-      tags: ['BBBEE', 'Reports']
-    },
-    {
-      id: '4',
-      title: 'Schedule sponsor meetings',
-      description: 'Organize Q1 review meetings with all active sponsors',
-      status: 'in_progress',
-      priority: 'medium',
-      assignee: 'Lisa Van Der Merwe',
-      dueDate: '2026-02-10',
-      startDate: '2026-01-25',
-      progress: 45,
-      project: 'Sponsor Relations',
-      tags: ['Meetings', 'Communication']
-    },
-    {
-      id: '5',
-      title: 'Create financial aid guidelines',
-      description: 'Draft new guidelines for financial aid disbursement',
-      status: 'todo',
-      priority: 'low',
-      assignee: 'David Nkosi',
-      dueDate: '2026-03-01',
-      startDate: '2026-02-15',
-      progress: 0,
-      project: 'Documentation',
-      tags: ['Guidelines', 'Policy']
-    },
-    {
-      id: '6',
-      title: 'Fix application portal bugs',
-      description: 'Resolve technical issues in the online application system',
-      status: 'in_progress',
-      priority: 'high',
-      assignee: 'John Smith',
-      dueDate: '2026-02-05',
-      startDate: '2026-01-28',
-      progress: 75,
-      project: 'Technical',
-      tags: ['Bug Fix', 'Urgent']
-    },
-    {
-      id: '7',
-      title: 'Conduct student interviews',
-      description: 'Interview shortlisted candidates for premium bursaries',
-      status: 'blocked',
-      priority: 'medium',
-      assignee: 'Sarah Johnson',
-      dueDate: '2026-02-18',
-      startDate: '2026-02-10',
-      progress: 0,
-      project: 'Student Affairs',
-      tags: ['Interviews', 'Selection']
-    },
-    {
-      id: '8',
-      title: 'Update website content',
-      description: 'Refresh homepage and program information pages',
-      status: 'completed',
-      priority: 'low',
-      assignee: 'Michael Chen',
-      dueDate: '2026-01-25',
-      startDate: '2026-01-10',
-      progress: 100,
-      project: 'Marketing',
-      tags: ['Website', 'Content']
+  const handleCreateTask = async () => {
+    if (!newTask.title.trim()) {
+      toast.error('Task title is required');
+      return;
     }
-  ];
+    setSavingTask(true);
+    try {
+      const taskData = {
+        ...newTask,
+        tags: newTask.tags ? newTask.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        progress: parseInt(newTask.progress) || 0,
+      };
+      await tasksAPI.create(taskData);
+      toast.success('Task created successfully');
+      setAddTaskDialog(false);
+      setNewTask({ title: '', description: '', status: 'todo', priority: 'medium', assignee_name: '', due_date: '', project_name: '', tags: '', progress: 0 });
+      fetchTasks();
+    } catch (error) {
+      toast.error('Failed to create task');
+    } finally {
+      setSavingTask(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    try {
+      await tasksAPI.delete(taskId);
+      toast.success('Task deleted');
+      fetchTasks();
+    } catch (error) {
+      toast.error('Failed to delete task');
+    }
+  };
+
+  const handleStatusChange = async (taskId, newStatus) => {
+    try {
+      await tasksAPI.update(taskId, { status: newStatus });
+      toast.success('Task status updated');
+      fetchTasks();
+    } catch (error) {
+      toast.error('Failed to update task');
+    }
+  };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
