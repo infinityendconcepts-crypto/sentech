@@ -1026,7 +1026,128 @@ async def microsoft_callback(code: str, state: str):
         logger.error(f"Microsoft auth error: {str(e)}")
         return RedirectResponse(url=f"{FRONTEND_URL}/login?error=auth_failed")
 
-# ============== USERS ROUTES ==============
+# ============== EMAIL OTP AUTH ==============
+
+OTP_EXPIRE_MINUTES = 10
+
+def _send_otp_smtp(to_email: str, otp_code: str):
+    """Send OTP via SMTP (blocking - run in executor)"""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USERNAME", "")
+    smtp_pass = os.environ.get("SMTP_PASSWORD", "")
+    from_name = os.environ.get("SMTP_FROM_NAME", "Sentech Bursary")
+    from_email = os.environ.get("SMTP_FROM_EMAIL", smtp_user)
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"Your {from_name} Login Code"
+    msg["From"] = f"{from_name} <{from_email}>"
+    msg["To"] = to_email
+
+    html = f"""
+    <html><body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">
+      <h2 style="color:#0056B3;">Sentech Bursary System</h2>
+      <p>Your one-time login code is:</p>
+      <div style="background:#E8F0FE;border:1px solid #0056B3;border-radius:8px;text-align:center;padding:24px;margin:20px 0;">
+        <h1 style="color:#0056B3;letter-spacing:12px;font-size:36px;margin:0">{otp_code}</h1>
+      </div>
+      <p>This code expires in <strong>{OTP_EXPIRE_MINUTES} minutes</strong>. Do not share it with anyone.</p>
+      <p style="color:#888;font-size:12px">If you didn't request this, please ignore this email.</p>
+    </body></html>
+    """
+    msg.attach(MIMEText(html, "html"))
+    msg.attach(MIMEText(f"Your login code: {otp_code}. Expires in {OTP_EXPIRE_MINUTES} minutes.", "plain"))
+
+    with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
+        server.ehlo()
+        server.starttls()
+        if smtp_user and smtp_pass:
+            server.login(smtp_user, smtp_pass)
+        server.sendmail(from_email, [to_email], msg.as_string())
+
+
+@api_router.post("/auth/request-otp")
+async def request_otp(body: dict):
+    """Request email OTP for login"""
+    email = body.get("email", "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+
+    otp_code = "".join([str(secrets.randbelow(10)) for _ in range(6)])
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRE_MINUTES)
+
+    await db.otps.delete_many({"email": email})
+    await db.otps.insert_one({
+        "email": email,
+        "otp": otp_code,
+        "attempts": 0,
+        "expires_at": expires_at,
+        "created_at": datetime.now(timezone.utc),
+    })
+
+    smtp_configured = bool(os.environ.get("SMTP_USERNAME", "").strip())
+    if smtp_configured:
+        try:
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, _send_otp_smtp, email, otp_code)
+            logger.info(f"OTP email sent to {email}")
+        except Exception as e:
+            logger.error(f"SMTP send failed for {email}: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to send OTP email. Please configure SMTP settings in Settings > Integrations.")
+    else:
+        logger.info(f"[DEV MODE] OTP for {email}: {otp_code}")
+
+    return {"message": "OTP sent to your email", "email": email, "dev_note": f"OTP: {otp_code}" if not smtp_configured else None}
+
+
+@api_router.post("/auth/verify-otp")
+async def verify_otp(body: dict):
+    """Verify email OTP and return JWT token"""
+    email = body.get("email", "").strip().lower()
+    otp_input = body.get("otp", "").strip()
+
+    if not email or not otp_input:
+        raise HTTPException(status_code=400, detail="Email and OTP are required")
+
+    record = await db.otps.find_one({"email": email})
+    if not record:
+        raise HTTPException(status_code=400, detail="No OTP found. Please request a new one.")
+
+    if record.get("attempts", 0) >= 5:
+        raise HTTPException(status_code=429, detail="Too many attempts. Please request a new OTP.")
+
+    expires_at = record.get("expires_at")
+    if isinstance(expires_at, datetime):
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > expires_at:
+            raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
+
+    if record["otp"] != otp_input:
+        await db.otps.update_one({"email": email}, {"$inc": {"attempts": 1}})
+        remaining = 4 - record.get("attempts", 0)
+        raise HTTPException(status_code=400, detail=f"Invalid OTP. {max(remaining, 0)} attempts remaining.")
+
+    await db.otps.delete_many({"email": email})
+
+    user = await db.users.find_one({"email": email}, {"_id": 0, "password_hash": 0})
+    if not user:
+        new_user = User(email=email, full_name=email.split("@")[0].title(), roles=["employee"], is_verified=True)
+        user_dict = new_user.model_dump()
+        user_dict["created_at"] = user_dict["created_at"].isoformat()
+        user_dict["updated_at"] = user_dict["updated_at"].isoformat()
+        await db.users.insert_one({**user_dict})
+        user = {k: v for k, v in user_dict.items() if k not in ("_id",)}
+
+    access_token = create_access_token(data={"sub": user["id"]})
+    return {"access_token": access_token, "token_type": "bearer", "user": user}
+
+
+
 
 @api_router.get("/users")
 async def get_users(
