@@ -101,3 +101,111 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Sentech Bursary Management System - Full stack app. TasksPage needs date filter and Excel/PDF export. Backend CRUD is implemented. Many placeholder UI pages need to be built out."
+
+backend:
+  - task: "Tasks Export Excel endpoint"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added /api/tasks/export/excel endpoint using openpyxl. Returns .xlsx file with filters for status, priority, date_from, date_to. Tested with curl - returns 200 with valid file."
+
+  - task: "Tasks Export PDF endpoint"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added /api/tasks/export/pdf endpoint using reportlab. Returns .pdf file with filters. Tested with curl - returns 200 with valid file."
+
+  - task: "Tasks CRUD API"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Full CRUD for tasks is in server.py: GET /api/tasks, GET /api/tasks/{id}, POST /api/tasks, PUT /api/tasks/{id}, DELETE /api/tasks/{id}"
+
+  - task: "Backend Auth"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Login endpoint working. Test user: jane.smith@uct.ac.za / securepass123"
+
+frontend:
+  - task: "TasksPage date filter"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/TasksPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added dateFrom and dateTo date input filters to TasksPage. Filter logic checks task.dueDate against the date range. Clear Filters button now also clears date fields."
+
+  - task: "TasksPage Excel/PDF export buttons"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/TasksPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added Export dropdown button in page header with Export to Excel and Export to PDF options. Uses tasksAPI.exportExcel() and tasksAPI.exportPdf() with current filter params. Triggers file download via blob URL."
+
+  - task: "TasksPage List/Kanban/Gantt views"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/TasksPage.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Existing views should still work - no regression changes made."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "TasksPage date filter"
+    - "TasksPage Excel/PDF export buttons"
+    - "Tasks Export Excel endpoint"
+    - "Tasks Export PDF endpoint"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implemented TasksPage enhancements: 1) Date range filter (From/To date inputs) added to filter section. 2) Export dropdown button added to header with Excel and PDF options. 3) Backend export endpoints added using openpyxl and reportlab. Both curl-tested successfully. Please test the full flow: login, navigate to Tasks, verify date filter works, verify Export dropdown shows and triggers file download."
