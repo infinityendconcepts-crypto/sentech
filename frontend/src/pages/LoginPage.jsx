@@ -91,6 +91,8 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
+
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
