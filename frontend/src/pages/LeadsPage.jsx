@@ -37,44 +37,28 @@ import {
   Building2,
   MoreVertical
 } from 'lucide-react';
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, useDroppable, useDraggable } from '@dnd-kit/core';
 import { toast } from 'sonner';
 
 // Draggable Lead Card Component
 const DraggableLeadCard = ({ lead }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: lead.id });
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: lead.id });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0 : 1,
+    touchAction: 'none',
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'new':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'qualified':
-        return 'bg-blue-100 text-blue-700';
-      case 'discussion':
-        return 'bg-purple-100 text-purple-700';
-      case 'negotiation':
-        return 'bg-orange-100 text-orange-700';
-      case 'won':
-        return 'bg-emerald-100 text-emerald-700';
-      case 'lost':
-        return 'bg-rose-100 text-rose-700';
-      default:
-        return 'bg-slate-100 text-slate-700';
+      case 'new': return 'bg-yellow-100 text-yellow-700';
+      case 'qualified': return 'bg-blue-100 text-blue-700';
+      case 'discussion': return 'bg-purple-100 text-purple-700';
+      case 'negotiation': return 'bg-orange-100 text-orange-700';
+      case 'won': return 'bg-emerald-100 text-emerald-700';
+      case 'lost': return 'bg-rose-100 text-rose-700';
+      default: return 'bg-slate-100 text-slate-700';
     }
   };
 
@@ -84,7 +68,7 @@ const DraggableLeadCard = ({ lead }) => {
       style={style}
       {...attributes}
       {...listeners}
-      className="bg-white border-slate-200 hover:shadow-md transition-all duration-200 cursor-move"
+      className="bg-white border-slate-200 hover:shadow-md transition-shadow duration-200 cursor-grab active:cursor-grabbing"
       data-testid={`kanban-lead-${lead.id}`}
     >
       <CardContent className="p-4">
@@ -113,9 +97,7 @@ const DraggableLeadCard = ({ lead }) => {
             {lead.labels && lead.labels.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {lead.labels.map((label, idx) => (
-                  <Badge key={idx} variant="outline" className="text-xs">
-                    {label}
-                  </Badge>
+                  <Badge key={idx} variant="outline" className="text-xs">{label}</Badge>
                 ))}
               </div>
             )}
@@ -126,23 +108,55 @@ const DraggableLeadCard = ({ lead }) => {
   );
 };
 
+// Lead Card Clone for DragOverlay
+const LeadCardOverlay = ({ lead }) => {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'new': return 'bg-yellow-100 text-yellow-700';
+      case 'qualified': return 'bg-blue-100 text-blue-700';
+      case 'discussion': return 'bg-purple-100 text-purple-700';
+      case 'negotiation': return 'bg-orange-100 text-orange-700';
+      case 'won': return 'bg-emerald-100 text-emerald-700';
+      case 'lost': return 'bg-rose-100 text-rose-700';
+      default: return 'bg-slate-100 text-slate-700';
+    }
+  };
+  return (
+    <Card className="bg-white border-slate-300 shadow-2xl rotate-2 opacity-95 cursor-grabbing">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <h4 className="font-semibold text-slate-900">{lead.name}</h4>
+          <Badge className={`${getStatusColor(lead.status)} text-xs`}>{lead.status}</Badge>
+        </div>
+        {lead.company && <p className="text-xs text-slate-500 mt-1">{lead.company}</p>}
+      </CardContent>
+    </Card>
+  );
+};
+
 // Droppable Column Component
 const DroppableColumn = ({ id, title, count, children }) => {
-  const { setNodeRef } = useSortable({ id });
+  const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
-    <div ref={setNodeRef} className="space-y-3">
+    <div className="flex flex-col gap-3">
       <div className="bg-slate-100 p-3 rounded-lg">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
           <Badge variant="secondary" className="ml-2">{count}</Badge>
         </div>
       </div>
-      <SortableContext items={React.Children.map(children, child => child?.key || '')} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3 min-h-[300px]">
-          {children}
-        </div>
-      </SortableContext>
+      <div
+        ref={setNodeRef}
+        className={`flex flex-col gap-3 min-h-[300px] rounded-lg p-2 transition-colors duration-150 ${
+          isOver ? 'bg-blue-50 border-2 border-dashed border-blue-300' : 'bg-transparent'
+        }`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
     </div>
   );
 };
