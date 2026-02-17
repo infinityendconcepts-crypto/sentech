@@ -297,28 +297,84 @@ const LoginPage = () => {
               </TabsContent>
 
               <TabsContent value="otp" className="space-y-4">
-                <div className="text-center py-8 space-y-4">
-                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
-                    <Mail className="w-8 h-8 text-slate-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-heading font-semibold text-lg text-slate-900">Email OTP Authentication</h3>
-                    <p className="text-sm text-slate-600 mt-1">
-                      Sign in with a one-time password sent to your email
-                    </p>
-                  </div>
-                  <div className="bg-slate-100 p-4 rounded-lg text-left space-y-2">
-                    <p className="text-sm text-slate-700 font-medium">Integration Setup Required:</p>
-                    <ul className="text-xs text-slate-600 space-y-1 ml-4 list-disc">
-                      <li>Configure email service (SendGrid/SMTP)</li>
-                      <li>Add email credentials to backend/.env</li>
-                      <li>Implement OTP verification flow</li>
-                    </ul>
-                  </div>
-                  <Button variant="outline" disabled className="w-full">
-                    Coming Soon
-                  </Button>
-                </div>
+                {!otpSent ? (
+                  <form onSubmit={handleRequestOtp} className="space-y-4">
+                    <div className="text-center pb-2">
+                      <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <ShieldCheck className="w-6 h-6 text-primary" />
+                      </div>
+                      <p className="text-sm text-slate-600">Enter your email to receive a one-time login code</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="otp-email">Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                        <Input
+                          id="otp-email"
+                          type="email"
+                          placeholder="your.email@university.edu"
+                          value={otpEmail}
+                          onChange={(e) => setOtpEmail(e.target.value)}
+                          className="pl-10"
+                          required
+                          data-testid="otp-email-input"
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading} data-testid="send-otp-btn">
+                      {loading ? 'Sending...' : 'Send Login Code'}
+                    </Button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifyOtp} className="space-y-4">
+                    <div className="text-center pb-2">
+                      <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Mail className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <p className="text-sm text-slate-700 font-medium">Code sent to {otpEmail}</p>
+                      <p className="text-xs text-slate-500 mt-1">Check your inbox and enter the 6-digit code below</p>
+                    </div>
+                    {otpDevCode && (
+                      <Alert className="bg-amber-50 border-amber-200">
+                        <AlertDescription className="text-amber-800 text-sm">
+                          <strong>Dev Mode:</strong> {otpDevCode}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <div className="space-y-2">
+                      <Label htmlFor="otp-code">6-Digit Code</Label>
+                      <Input
+                        id="otp-code"
+                        type="text"
+                        placeholder="000000"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        className="text-center text-2xl tracking-[0.5em] font-mono"
+                        maxLength={6}
+                        required
+                        autoFocus
+                        data-testid="otp-code-input"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={loading || otpCode.length !== 6} data-testid="verify-otp-btn">
+                      {loading ? 'Verifying...' : 'Verify & Sign In'}
+                    </Button>
+                    <div className="flex items-center justify-between text-sm">
+                      <button type="button" className="text-slate-500 hover:text-slate-700" onClick={() => { setOtpSent(false); setOtpCode(''); setOtpDevCode(''); }}>
+                        ← Change email
+                      </button>
+                      <button
+                        type="button"
+                        className={`flex items-center gap-1 ${otpCountdown > 0 ? 'text-slate-400' : 'text-primary hover:underline'}`}
+                        disabled={otpCountdown > 0}
+                        onClick={handleRequestOtp}
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        {otpCountdown > 0 ? `Resend in ${otpCountdown}s` : 'Resend code'}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </TabsContent>
 
               <TabsContent value="microsoft" className="space-y-4">
