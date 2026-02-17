@@ -191,7 +191,7 @@ export const reportsAPI = {
   getDashboard: () => api.get('/reports/dashboard'),
   export: (reportType, format = 'json') => api.get(`/reports/export/${reportType}`, { 
     params: { format },
-    responseType: format === 'csv' ? 'blob' : 'json'
+    responseType: ['excel', 'pdf', 'csv'].includes(format) ? 'blob' : 'json'
   }),
 };
 
