@@ -256,4 +256,4 @@ test_plan:
 
 agent_communication:
   - agent: "main"
-    message: "Round 2 implementations: 1) TasksPage now connected to real backend (no more mock data) with Add Task modal that creates tasks in MongoDB. 2) ReportsPage updated with Excel/PDF export dropdown. 3) Backend reports export endpoint now supports excel and pdf formats. Test: Login, navigate to /tasks - should show tasks from DB, click Add Task, fill form, create task. Test /reports - click Export dropdown, try Excel/PDF."
+    message: "Fixed: 1) All dialog/popup backgrounds now bg-white with text-slate-900. 2) Sonner notifications forced to light theme with white bg + black text. 3) Kanban drag-and-drop rewritten for both Tasks and Leads pages using proper useDraggable+useDroppable pattern with DragOverlay. Columns highlight blue when hovering during drag. Status updates via API on drop. Please test: login->tasks->kanban->drag a card between columns, open Add Task dialog (check white bg), create a task (check toast notification has black text)."
