@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Header from './Header';
 import {
   LayoutDashboard,
@@ -24,6 +25,9 @@ import {
   Settings,
   LogOut,
   X,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
 } from 'lucide-react';
 
 const navigation = [
@@ -49,100 +53,231 @@ const navigation = [
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  return (
-    <div className="flex h-screen bg-background">
-      <div
-        className={`fixed inset-0 bg-slate-900/50 lg:hidden z-40 transition-opacity duration-200 ${
-          sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={() => setSidebarOpen(false)}
-      />
+  // Handle responsive behavior
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+      if (window.innerWidth < 1024) {
+        setSidebarCollapsed(false);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
-      <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out lg:transform-none ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+  // Load collapsed state from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    if (saved !== null && !isMobile) {
+      setSidebarCollapsed(JSON.parse(saved));
+    }
+  }, [isMobile]);
+
+  const toggleCollapse = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+  };
+
+  const NavItem = ({ item, isActive }) => {
+    const content = (
+      <Link
+        to={item.href}
+        data-testid={`nav-link-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+        className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md transition-all duration-200 ${
+          isActive
+            ? 'bg-primary text-white shadow-sm'
+            : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+        } ${sidebarCollapsed && !isMobile ? 'justify-center' : ''}`}
+        onClick={() => isMobile && setSidebarOpen(false)}
       >
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between h-16 px-6 border-b border-slate-200">
-            <div className="flex items-center gap-3">
+        <item.icon className="w-5 h-5 shrink-0" />
+        {(!sidebarCollapsed || isMobile) && <span className="truncate">{item.name}</span>}
+      </Link>
+    );
+
+    if (sidebarCollapsed && !isMobile) {
+      return (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>
+            {content}
+          </TooltipTrigger>
+          <TooltipContent side="right" className="font-medium">
+            {item.name}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return content;
+  };
+
+  return (
+    <TooltipProvider>
+      <div className="flex h-screen bg-background">
+        {/* Mobile overlay */}
+        <div
+          className={`fixed inset-0 bg-slate-900/50 lg:hidden z-40 transition-opacity duration-200 ${
+            sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={() => setSidebarOpen(false)}
+        />
+
+        {/* Sidebar */}
+        <aside
+          className={`fixed lg:static inset-y-0 left-0 z-50 bg-white border-r border-slate-200 transform transition-all duration-200 ease-in-out ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          } ${sidebarCollapsed && !isMobile ? 'w-[72px]' : 'w-64'}`}
+        >
+          <div className="flex flex-col h-full">
+            {/* Logo */}
+            <div className={`flex items-center h-16 border-b border-slate-200 ${
+              sidebarCollapsed && !isMobile ? 'justify-center px-3' : 'justify-between px-6'
+            }`}>
+              <div className="flex items-center gap-3">
+                <img 
+                  src="https://customer-assets.emergentagent.com/job_35f4e68b-f8a6-438f-aaff-cead03553ebb/artifacts/a17j70a0_HeCFT4bk_400x400.jpg" 
+                  alt="Sentech Logo" 
+                  className={`rounded-lg ${sidebarCollapsed && !isMobile ? 'w-10 h-10' : 'w-10 h-10'}`}
+                />
+                {(!sidebarCollapsed || isMobile) && (
+                  <span className="font-heading font-bold text-lg text-slate-900">Sentech</span>
+                )}
+              </div>
+              {/* Mobile close button */}
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden p-2 text-slate-500 hover:text-slate-700"
+                data-testid="close-sidebar-btn"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+              {navigation.map((item) => (
+                <NavItem 
+                  key={item.name} 
+                  item={item} 
+                  isActive={location.pathname === item.href}
+                />
+              ))}
+            </nav>
+
+            {/* User section */}
+            <div className="border-t border-slate-200">
+              {/* Collapse toggle - desktop only */}
+              {!isMobile && (
+                <div className={`px-3 py-2 border-b border-slate-100 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleCollapse}
+                    className={`gap-2 text-slate-500 hover:text-slate-700 ${sidebarCollapsed ? 'p-2' : 'w-full justify-start'}`}
+                    data-testid="toggle-sidebar-btn"
+                  >
+                    {sidebarCollapsed ? (
+                      <ChevronRight className="w-4 h-4" />
+                    ) : (
+                      <>
+                        <ChevronLeft className="w-4 h-4" />
+                        <span className="text-xs">Collapse menu</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+              
+              <div className="p-3">
+                {sidebarCollapsed && !isMobile ? (
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={logout}
+                        className="w-full p-2 flex justify-center items-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+                        data-testid="logout-btn"
+                      >
+                        <LogOut className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>{user?.full_name || 'User'}</p>
+                      <p className="text-xs text-slate-500">Click to logout</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 px-3 py-2 mb-2">
+                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                        <span className="text-sm font-semibold text-primary">
+                          {user?.full_name?.charAt(0) || 'U'}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">{user?.full_name || 'User'}</p>
+                        <p className="text-xs text-slate-500 truncate">{user?.email || ''}</p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={logout}
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start gap-2"
+                      data-testid="logout-btn"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main content area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Mobile header with hamburger menu */}
+          <div className="lg:hidden flex items-center justify-between h-14 px-4 border-b border-slate-200 bg-white">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md"
+              data-testid="open-sidebar-btn"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="flex items-center gap-2">
               <img 
                 src="https://customer-assets.emergentagent.com/job_35f4e68b-f8a6-438f-aaff-cead03553ebb/artifacts/a17j70a0_HeCFT4bk_400x400.jpg" 
                 alt="Sentech Logo" 
-                className="w-10 h-10 rounded-lg"
+                className="w-8 h-8 rounded-lg"
               />
-              <span className="font-heading font-bold text-lg text-slate-900">Sentech</span>
+              <span className="font-heading font-bold text-slate-900">Sentech</span>
             </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-2 text-slate-500 hover:text-slate-700"
-              data-testid="close-sidebar-btn"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="w-10" /> {/* Spacer for centering */}
           </div>
 
-          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  data-testid={`nav-link-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md transition-all duration-200 ${
-                    isActive
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon className="w-5 h-5" />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="p-4 border-t border-slate-200">
-            <div className="flex items-center gap-3 px-3 py-2 mb-2">
-              <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center">
-                <span className="text-sm font-semibold text-slate-700">
-                  {user?.full_name?.charAt(0) || 'U'}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">{user?.full_name || 'User'}</p>
-                <p className="text-xs text-slate-500 truncate">{user?.email || ''}</p>
-              </div>
-            </div>
-            <Button
-              onClick={logout}
-              variant="outline"
-              size="sm"
-              className="w-full justify-start gap-2"
-              data-testid="logout-btn"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </Button>
+          {/* Desktop header */}
+          <div className="hidden lg:block">
+            <Header />
           </div>
+
+          <main className="flex-1 overflow-y-auto bg-background">
+            <div className="p-4 md:p-6 lg:p-8">
+              <Outlet />
+            </div>
+          </main>
         </div>
-      </aside>
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
-
-        <main className="flex-1 overflow-y-auto bg-background">
-          <div className="p-6 md:p-8">
-            <Outlet />
-          </div>
-        </main>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 
