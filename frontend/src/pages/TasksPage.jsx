@@ -102,18 +102,18 @@ const DraggableTaskCard = ({ task }) => {
           </Badge>
           <div className="flex items-center gap-2 text-xs text-slate-600">
             <User className="w-3 h-3" />
-            {task.assignee.split(' ')[0]}
+            {(task.assignee_name || task.assignee || '').split(' ')[0]}
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-600">
             <Calendar className="w-3 h-3" />
-            {new Date(task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {(task.due_date || task.dueDate) ? new Date(task.due_date || task.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'}
           </div>
           {task.status === 'in_progress' && (
             <div className="pt-2">
               <div className="w-full bg-slate-200 rounded-full h-1.5">
                 <div
                   className="bg-primary h-1.5 rounded-full"
-                  style={{ width: `${task.progress}%` }}
+                  style={{ width: `${task.progress || 0}%` }}
                 />
               </div>
             </div>
