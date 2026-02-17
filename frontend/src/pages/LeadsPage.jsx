@@ -587,7 +587,7 @@ const LeadsPage = () => {
 
         {/* Kanban View */}
         <TabsContent value="kanban">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               {kanbanColumns.map(column => {
                 const columnLeads = filteredLeads.filter(lead => lead.status === column.status);
@@ -598,7 +598,11 @@ const LeadsPage = () => {
                     ))}
                   </DroppableColumn>
                 );
-              })}            </div>
+              })}
+            </div>
+            <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
+              {activeLead ? <LeadCardOverlay lead={activeLead} /> : null}
+            </DragOverlay>
           </DndContext>
         </TabsContent>
       </Tabs>
