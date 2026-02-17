@@ -634,14 +634,17 @@ const TasksPage = () => {
                   {/* Gantt Rows */}
                   <div className="space-y-3">
                     {filteredTasks.map(task => {
-                      const position = getGanttPosition(task.startDate, task.dueDate);
+                      const startDate = task.start_date || task.startDate;
+                      const dueDate = task.due_date || task.dueDate;
+                      const position = getGanttPosition(startDate, dueDate);
+                      const assignee = task.assignee_name || task.assignee || '';
                       return (
                         <div key={task.id} className="flex items-center" data-testid={`gantt-task-${task.id}`}>
                           <div className="w-64">
                             <div className="text-sm font-medium text-slate-900 truncate">{task.title}</div>
                             <div className="text-xs text-slate-600 flex items-center gap-2 mt-1">
                               <User className="w-3 h-3" />
-                              {task.assignee.split(' ')[0]}
+                              {assignee.split(' ')[0]}
                             </div>
                           </div>
                           <div className="flex-1 relative h-10">
@@ -654,7 +657,7 @@ const TasksPage = () => {
                               className={`absolute top-2 h-6 rounded ${getPriorityColor(task.priority)} flex items-center px-2 text-xs font-medium`}
                               style={{ left: `${position.left}px`, width: `${Math.max(position.width, 60)}px` }}
                             >
-                              <span className="truncate">{task.progress}%</span>
+                              <span className="truncate">{task.progress || 0}%</span>
                             </div>
                           </div>
                         </div>
