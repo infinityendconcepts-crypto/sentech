@@ -287,13 +287,15 @@ const TasksPage = () => {
     }
   };
 
-  const filteredTasks = mockTasks.filter(task => {
+  const filteredTasks = tasks.filter(task => {
+    const taskDueDate = task.due_date || task.dueDate || '';
+    const taskAssignee = task.assignee_name || task.assignee || '';
     if (filters.status !== 'all' && task.status !== filters.status) return false;
     if (filters.priority !== 'all' && task.priority !== filters.priority) return false;
-    if (filters.assignee !== 'all' && task.assignee !== filters.assignee) return false;
+    if (filters.assignee !== 'all' && taskAssignee !== filters.assignee) return false;
     if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
-    if (filters.dateFrom && task.dueDate < filters.dateFrom) return false;
-    if (filters.dateTo && task.dueDate > filters.dateTo) return false;
+    if (filters.dateFrom && taskDueDate < filters.dateFrom) return false;
+    if (filters.dateTo && taskDueDate > filters.dateTo) return false;
     return true;
   });
 
