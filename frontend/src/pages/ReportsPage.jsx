@@ -59,31 +59,40 @@ const ReportsPage = () => {
     }
   };
 
+  const [exporting, setExporting] = useState(false);
+
   const handleExport = async (format) => {
+    setExporting(true);
     try {
       const response = await reportsAPI.export(selectedReport, format);
       
-      if (format === 'csv') {
-        const blob = new Blob([response.data], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${selectedReport}_report.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-      } else {
-        const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${selectedReport}_report.json`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-      }
+      const mimeTypes = {
+        'excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'pdf': 'application/pdf',
+        'csv': 'text/csv',
+        'json': 'application/json',
+      };
+      const extensions = { 'excel': 'xlsx', 'pdf': 'pdf', 'csv': 'csv', 'json': 'json' };
+      
+      let blobData = response.data;
+      if (format === 'json') blobData = JSON.stringify(response.data, null, 2);
+      
+      const blob = new Blob([blobData], { type: mimeTypes[format] });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedReport}_report.${extensions[format]}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       
       toast.success(`Report exported as ${format.toUpperCase()}`);
     } catch (error) {
       toast.error('Failed to export report');
+      console.error(error);
+    } finally {
+      setExporting(false);
     }
   };
 
