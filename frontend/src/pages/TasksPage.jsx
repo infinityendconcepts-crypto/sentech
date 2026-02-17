@@ -398,7 +398,7 @@ const TasksPage = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button className="gap-2" data-testid="add-task-btn">
+          <Button className="gap-2" onClick={() => setAddTaskDialog(true)} data-testid="add-task-btn">
             <Plus className="w-4 h-4" />
             Add Task
           </Button>
