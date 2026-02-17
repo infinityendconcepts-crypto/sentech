@@ -322,35 +322,44 @@ const LeadsPage = () => {
     { id: 'lost', title: 'Lost', status: 'lost' }
   ];
 
-  const filteredLeads = mockLeads.filter(lead => {
+  const allLeads = leads.length > 0 ? leads : mockLeads;
+
+  const filteredLeads = allLeads.filter(lead => {
     if (filters.owner !== 'all' && lead.owner !== filters.owner) return false;
     if (filters.status !== 'all' && lead.status !== filters.status) return false;
-    if (filters.label !== 'all' && !lead.labels.includes(filters.label)) return false;
+    if (filters.label !== 'all' && !(lead.labels || []).includes(filters.label)) return false;
     if (filters.source !== 'all' && lead.source !== filters.source) return false;
     if (filters.search && !lead.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
     return true;
   });
 
-  const uniqueOwners = [...new Set(mockLeads.map(l => l.owner))];
-  const uniqueLabels = [...new Set(mockLeads.flatMap(l => l.labels))];
-  const uniqueSources = [...new Set(mockLeads.map(l => l.source))];
+  const uniqueOwners = [...new Set(allLeads.map(l => l.owner).filter(Boolean))];
+  const uniqueLabels = [...new Set(allLeads.flatMap(l => l.labels || []))];
+  const uniqueSources = [...new Set(allLeads.map(l => l.source).filter(Boolean))];
 
-  const handleStatusChange = (leadId, newStatus) => {
-    console.log(`Changing lead ${leadId} to status ${newStatus}`);
-    toast.success(`Lead status changed to ${newStatus}`);
+  const activeLead = activeId ? allLeads.find(l => l.id === activeId) : null;
+
+  const handleStatusChange = async (leadId, newStatus) => {
+    try {
+      await leadsAPI.update(leadId, { status: newStatus });
+      setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
+      toast.success(`Lead moved to ${newStatus}`);
+    } catch {
+      toast.error('Failed to update lead status');
+    }
+  };
+
+  const handleDragStart = (event) => {
+    setActiveId(event.active.id);
   };
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-
+    setActiveId(null);
     if (!over) return;
-
-    const activeLead = mockLeads.find(l => l.id === active.id);
-    const overColumnStatus = over.id;
-
-    if (activeLead && activeLead.status !== overColumnStatus) {
-      handleStatusChange(active.id, overColumnStatus);
-      toast.success(`Lead moved to ${overColumnStatus}`);
+    const lead = allLeads.find(l => l.id === active.id);
+    if (lead && lead.status !== over.id) {
+      handleStatusChange(active.id, over.id);
     }
   };
 
