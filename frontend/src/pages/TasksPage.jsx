@@ -416,10 +416,30 @@ const TasksPage = () => {
           <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Tasks</h2>
           <p className="text-slate-600 mt-1">Manage and track your tasks and projects</p>
         </div>
-        <Button className="gap-2" data-testid="add-task-btn">
-          <Plus className="w-4 h-4" />
-          Add Task
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2" disabled={exporting} data-testid="export-btn">
+                <Download className="w-4 h-4" />
+                {exporting ? 'Exporting...' : 'Export'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport('excel')} data-testid="export-excel">
+                <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />
+                Export to Excel
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('pdf')} data-testid="export-pdf">
+                <FileText className="w-4 h-4 mr-2 text-red-600" />
+                Export to PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button className="gap-2" data-testid="add-task-btn">
+            <Plus className="w-4 h-4" />
+            Add Task
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
