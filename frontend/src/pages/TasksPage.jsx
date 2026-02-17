@@ -364,14 +364,19 @@ const TasksPage = () => {
     return { left: daysSinceStart * 40, width: duration * 40 };
   };
 
+  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+
+  const handleDragStart = (event) => {
+    setActiveId(event.active.id);
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
+    setActiveId(null);
     if (!over) return;
-    const activeTask = tasks.find(t => t.id === active.id);
-    const overColumnStatus = over.id;
-    if (activeTask && activeTask.status !== overColumnStatus) {
-      handleStatusChange(active.id, overColumnStatus);
-      toast.success(`Task moved to ${overColumnStatus.replace('_', ' ')}`);
+    const task = tasks.find(t => t.id === active.id);
+    if (task && task.status !== over.id) {
+      handleStatusChange(active.id, over.id);
     }
   };
 
