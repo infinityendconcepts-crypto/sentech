@@ -445,7 +445,7 @@ const TasksPage = () => {
       {/* Filters */}
       <Card className="bg-white border-slate-200">
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
@@ -490,9 +490,36 @@ const TasksPage = () => {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-slate-400" />
+              <span className="text-sm text-slate-600">Due Date:</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-slate-500">From</label>
+              <Input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                className="w-36 text-sm"
+                data-testid="filter-date-from"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-slate-500">To</label>
+              <Input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                className="w-36 text-sm"
+                data-testid="filter-date-to"
+              />
+            </div>
             <Button
               variant="outline"
-              onClick={() => setFilters({ status: 'all', priority: 'all', assignee: 'all', search: '' })}
+              size="sm"
+              onClick={() => setFilters({ status: 'all', priority: 'all', assignee: 'all', search: '', dateFrom: '', dateTo: '' })}
               data-testid="clear-filters-btn"
             >
               Clear Filters
