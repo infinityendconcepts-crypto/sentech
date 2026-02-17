@@ -208,7 +208,13 @@ const TasksPage = () => {
     setSavingTask(true);
     try {
       const taskData = {
-        ...newTask,
+        title: newTask.title,
+        description: newTask.description || null,
+        status: newTask.status,
+        priority: newTask.priority,
+        assignee_name: newTask.assignee_name || null,
+        due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : null,
+        project_name: newTask.project_name || null,
         tags: newTask.tags ? newTask.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         progress: parseInt(newTask.progress) || 0,
       };
