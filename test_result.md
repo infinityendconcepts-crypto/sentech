@@ -218,6 +218,42 @@ test_plan:
   test_all: false
   test_priority: "high_first"
 
+  - task: "TasksPage connected to real backend"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/TasksPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Replaced mockTasks with real API calls. Added useAuth import, handleCreateTask, handleDeleteTask, handleStatusChange functions connecting to tasksAPI. Added Add Task dialog modal."
+
+  - task: "TasksPage Add Task Modal"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/TasksPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added full Add Task dialog with fields: title, description, status, priority, assignee_name, due_date, project_name, tags. Calls tasksAPI.create() on submit."
+
+  - task: "ReportsPage Excel/PDF export buttons"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/ReportsPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Replaced CSV/JSON export buttons with unified Export dropdown showing Excel, PDF, CSV options. Updated handleExport to support all 4 formats."
+
 agent_communication:
   - agent: "main"
-    message: "Implemented TasksPage enhancements: 1) Date range filter (From/To date inputs) added to filter section. 2) Export dropdown button added to header with Excel and PDF options. 3) Backend export endpoints added using openpyxl and reportlab. Both curl-tested successfully. Please test the full flow: login, navigate to Tasks, verify date filter works, verify Export dropdown shows and triggers file download."
+    message: "Round 2 implementations: 1) TasksPage now connected to real backend (no more mock data) with Add Task modal that creates tasks in MongoDB. 2) ReportsPage updated with Excel/PDF export dropdown. 3) Backend reports export endpoint now supports excel and pdf formats. Test: Login, navigate to /tasks - should show tasks from DB, click Add Task, fill form, create task. Test /reports - click Export dropdown, try Excel/PDF."
