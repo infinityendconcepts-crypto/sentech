@@ -145,8 +145,11 @@ const TasksPage = () => {
     status: 'all',
     priority: 'all',
     assignee: 'all',
-    search: ''
+    search: '',
+    dateFrom: '',
+    dateTo: '',
   });
+  const [exporting, setExporting] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
