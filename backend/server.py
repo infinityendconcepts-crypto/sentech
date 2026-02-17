@@ -2617,20 +2617,34 @@ async def export_report(
             if isinstance(value, datetime):
                 item[key] = value.isoformat()
     
-    if format == "csv":
+    if format == "excel":
+        title = report_type.replace("_", " ").title()
+        excel_stream = generate_excel(data, title=title)
+        return StreamingResponse(
+            iter([excel_stream.getvalue()]),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={report_type}_report.xlsx"}
+        )
+    elif format == "pdf":
+        title = f"{report_type.replace('_', ' ').title()} Report"
+        pdf_stream = generate_pdf(data, title=title)
+        return StreamingResponse(
+            iter([pdf_stream.getvalue()]),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={report_type}_report.pdf"}
+        )
+    elif format == "csv":
         if not data:
             return StreamingResponse(
                 io.StringIO("No data"),
                 media_type="text/csv",
                 headers={"Content-Disposition": f"attachment; filename={report_type}_report.csv"}
             )
-        
         import csv
         output = io.StringIO()
         writer = csv.DictWriter(output, fieldnames=data[0].keys())
         writer.writeheader()
         writer.writerows(data)
-        
         return StreamingResponse(
             io.StringIO(output.getvalue()),
             media_type="text/csv",
