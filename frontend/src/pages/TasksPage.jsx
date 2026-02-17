@@ -615,7 +615,7 @@ const TasksPage = () => {
 
         {/* Kanban View */}
         <TabsContent value="kanban">
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {kanbanColumns.map(column => {
                 const columnTasks = filteredTasks.filter(task => task.status === column.status);
@@ -628,6 +628,9 @@ const TasksPage = () => {
                 );
               })}
             </div>
+            <DragOverlay dropAnimation={{ duration: 150, easing: 'ease' }}>
+              {activeTask ? <TaskCardOverlay task={activeTask} /> : null}
+            </DragOverlay>
           </DndContext>
         </TabsContent>
 
