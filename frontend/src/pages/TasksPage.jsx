@@ -158,6 +158,7 @@ const TasksPage = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState('list');
+  const [activeId, setActiveId] = useState(null);
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
