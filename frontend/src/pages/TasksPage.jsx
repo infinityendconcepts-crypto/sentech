@@ -588,6 +588,10 @@ const TasksPage = () => {
                           <CheckCircle className="w-4 h-4 mr-2" />
                           Mark as Completed
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDeleteTask(task.id)} className="text-red-600">
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Delete Task
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
