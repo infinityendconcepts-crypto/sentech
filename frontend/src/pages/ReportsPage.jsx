@@ -4,35 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { reportsAPI, tasksAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import {
-  BarChart3,
-  Download,
-  FileText,
-  FileSpreadsheet,
-  Users,
-  Briefcase,
-  CheckCircle,
-  DollarSign,
-  TrendingUp,
-  Calendar,
-  Filter,
-  Printer,
+  BarChart3, Download, FileText, FileSpreadsheet,
+  Users, Briefcase, CheckCircle, DollarSign,
+  TrendingUp, Calendar, Filter, Printer,
 } from 'lucide-react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
+  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line,
+  Legend,
+} from 'recharts';
+
+const CHART_COLORS = ['#0056B3', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899'];
 
 const ReportsPage = () => {
   const { user } = useAuth();
