@@ -3,103 +3,155 @@ The user wants to create a comprehensive bursary management system named Sentech
 
 **PRODUCT REQUIREMENTS (New & Existing):**
 - **Technology:** React, FastAPI, and MongoDB.
-- **Branding:** Sentech name with a blue (#0056B3) and gray color scheme.
-- **Authentication:** Microsoft Entra ID SSO, standard email/password, and Email OTP.
-- **Core Modules (Pages):** Dashboard, Applications, Sponsors, BBBEE, Projects, Tasks, Leads, Prospects, Meetings, Notes, Messages, Team, Tickets, Expenses, Reports, Files, Help and Support, Settings, Users, User Profile, Events.
+- **Branding:** Sentech name with a blue (#0056B3) and gray color scheme. The logo has been updated multiple times based on user-provided images.
+- **Authentication:** Microsoft Entra ID SSO, standard email/password, and Email OTP. The public registration option has been removed.
+- **Core Modules (Pages):** Dashboard, Applications, Sponsors, BBBEE, Projects, Tasks, Leads, Prospects, Meetings, Notes, Messages, Team, Tickets, Expenses, Reports, Files, Help and Support, Settings, Users, User Profile, Events, Personal Development Plan (PDP).
 - **Feature Requests:**
     - **Data Persistence:** Implement the backend for all modules.
-    - **Meetings:** Integrate Zoom/Teams, with API keys managed from the Settings page.
-    - **Notes:** Allow creation and sharing of notes.
-    - **Messages:** An internal messaging system.
-    - **Team Management:** Create teams and assign users.
-    - **User Management:** Invite, deactivate, and change roles for users on a dedicated  page. A  page to manage personal settings and documents.
+    - **Role-Based Access Control (RBAC):** Implement a full RBAC system. A simplified version with admin and student roles has been implemented. Admins can create and delete users.
+    - **Personal Development Plan (PDP):** A new page to manage PDPs with fields for What to learn, How to achieve, Resources, Success criteria, and Target dates.
     - **Document Management:** On the profile page, allow users to re-upload rejected application documents, with status tracking (processing, approved, rejected).
-    - **Expenses:** Track expenses against users, projects, and sponsors.
-    - **Ticketing System:** A full ticket creation and management system.
-    - **Help and Support:** An FAQ section and a link to the ticketing system.
-    - **Settings Page:** Centralized management for SMTP, Zoom/Teams keys, page customizations, and user permissions (RBAC). The page should be functional for saving these settings.
-    - **Reporting/Export:** Export to Excel/PDF on Reports and Tasks pages. Add analytics charts to the Reports page.
-    - **Tasks Page:** Add a date filter.
-    - **UI Enhancements:** A collapsible, mobile-responsive main navigation sidebar. Fix UI inconsistencies like dialog backgrounds and notification text color. Fix Kanban drag-and-drop functionality.
+    - **Meetings:** Integrate Zoom/Teams, with API keys managed from the Settings page.
+    - **Settings Page:** Centralized management for SMTP, Zoom/Teams keys, and user permissions. The page is now functional for saving settings.
+    - **Deployment:** The user requested instructions on how to package and deploy the application on a self-hosted VPS.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a well-developed full-stack system with many functional modules. The backend has a modular structure, and the frontend features numerous pages with real data connections.
+A comprehensive full-stack application (React/FastAPI/MongoDB) with a significant number of features implemented. The system now includes robust Role-Based Access Control (RBAC) differentiating between 'admin' and 'student' users, affecting UI visibility and permissions.
 
 Key implemented features include:
-- **Authentication:** Standard Login, Microsoft SSO, and a fully functional Email OTP flow.
-- **Tasks Page:** Fully connected to the backend with CRUD operations, an Add Task modal, date filtering, and Excel/PDF export capabilities.
-- **Reports Page:** Features analytics charts (using Recharts) and Excel/PDF export functionality.
-- **Users & Profile Pages:** A  lists all system users with management options (invite, change role), and a  allows users to view their details.
-- **UI & UX:** The main sidebar is collapsible. Critical UI bugs have been fixed, including dialog backgrounds, notification text colors, and a complete overhaul of the Kanban drag-and-drop logic on both the  and  using .
-- **Backend:** CRUD operations for Tasks and User Management are implemented. The structure for many other modules (, , etc.) exists but awaits business logic implementation.
+- **Core Modules:** Fully functional pages for Tasks, Reports, Users, User Profile (with a Documents tab), Events, and a new Personal Development Plan (PDP).
+- **Authentication:** Standard Login, Microsoft SSO, and Email OTP are functional. The public registration page has been removed.
+- **RBAC:** An 'admin'/'student' role system is in place. Admins have access to the  page to create/delete users, while the navigation sidebar dynamically adjusts to the user's role.
+- **File Management:** The  page supports file upload (via base64) and download. The  also has document upload capabilities.
+- **Settings:** The  page is now functional, allowing an admin user to persist configuration changes to the database.
+- **UI/UX:** The application logo has been updated, and the login page simplified. Kanban boards on  and  use the modern  library.
+- **Deployment Support:** The project's  has been fixed to support installation from private package indexes, a critical step for deployment.
 
 **Last working item**:
-- **Last item agent was working:** The agent was in the middle of a large, multi-part user request. It began by implementing the necessary backend changes. Specifically, it created a new  model and was adding new API endpoints to  for:
-    1.  CRUD operations for a new  module.
-    2.  Endpoints to handle user document uploads and status updates ().
-    3.  Improving the existing  endpoint to persist API keys and other configurations.
-- **Status**: IN PROGRESS
-- **Agent Testing Done**: N
-- **Which testing method agent to use?**: backend testing agent (To verify the new CRUD endpoints for Events, the document management endpoints, and the updated settings endpoint).
+- **Last item agent was working:** The agent was resolving a 
+Usage:   
+  pip <command> [options]
+
+Commands:
+  install                     Install packages.
+  lock                        Generate a lock file.
+  download                    Download packages.
+  uninstall                   Uninstall packages.
+  freeze                      Output installed packages in requirements format.
+  inspect                     Inspect the python environment.
+  list                        List installed packages.
+  show                        Show information about installed packages.
+  check                       Verify installed packages have compatible dependencies.
+  config                      Manage local and global configuration.
+  search                      Search PyPI for packages.
+  cache                       Inspect and manage pip's wheel cache.
+  index                       Inspect information available from package indexes.
+  wheel                       Build wheels from your requirements.
+  hash                        Compute hashes of package archives.
+  completion                  A helper command used for command completion.
+  debug                       Show information useful for debugging.
+  help                        Show help for commands.
+
+General Options:
+  -h, --help                  Show help.
+  --debug                     Let unhandled exceptions propagate outside the
+                              main subroutine, instead of logging them to
+                              stderr.
+  --isolated                  Run pip in an isolated mode, ignoring
+                              environment variables and user configuration.
+  --require-virtualenv        Allow pip to only run in a virtual environment;
+                              exit with an error otherwise.
+  --python <python>           Run pip with the specified Python interpreter.
+  -v, --verbose               Give more output. Option is additive, and can be
+                              used up to 3 times.
+  -V, --version               Show version and exit.
+  -q, --quiet                 Give less output. Option is additive, and can be
+                              used up to 3 times (corresponding to WARNING,
+                              ERROR, and CRITICAL logging levels).
+  --log <path>                Path to a verbose appending log.
+  --no-input                  Disable prompting for input.
+  --keyring-provider <keyring_provider>
+                              Enable the credential lookup via the keyring
+                              library if user input is allowed. Specify which
+                              mechanism to use [auto, disabled, import,
+                              subprocess]. (default: auto)
+  --proxy <proxy>             Specify a proxy in the form
+                              scheme://[user:passwd@]proxy.server:port.
+  --retries <retries>         Maximum attempts to establish a new HTTP
+                              connection. (default: 5)
+  --timeout <sec>             Set the socket timeout (default 15 seconds).
+  --exists-action <action>    Default action when a path already exists:
+                              (s)witch, (i)gnore, (w)ipe, (b)ackup, (a)bort.
+  --trusted-host <hostname>   Mark this host or host:port pair as trusted,
+                              even though it does not have valid or any HTTPS.
+  --cert <path>               Path to PEM-encoded CA certificate bundle. If
+                              provided, overrides the default. See 'SSL
+                              Certificate Verification' in pip documentation
+                              for more information.
+  --client-cert <path>        Path to SSL client certificate, a single file
+                              containing the private key and the certificate
+                              in PEM format.
+  --cache-dir <dir>           Store the cache data in <dir>.
+  --no-cache-dir              Disable the cache.
+  --disable-pip-version-check
+                              Don't periodically check PyPI to determine
+                              whether a new version of pip is available for
+                              download. Implied with --no-index.
+  --no-color                  Suppress colored output.
+  --use-feature <feature>     Enable new functionality, that may be backward
+                              incompatible.
+  --use-deprecated <feature>  Enable deprecated functionality, that will be
+                              removed in the future.
+  --resume-retries <resume_retries>
+                              Maximum attempts to resume or restart an
+                              incomplete download. (default: 5) installation error the user would face during manual deployment. The error No matching distribution found for emergentintegrations occurred because it's a private package. The agent fixed this by adding the private index URL () to the top of .
+- **Status**: RESOLVED
+- **Agent Testing Done**: Y
+- **Which testing method agent to use?**: NA. This was a configuration fix. The next step would be to continue with the upcoming tasks.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Kanban Drag-and-Drop on Leads Page (P1)**
-    - **Description**: The user reported that the Kanban drag-and-drop on the  is not smooth. The agent has already fixed the  Kanban and started fixing the  but the work is still in progress.
+- **Issue 1: Outdated Drag-and-Drop on Prospects Page (P1)**
+    - **Description**: The  uses the older  library for its Kanban board, which is inconsistent with the  and  that have been upgraded to . This can lead to a subpar user experience and console warnings.
     - **Next debug checklist**:
-        1. Review the  function in .
-        2. Ensure 's  is correctly implemented for a smooth visual drag experience.
-        3. Connect the drag-and-drop action to a backend API call to persist the status change.
-        4. Replace  with data from the backend.
-    - **Why fix this issue?**: To provide a smooth user experience and ensure data consistency, as requested by the user.
-    - **Status**: IN PROGRESS
+        1. Edit .
+        2. Replace the  implementation with , mirroring the logic in .
+        3. Ensure the backend API call to update the prospect's status is triggered correctly after a drag-and-drop action.
+    - **Why fix this issue?**: To standardize the user interface, eliminate console warnings, and provide a consistent, smooth drag-and-drop experience across all Kanban boards.
+    - **Status**: NOT STARTED
     - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: both
+    - **Should Test frontend/backend/both after fix?**: frontend
 
 **In progress Task List**:
-- **Task 1: Complete User's Multi-Part Request (P0)**
-    - **Description**: The user requested several features and fixes at once. The agent started the backend work but needs to complete the full implementation.
-    - **Where to resume**: . The agent was adding routes for Events and User Documents. After completing the backend, the following frontend work is required:
-        1.  **Settings Page:** Make the form functional to save API keys (SMTP, Zoom/Teams) to the database via the updated  endpoint.
-        2.  **Leads Page:** Replace the  with a proper working example or connect it to the backend.
-        3.  **Layout:** Remove the My Profile link from the main sidebar navigation in  to eliminate the duplicate link.
-        4.  **User Profile Page:** Add a new tab for Documents. This tab should allow users to upload files, view their status (Processing, Approved, Rejected), and re-upload if rejected.
-        5.  **Events Page:** Create a new , add it to the router in  and the sidebar in , and connect it to the new  backend endpoints.
-    - **What will be achieved with this?**: This will deliver several key features requested by the user, making the Settings page functional, adding a new Events module, implementing a document management workflow, and improving UI/UX.
-    - **Status**: IN PROGRESS
-    - **Should Test frontend/backend/both after fix?**: both
-    - **Blocked on something**: No.
+None. The last active development tasks were completed.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-- **Task 1: Implement Backend CRUD Operations (P0):** Flesh out all the placeholder routes in  with MongoDB logic for , , , , , , , , , etc.
-- **Task 2: Implement UI for Remaining Pages (P1):** Build the frontend components and logic for all placeholder pages: , , , , , , , .
-- **Task 3: Implement Real File Upload on  (P1):** Build the dedicated file management module.
+- **Task 1: Implement Backend for Remaining Modules (P0):** The primary remaining task is to build out the backend business logic for the placeholder modules. Create CRUD API endpoints in  and implement the logic for: , , , , , , , and .
+- **Task 2: Implement Frontend for Remaining Modules (P1):** Connect the existing placeholder frontend pages to the newly created backend endpoints. This includes: , , , , , and .
 
 **Future Tasks:**
-- **Task 4: Implement Meetings Integration (P2):** Use the saved Zoom/Teams keys to integrate video conferencing.
-- **Task 5: Full Role-Based Access Control (RBAC) (P2):** Use the permissions defined in the Settings page to restrict access throughout the app.
-- **Task 6: Implement Internal Messaging & Note Sharing (P2):** Build out the real-time messaging and collaboration features.
+- **Task 3: Meetings Integration (P2):** Use the API keys saved from the  page to integrate Zoom or Microsoft Teams for scheduling and joining meetings within the .
+- **Task 4: Advanced RBAC (P2):** Enhance the current RBAC system. The initial request mentioned defining granular permissions on the  page. This task involves building the UI to manage these permissions and then enforcing them across the entire application.
+- **Task 5: Internal Messaging & Note Sharing (P2):** Implement the real-time features for the  and  modules, allowing for internal team communication and collaboration.
+- **Task 6: Refactor File Uploads (P2):** Improve the file upload functionality on the  from the current base64 implementation to chunked multipart uploads to better handle larger files.
 
 **Completed work in this session**
-- **Tasks Page Enhancement:** Successfully added a date filter, Excel/PDF export functionality, connected it to the live backend, and implemented an Add Task modal.
-- **Reports Page Enhancement:** Added Excel/PDF export and implemented analytics charts using .
-- **Authentication:** Implemented a full Email OTP login flow, including backend endpoints and frontend UI.
-- **User Management:** Created a new  to list and manage all users and a .
-- **UI/UX Fixes:**
-    - Corrected all Shadcn dialog components to have a  background.
-    - Forced notification toasts () to use a light theme with black text for readability.
-    - Re-engineered the Kanban drag-and-drop on  and  with  for a smoother experience.
-- **Header Navigation:** Made the Add action dropdown in the header functional.
-- **Backend Implementation:**
-    - Implemented full CRUD endpoints for the Tasks module.
-    - Added user management endpoints (invite, change role, deactivate).
-    - Created the model and started route implementation for a new  module and user .
+- **RBAC Implementation:** Successfully implemented a full 'admin'/'student' role system, including protected routes, conditional UI rendering in navigation and the , and admin-only endpoints for user creation/deletion.
+- **Personal Development Plan (PDP) Module:** Created a complete, end-to-end module with a backend model, CRUD API endpoints, and a fully functional frontend page.
+- **Events & User Documents:** Completed the implementation of the  module and the Documents tab on the .
+- **Settings Page:** Made the  page functional, allowing an admin to save configurations.
+- **Logo and Login UI:** Updated the application logo across the app (sidebar, login page) and removed the Register tab from the  to streamline the user flow.
+- **File Upload:** Implemented file upload/download functionality on the  using base64 encoding.
+- **Deployment Support & Troubleshooting:**
+    - Provided comprehensive, step-by-step guides for deploying the application to an Ubuntu 22.04 and 24.04 LTS server.
+    - Ran a deployment health check to verify readiness.
+    - Resolved a critical deployment blocker by adding the necessary  to  to locate a private Python package.
 
 **Earlier issues found/mentioned but not fixed**
-None. All previously pending minor issues (Add dropdown, Email OTP) were resolved in this session.
+- The  drag-and-drop library has not been updated (listed in All Pending/In progress Issue list).
 
 **Known issue recurrence from previous fork**
 N/A
@@ -111,94 +163,249 @@ N/A
 - **Backend:** FastAPI, MongoDB
 - **Frontend:** React.js, Vite
 - **Styling:** Tailwind CSS, Shadcn UI
-- **State Management:** React Context API, React Hooks (, )
-- **UI Interactivity:**  for advanced drag-and-drop,  for data visualization.
-- **Authentication:** JWT, Microsoft Entra ID (), Email OTP via SMTP.
+- **State Management:** React Context API
+- **UI Interactivity:** 
+- **Authentication:** JWT, Role-Based Access Control (RBAC)
+- **Deployment:** Nginx, systemd, ufw, Certbot (for self-hosting on a VPS)
 
 **key DB schema**
-- **Event:** A new model  has been created.
-- **User:** The  model will be implicitly updated to handle an array of documents, each with a , , and .
+- **pdp:** 
+- **user:** The  field is now actively used ('admin' or 'student').
 
 **changes in tech stack**
-- ****: Added for data visualization on the Reports page.
-- ****: Added to replace  for a more robust Kanban implementation.
+- No new libraries were added. Configuration for 
+Usage:   
+  pip <command> [options]
+
+Commands:
+  install                     Install packages.
+  lock                        Generate a lock file.
+  download                    Download packages.
+  uninstall                   Uninstall packages.
+  freeze                      Output installed packages in requirements format.
+  inspect                     Inspect the python environment.
+  list                        List installed packages.
+  show                        Show information about installed packages.
+  check                       Verify installed packages have compatible dependencies.
+  config                      Manage local and global configuration.
+  search                      Search PyPI for packages.
+  cache                       Inspect and manage pip's wheel cache.
+  index                       Inspect information available from package indexes.
+  wheel                       Build wheels from your requirements.
+  hash                        Compute hashes of package archives.
+  completion                  A helper command used for command completion.
+  debug                       Show information useful for debugging.
+  help                        Show help for commands.
+
+General Options:
+  -h, --help                  Show help.
+  --debug                     Let unhandled exceptions propagate outside the
+                              main subroutine, instead of logging them to
+                              stderr.
+  --isolated                  Run pip in an isolated mode, ignoring
+                              environment variables and user configuration.
+  --require-virtualenv        Allow pip to only run in a virtual environment;
+                              exit with an error otherwise.
+  --python <python>           Run pip with the specified Python interpreter.
+  -v, --verbose               Give more output. Option is additive, and can be
+                              used up to 3 times.
+  -V, --version               Show version and exit.
+  -q, --quiet                 Give less output. Option is additive, and can be
+                              used up to 3 times (corresponding to WARNING,
+                              ERROR, and CRITICAL logging levels).
+  --log <path>                Path to a verbose appending log.
+  --no-input                  Disable prompting for input.
+  --keyring-provider <keyring_provider>
+                              Enable the credential lookup via the keyring
+                              library if user input is allowed. Specify which
+                              mechanism to use [auto, disabled, import,
+                              subprocess]. (default: auto)
+  --proxy <proxy>             Specify a proxy in the form
+                              scheme://[user:passwd@]proxy.server:port.
+  --retries <retries>         Maximum attempts to establish a new HTTP
+                              connection. (default: 5)
+  --timeout <sec>             Set the socket timeout (default 15 seconds).
+  --exists-action <action>    Default action when a path already exists:
+                              (s)witch, (i)gnore, (w)ipe, (b)ackup, (a)bort.
+  --trusted-host <hostname>   Mark this host or host:port pair as trusted,
+                              even though it does not have valid or any HTTPS.
+  --cert <path>               Path to PEM-encoded CA certificate bundle. If
+                              provided, overrides the default. See 'SSL
+                              Certificate Verification' in pip documentation
+                              for more information.
+  --client-cert <path>        Path to SSL client certificate, a single file
+                              containing the private key and the certificate
+                              in PEM format.
+  --cache-dir <dir>           Store the cache data in <dir>.
+  --no-cache-dir              Disable the cache.
+  --disable-pip-version-check
+                              Don't periodically check PyPI to determine
+                              whether a new version of pip is available for
+                              download. Implied with --no-index.
+  --no-color                  Suppress colored output.
+  --use-feature <feature>     Enable new functionality, that may be backward
+                              incompatible.
+  --use-deprecated <feature>  Enable deprecated functionality, that will be
+                              removed in the future.
+  --resume-retries <resume_retries>
+                              Maximum attempts to resume or restart an
+                              incomplete download. (default: 5) was modified to include a private package index.
 
 **All files of reference**
 - **Significantly Modified:**
-    - : Added new routes for OTP, user management, and exports. Currently being edited to add Events and Documents routes.
-    - : Major overhaul to connect to backend, add modal, filter, export, and fix DnD.
-    - : Fixed DnD logic.
-    - : Added charts and export buttons.
-    - : Implemented the Email OTP tab.
-    - : Made Add dropdown functional, added Users link.
-    - : Added many new functions for tasks, reports, auth, and users.
-    - : Added routes for new pages.
-    - : Forced white background.
-    - : Forced light theme.
+    - : Added endpoints for Events, PDP, user creation/deletion, and RBAC checks.
+    - : Added  for private package installation.
+    - : Wrapped admin routes with .
+    - : Added API functions for PDP and user creation.
+    - : Exposed user role and  helper.
+    - : Updated logos, removed styling, and implemented role-based navigation filtering.
+    - : Major overhaul to support user creation, deletion, and restrict role changes to admin/student.
+    - : Removed registration tab and simplified the form.
+    - : Implemented upload/download logic.
 - **Newly Created:**
     - 
     - 
     - 
-- **Up Next (Editing/Creation):**
-    -  (to be made functional)
-    -  (to add Documents tab)
-    -  (to be created)
 
 **Areas that need refactoring**:
-- The skeleton backend route files in  for most modules still need to be implemented with business logic.
-- Consider creating a reusable  component to avoid duplicating the complex  logic in  and .
+- The file upload on  uses base64, which is not efficient for large files. It should be refactored to use chunked multipart uploads.
+- A reusable  component should be created to standardize the  logic and avoid code duplication between , , and eventually .
 
 **key api endpoints**
-- , : Full CRUD for tasks.
-- : Export tasks to Excel/PDF.
-- : Export reports to Excel/PDF.
-- , : For email OTP login.
-- , : For user listing and management.
-- **In Progress:**
-    - : For Events module CRUD.
-    - : For document upload and status updates.
-    - : To save integration keys and other settings.
+- , : Full CRUD for Personal Development Plans.
+- : Creates a new user (admin only).
+- : Deletes a user (admin only).
+- : Updates a user's role (admin only).
+- : Saves application settings (admin only).
+- : Uploads/lists files.
 
 **Critical Info for New Agent**
-- **Resume the In-Progress Task:** Your immediate priority is to complete the multi-part task the previous agent started. The backend work for Events, Documents, and Settings is partially done in . You must complete it and then implement all corresponding frontend changes as detailed in the In progress Task List.
-- **Backend Skeletons Remain:** The biggest long-term task is still implementing the backend logic for the many modules that are currently just placeholders (Projects, Sponsors, Notes, etc.).
-- **Test After Each Step:** The user's request is complex. Implement and test each part (Settings, Events page, Documents tab, etc.) incrementally to ensure stability.
+- The user has shown significant interest in self-hosting the application. Be prepared to provide further support on deployment, troubleshooting server environments (Nginx, systemd, ufw), and database management.
+- The  file has been modified to pull from a private repository. This is a critical detail for any future environment setup.
+- The most significant remaining body of work is implementing the backend logic and connecting the frontend for the numerous placeholder modules (, , , etc.). This should be the next development priority.
+- RBAC is now a core part of the application. All new features should be developed with 'admin' and 'student' roles in mind.
 
 **documents and test reports created in this job**
 - 
--  (multiple reports were generated from successful test runs).
+- Multiple  files were generated from successful test runs.
+-  was created, but the agent correctly informed the user to use the Save to GitHub feature instead.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **USER:** (summarized) proceed with upcoming tasks and add user profile page and the users page to show all the users
-    - **Status:** COMPLETED. Agent built both pages and connected them to the backend.
-2.  **USER:** (summarized) fix the site popups to have a white background and the notifications to have black text... fix both on the leads and task the kanbans dont drag nice
-    - **Status:** COMPLETED. Agent fixed the CSS for popups/notifications and re-implemented Kanban drag-and-drop.
-3.  **USER:** (summarized) activate the ability to customize the settings page... remove sample data on the leads page... remove my profile from the menu pane... in the profile page add a tab be able to have option to re upload rejected documents... and lastly add the events page
-    - **Status:** IN PROGRESS. This is the current, active task. The agent has started on the backend implementation for these features.
+1.  **USER:** 
+    - **Status:** COMPLETED. The agent built the PDP module end-to-end.
+2.  **USER:** 
+    - **Status:** COMPLETED. The agent packaged the app and explained why channel hosting (shared hosting) is incompatible, suggesting better alternatives.
+3.  **USER:** 
+    - **Status:** COMPLETED. The agent provided a detailed VPS deployment guide for Ubuntu 22.04.
+4.  **USER:** 
+    - **Status:** COMPLETED. The agent ran the health check, which passed.
+5.  **USER:** 
+    - **Status:** COMPLETED. The agent provided an updated deployment guide for Ubuntu 24.04.
+6.  **USER:** 
+    - **Status:** COMPLETED. The agent rewrote the Ubuntu 24.04 guide for a non-root user with  privileges.
+7.  **USER:** 
+    - **Status:** COMPLETED. The agent diagnosed the 
+Usage:   
+  pip <command> [options]
+
+Commands:
+  install                     Install packages.
+  lock                        Generate a lock file.
+  download                    Download packages.
+  uninstall                   Uninstall packages.
+  freeze                      Output installed packages in requirements format.
+  inspect                     Inspect the python environment.
+  list                        List installed packages.
+  show                        Show information about installed packages.
+  check                       Verify installed packages have compatible dependencies.
+  config                      Manage local and global configuration.
+  search                      Search PyPI for packages.
+  cache                       Inspect and manage pip's wheel cache.
+  index                       Inspect information available from package indexes.
+  wheel                       Build wheels from your requirements.
+  hash                        Compute hashes of package archives.
+  completion                  A helper command used for command completion.
+  debug                       Show information useful for debugging.
+  help                        Show help for commands.
+
+General Options:
+  -h, --help                  Show help.
+  --debug                     Let unhandled exceptions propagate outside the
+                              main subroutine, instead of logging them to
+                              stderr.
+  --isolated                  Run pip in an isolated mode, ignoring
+                              environment variables and user configuration.
+  --require-virtualenv        Allow pip to only run in a virtual environment;
+                              exit with an error otherwise.
+  --python <python>           Run pip with the specified Python interpreter.
+  -v, --verbose               Give more output. Option is additive, and can be
+                              used up to 3 times.
+  -V, --version               Show version and exit.
+  -q, --quiet                 Give less output. Option is additive, and can be
+                              used up to 3 times (corresponding to WARNING,
+                              ERROR, and CRITICAL logging levels).
+  --log <path>                Path to a verbose appending log.
+  --no-input                  Disable prompting for input.
+  --keyring-provider <keyring_provider>
+                              Enable the credential lookup via the keyring
+                              library if user input is allowed. Specify which
+                              mechanism to use [auto, disabled, import,
+                              subprocess]. (default: auto)
+  --proxy <proxy>             Specify a proxy in the form
+                              scheme://[user:passwd@]proxy.server:port.
+  --retries <retries>         Maximum attempts to establish a new HTTP
+                              connection. (default: 5)
+  --timeout <sec>             Set the socket timeout (default 15 seconds).
+  --exists-action <action>    Default action when a path already exists:
+                              (s)witch, (i)gnore, (w)ipe, (b)ackup, (a)bort.
+  --trusted-host <hostname>   Mark this host or host:port pair as trusted,
+                              even though it does not have valid or any HTTPS.
+  --cert <path>               Path to PEM-encoded CA certificate bundle. If
+                              provided, overrides the default. See 'SSL
+                              Certificate Verification' in pip documentation
+                              for more information.
+  --client-cert <path>        Path to SSL client certificate, a single file
+                              containing the private key and the certificate
+                              in PEM format.
+  --cache-dir <dir>           Store the cache data in <dir>.
+  --no-cache-dir              Disable the cache.
+  --disable-pip-version-check
+                              Don't periodically check PyPI to determine
+                              whether a new version of pip is available for
+                              download. Implied with --no-index.
+  --no-color                  Suppress colored output.
+  --use-feature <feature>     Enable new functionality, that may be backward
+                              incompatible.
+  --use-deprecated <feature>  Enable deprecated functionality, that will be
+                              removed in the future.
+  --resume-retries <resume_retries>
+                              Maximum attempts to resume or restart an
+                              incomplete download. (default: 5) error and applied a permanent fix to .
 
 **Project Health Check:**
-- **Broken:** No. The application is stable and running.
-- **Mocked:** Partially. Core features like Tasks, Users, and Reports are functional. However, many modules (, , , etc.) and the  page still rely on placeholder backend routes or frontend mock data.
+- **Broken:** No. The application is stable and all core features are functional.
+- **Mocked:** Partially. Several modules (, , , , , , , ) exist as frontend pages but lack backend implementation.
 
 **3rd Party Integrations**
 - **Existing & Functional:**
     - Microsoft Entra ID ()
-    -  (for drag and drop)
-    -  (for charts)
-    - SMTP (via  for Email OTP)
-- **Newly Requested (Requires ):**
-    - **Video Conferencing:** Zoom / Microsoft Teams
-    - **File Export:** ,  (already implemented for tasks/reports)
+    - 
+    - 
+    - SMTP (via )
+    -  (private package, now installable)
+- **Requested (Not Yet Implemented):**
+    - Zoom / Microsoft Teams
 
 **Testing status**
-- **Testing agent used after significant changes**: YES. The agent successfully used the testing agent multiple times to verify new features and fixes, including Tasks page functionality, UI fixes, and OTP auth.
-- **Troubleshoot agent used after agent stuck in loop**: NO
-- **Test files created**: Test scenarios were added to  for the testing agent. No permanent  files were created.
+- **Testing agent used after significant changes**: YES. The agent ran the testing agent multiple times after implementing RBAC, the PDP module, and logo changes, with all tests passing.
+- **Troubleshoot agent used after agent stuck in loop**: NO.
+- **Test files created**: Test scenarios in  were updated for the testing agent.
 - **Known regressions**: None.
 
 **Credentials to test flow:**
 - **Email:** 
 - **Password:** 
+- **Note:** This user is currently assigned the 'admin' role.
 
 **What agent forgot to execute**
-- The agent correctly identified all parts of the user's latest multi-part request and started working on them. It has not forgotten any parts, but the task itself is still in progress. Specifically, the replace sample data on the leads page part has not been addressed yet.</analysis>
+The agent has been diligent in following user requests. No explicit tasks were forgotten. The remaining work aligns with the long-term product requirements.</analysis>
