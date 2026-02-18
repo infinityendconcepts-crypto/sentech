@@ -61,14 +61,15 @@ const UsersPage = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
 
-  const [inviteDialog, setInviteDialog] = useState(false);
+  const [createDialog, setCreateDialog] = useState(false);
   const [roleDialog, setRoleDialog] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { id, name }
   const [selectedUser, setSelectedUser] = useState(null);
-  const [inviteForm, setInviteForm] = useState({ email: '', full_name: '', role: 'employee' });
+  const [createForm, setCreateForm] = useState({ email: '', full_name: '', role: 'student', password: '', confirmPassword: '' });
   const [saving, setSaving] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
 
   const isAdmin = currentUser?.roles?.includes('admin');
-  const isManager = isAdmin || currentUser?.roles?.includes('manager');
 
   useEffect(() => { fetchUsers(); }, []);
 
