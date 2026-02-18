@@ -28,6 +28,8 @@ import ReportsPage from './pages/ReportsPage';
 import FilesPage from './pages/FilesPage';
 import HelpPage from './pages/HelpPage';
 import SettingsPage from './pages/SettingsPage';
+import UsersPage from './pages/UsersPage';
+import UserProfilePage from './pages/UserProfilePage';
 
 function App() {
   return (
