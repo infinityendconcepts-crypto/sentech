@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,10 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '../contexts/AuthContext';
-import { usersAPI } from '../services/api';
+import { usersAPI, documentsAPI } from '../services/api';
 import {
   User, Mail, Phone, Building2, Lock, Save,
   Shield, Camera, CheckCircle, Eye, EyeOff,
+  Upload, FileText, CheckCircle2, XCircle, Clock,
+  Trash2, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
