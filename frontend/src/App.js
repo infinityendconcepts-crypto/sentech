@@ -57,7 +57,7 @@ function App() {
               <Route path="/files" element={<FilesPage />} />
               <Route path="/events" element={<EventsPage />} />
               <Route path="/pdp" element={<PDPPage />} />
-              <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/tasks" element={<TrainingTrackPage />} />
               <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/meetings" element={<MeetingsPage />} />
               <Route path="/team" element={<TeamPage />} />
