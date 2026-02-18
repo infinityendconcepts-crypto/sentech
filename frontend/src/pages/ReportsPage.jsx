@@ -99,16 +99,37 @@ const ReportsPage = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-ZA', {
-      style: 'currency',
-      currency: 'ZAR',
-    }).format(amount || 0);
+    return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount || 0);
   };
+
+  // Build chart data from dashboardStats
+  const applicationStatusData = dashboardStats ? [
+    { name: 'Pending', value: dashboardStats.applications?.pending || 0, fill: '#F59E0B' },
+    { name: 'Approved', value: dashboardStats.applications?.approved || 0, fill: '#10B981' },
+    { name: 'Rejected', value: dashboardStats.applications?.rejected || 0, fill: '#EF4444' },
+    { name: 'Under Review', value: dashboardStats.applications?.under_review || 0, fill: '#0056B3' },
+  ].filter(d => d.value > 0) : [];
+
+  const taskStatusData = dashboardStats ? [
+    { name: 'To Do', value: dashboardStats.tasks?.todo || 0 },
+    { name: 'In Progress', value: dashboardStats.tasks?.in_progress || 0 },
+    { name: 'Completed', value: dashboardStats.tasks?.completed || 0 },
+    { name: 'Blocked', value: dashboardStats.tasks?.blocked || 0 },
+  ] : [];
+
+  const overviewBarData = dashboardStats ? [
+    { name: 'Applications', Total: dashboardStats.applications?.total || 0 },
+    { name: 'Sponsors', Total: dashboardStats.sponsors?.total || 0 },
+    { name: 'Tasks', Total: dashboardStats.tasks?.total || 0 },
+    { name: 'Projects', Total: dashboardStats.projects?.total || 0 },
+    { name: 'Leads', Total: dashboardStats.leads?.total || 0 },
+    { name: 'Tickets', Total: dashboardStats.tickets?.total || 0 },
+  ] : [];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
