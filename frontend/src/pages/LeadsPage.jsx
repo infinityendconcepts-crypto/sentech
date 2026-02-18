@@ -512,7 +512,7 @@ const LeadsPage = () => {
                             <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`edit-lead-${lead.id}`}>
                               <Edit2 className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" data-testid={`delete-lead-${lead.id}`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => handleDeleteLead(lead.id)} data-testid={`delete-lead-${lead.id}`}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
