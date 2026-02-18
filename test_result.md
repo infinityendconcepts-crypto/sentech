@@ -102,7 +102,71 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Sentech Bursary Management System - RBAC enforcement (admin vs student roles), Create User with password (admin only), Delete User (admin only). Only two roles: admin and student."
+user_problem_statement: "Sentech Bursary Management System - Add Personal Development Plan page with 5 features: What do I need to learn, What will I do to achieve this, What resources or support will I need, What will my success criteria be, Target dates for review and completion."
+
+backend:
+  - task: "PDP CRUD API - /api/pdp"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "CURL verified. GET/POST/PUT/DELETE /api/pdp all working. Tested create with all 5 fields. Entry owned by logged-in user."
+
+frontend:
+  - task: "PDPPage - Table view with 5 columns, wizard dialog, status change"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/PDPPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created PDPPage.jsx. Table with 5 column headers (learn_what, action_plan, resources_support, success_criteria, target_date). 5-step wizard dialog for creation. Status change dropdown inline. View/Edit/Delete actions. Stats cards. Filters by status and priority. Accessible to all users (no admin restriction)."
+
+  - task: "PDP nav item added to sidebar"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/Layout/Layout.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+
+  - task: "PDP route added to App.js"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+
+metadata:
+  created_by: "main_agent"
+  version: "5.0"
+  test_sequence: 5
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "PDPPage loads at /pdp"
+    - "Add Development Goal button opens 5-step wizard"
+    - "All 5 steps navigate correctly"
+    - "Entry saved and appears in table"
+    - "Edit and delete work"
+    - "Status change inline works"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Added Personal Development Plan page. Backend: /api/pdp CRUD routes with PDPEntry model (all 5 fields: learn_what, action_plan, resources_support, success_criteria, target_date+review_date). Frontend: PDPPage.jsx at /pdp with 5-column table, 5-step wizard creation dialog, inline status change dropdown, view/edit/delete, stats cards, filters. Added 'Dev Plan' to sidebar nav (TrendingUp icon, available to all users). Test: login and go to /pdp, add a goal through all 5 wizard steps, verify it appears in table."
 
 backend:
   - task: "POST /api/users - Create user directly with password"
