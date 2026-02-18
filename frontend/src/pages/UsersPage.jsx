@@ -140,13 +140,16 @@ const UsersPage = () => {
   };
 
   const handleDelete = async (userId, name) => {
-    if (!window.confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) return;
+    setSaving(true);
     try {
       await usersAPI.delete(userId);
-      toast.success('User deleted');
+      toast.success(`${name} deleted`);
+      setDeleteConfirm(null);
       fetchUsers();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to delete user');
+    } finally {
+      setSaving(false);
     }
   };
 
