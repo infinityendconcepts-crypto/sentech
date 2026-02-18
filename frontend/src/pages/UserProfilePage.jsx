@@ -44,6 +44,15 @@ const UserProfilePage = () => {
   const [showCurrentPwd, setShowCurrentPwd] = useState(false);
   const [showNewPwd, setShowNewPwd] = useState(false);
 
+  // Documents state
+  const [documents, setDocuments] = useState([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const reuploadRef = useRef(null);
+  const [reuploadDocId, setReuploadDocId] = useState(null);
+  const [docForm, setDocForm] = useState({ name: '', document_type: 'general' });
+
   const [form, setForm] = useState({
     full_name: '',
     phone: '',
@@ -82,6 +91,73 @@ const UserProfilePage = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDocuments = async () => {
+    if (!profile?.id) return;
+    setDocsLoading(true);
+    try {
+      const res = await documentsAPI.getAll(profile.id);
+      setDocuments(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setDocuments([]);
+    } finally {
+      setDocsLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (e, reuploadId = null) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile?.id) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('File size must be under 5MB'); return; }
+
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const base64 = evt.target.result;
+        const payload = {
+          name: docForm.name || file.name,
+          file_name: file.name,
+          file_data: base64,
+          document_type: docForm.document_type,
+        };
+
+        if (reuploadId) {
+          // Delete old doc and upload new
+          await documentsAPI.delete(profile.id, reuploadId);
+        }
+        await documentsAPI.upload(profile.id, payload);
+        toast.success(reuploadId ? 'Document re-uploaded successfully' : 'Document uploaded successfully');
+        setDocForm({ name: '', document_type: 'general' });
+        setReuploadDocId(null);
+        fetchDocuments();
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast.error('Failed to upload document');
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId) => {
+    if (!profile?.id) return;
+    try {
+      await documentsAPI.delete(profile.id, docId);
+      toast.success('Document removed');
+      fetchDocuments();
+    } catch {
+      toast.error('Failed to remove document');
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'approved': return <Badge className="bg-emerald-100 text-emerald-700 gap-1"><CheckCircle2 className="w-3 h-3" />Approved</Badge>;
+      case 'rejected': return <Badge className="bg-rose-100 text-rose-700 gap-1"><XCircle className="w-3 h-3" />Rejected</Badge>;
+      default: return <Badge className="bg-amber-100 text-amber-700 gap-1"><Clock className="w-3 h-3" />Processing</Badge>;
     }
   };
 
