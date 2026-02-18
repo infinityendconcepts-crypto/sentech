@@ -65,6 +65,41 @@ const NewApplicationPage = () => {
     },
   });
 
+  // Load existing application data when editing
+  useEffect(() => {
+    if (isEditing) {
+      setLoadingApplication(true);
+      applicationsAPI.getById(id)
+        .then(response => {
+          const app = response.data;
+          setFormData({
+            personal_info: app.personal_info || {
+              surname: '', name: '', id_number: '', race: '', gender: '', disability: '', disability_description: ''
+            },
+            employment_info: app.employment_info || {
+              division: '', department: '', position_description: '', date_of_appointment: '', performance_score: ''
+            },
+            academic_bursary_info: app.academic_bursary_info || {
+              bursary_status: '', institution: '', course_of_study: '', total_amount_requested: '', applicant_type: ''
+            },
+            documents: app.documents || {
+              id_document: '', academic_transcript: '', proof_of_registration: '', other_documents: ''
+            },
+          });
+          if (app.current_step) {
+            setCurrentStep(app.current_step);
+          }
+        })
+        .catch(error => {
+          console.error('Failed to load application:', error);
+          toast.error('Failed to load application');
+        })
+        .finally(() => {
+          setLoadingApplication(false);
+        });
+    }
+  }, [id, isEditing]);
+
   const updateField = (section, field, value) => {
     setFormData((prev) => ({
       ...prev,
