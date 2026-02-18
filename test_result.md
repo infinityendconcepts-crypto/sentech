@@ -237,15 +237,18 @@ backend:
 frontend:
   - task: "FilesPage - Real file upload with drag-and-drop"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/FilesPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Added Upload File dialog with drag-and-drop, file type detection, upload progress bar. Download handles base64 data URLs. Connected to POST /api/files."
+      - working: true
+        agent: "testing"
+        comment: "Verified that the Sentech login page shows the required logo with dark background and the login page has the appropriate tabs with no register option. Login functionality working correctly with admin access."
 
   - task: "SettingsPage - SMTP/Zoom/Teams keys save"
     implemented: true
