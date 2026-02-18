@@ -480,7 +480,7 @@ const LeadsPage = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-wrap gap-1">
-                            {lead.labels.map((label, idx) => (
+                            {(lead.tags || lead.labels || []).map((label, idx) => (
                               <Badge key={idx} variant="outline" className="text-xs">
                                 {label}
                               </Badge>
@@ -488,7 +488,7 @@ const LeadsPage = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                          {new Date(lead.created_date).toLocaleDateString()}
+                          {lead.created_at || lead.created_date ? new Date(lead.created_at || lead.created_date).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <DropdownMenu>
