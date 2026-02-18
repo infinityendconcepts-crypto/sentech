@@ -229,19 +229,19 @@ const LeadsPage = () => {
     { id: 'lost', title: 'Lost', status: 'lost' }
   ];
 
-  const allLeads = leads.length > 0 ? leads : mockLeads;
+  const allLeads = leads;
 
   const filteredLeads = allLeads.filter(lead => {
-    if (filters.owner !== 'all' && lead.owner !== filters.owner) return false;
+    if (filters.owner !== 'all' && lead.owner !== filters.owner && lead.assignee_name !== filters.owner) return false;
     if (filters.status !== 'all' && lead.status !== filters.status) return false;
-    if (filters.label !== 'all' && !(lead.labels || []).includes(filters.label)) return false;
+    if (filters.label !== 'all' && !(lead.labels || lead.tags || []).includes(filters.label)) return false;
     if (filters.source !== 'all' && lead.source !== filters.source) return false;
     if (filters.search && !lead.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
     return true;
   });
 
-  const uniqueOwners = [...new Set(allLeads.map(l => l.owner).filter(Boolean))];
-  const uniqueLabels = [...new Set(allLeads.flatMap(l => l.labels || []))];
+  const uniqueOwners = [...new Set(allLeads.map(l => l.assignee_name || l.owner).filter(Boolean))];
+  const uniqueLabels = [...new Set(allLeads.flatMap(l => l.labels || l.tags || []))];
   const uniqueSources = [...new Set(allLeads.map(l => l.source).filter(Boolean))];
 
   const activeLead = activeId ? allLeads.find(l => l.id === activeId) : null;
