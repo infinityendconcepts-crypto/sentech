@@ -257,12 +257,65 @@ const FilesPage = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button className="gap-2" data-testid="upload-file-btn">
+          <Button className="gap-2" onClick={() => setUploadDialog(true)} data-testid="upload-file-btn">
             <Upload className="w-4 h-4" />
             Upload File
           </Button>
         </div>
       </div>
+
+      {/* Upload File Dialog */}
+      <Dialog open={uploadDialog} onOpenChange={(open) => { setUploadDialog(open); if (!open) { setSelectedFile(null); setUploadProgress(0); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload File</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-slate-300 hover:border-primary'}`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect} />
+              {selectedFile ? (
+                <div className="flex items-center justify-center gap-3">
+                  <FileText className="w-8 h-8 text-primary" />
+                  <div className="text-left">
+                    <p className="font-medium text-slate-900">{selectedFile.name}</p>
+                    <p className="text-xs text-slate-500">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <Upload className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-slate-700">Drop file here or click to browse</p>
+                  <p className="text-xs text-slate-400 mt-1">Max 10MB. Any file type.</p>
+                </div>
+              )}
+            </div>
+            {uploading && uploadProgress > 0 && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Uploading...</span><span>{uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} className="h-2" />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUploadDialog(false)}>Cancel</Button>
+            <Button onClick={handleUpload} disabled={!selectedFile || uploading} className="gap-2">
+              <Upload className="w-4 h-4" />
+              {uploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Breadcrumb */}
       <Card className="bg-white border-slate-200">
