@@ -18,12 +18,6 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   const [loginData, setLoginData] = useState({ email: '', password: '' });
-  const [registerData, setRegisterData] = useState({
-    email: '',
-    password: '',
-    full_name: '',
-    student_id: '',
-  });
 
   // OTP state
   const [otpEmail, setOtpEmail] = useState('');
