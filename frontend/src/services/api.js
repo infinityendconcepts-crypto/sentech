@@ -209,4 +209,19 @@ export const dashboardAPI = {
   getStats: () => api.get('/dashboard/stats'),
 };
 
+export const eventsAPI = {
+  getAll: (params) => api.get('/events', { params }),
+  getById: (id) => api.get(`/events/${id}`),
+  create: (data) => api.post('/events', data),
+  update: (id, data) => api.put(`/events/${id}`, data),
+  delete: (id) => api.delete(`/events/${id}`),
+};
+
+export const documentsAPI = {
+  getAll: (userId) => api.get(`/users/${userId}/documents`),
+  upload: (userId, data) => api.post(`/users/${userId}/documents`, data),
+  updateStatus: (userId, docId, data) => api.put(`/users/${userId}/documents/${docId}`, data),
+  delete: (userId, docId) => api.delete(`/users/${userId}/documents/${docId}`),
+};
+
 export default api;
