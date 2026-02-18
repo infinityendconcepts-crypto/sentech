@@ -163,6 +163,8 @@ const LeadsPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState('list');
   const [activeId, setActiveId] = useState(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [savingLead, setSavingLead] = useState(false);
   const [filters, setFilters] = useState({
     owner: 'all',
     status: 'all',
@@ -170,6 +172,9 @@ const LeadsPage = () => {
     source: 'all',
     search: ''
   });
+
+  const emptyLead = { name: '', email: '', phone: '', company: '', source: 'website', status: 'new', value: 0, notes: '', tags: [] };
+  const [leadForm, setLeadForm] = useState(emptyLead);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
