@@ -94,7 +94,7 @@ const LoginPage = () => {
             <img 
               src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/576jxjw8_HeCFT4bk_400x400.jpg" 
               alt="Sentech Logo" 
-              className="w-20 h-20 rounded-xl object-contain bg-slate-900 p-1"
+              className="w-20 h-20 rounded-xl object-contain"
             />
             <div>
               <h1 className="text-4xl font-heading font-bold text-slate-900">Sentech</h1>
