@@ -32,6 +32,7 @@ import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
 import UserProfilePage from './pages/UserProfilePage';
 import EventsPage from './pages/EventsPage';
+import PDPPage from './pages/PDPPage';
 
 function App() {
   return (
