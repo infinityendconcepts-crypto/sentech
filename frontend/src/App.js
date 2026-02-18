@@ -62,6 +62,8 @@ function App() {
               <Route path="/files" element={<FilesPage />} />
               <Route path="/help" element={<HelpPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/users" element={<UsersPage />} />
+              <Route path="/profile" element={<UserProfilePage />} />
             </Route>
           </Route>
         </Routes>
