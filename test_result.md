@@ -102,34 +102,10 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Sentech Bursary Management System - Full stack app. TasksPage needs date filter and Excel/PDF export. Backend CRUD is implemented. Many placeholder UI pages need to be built out."
+user_problem_statement: "Sentech Bursary Management System - Full stack app with Events, Documents, Leads, Settings, and Profile functionality."
 
 backend:
-  - task: "Tasks Export Excel endpoint"
-    implemented: true
-    working: "NA"
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Added /api/tasks/export/excel endpoint using openpyxl. Returns .xlsx file with filters for status, priority, date_from, date_to. Tested with curl - returns 200 with valid file."
-
-  - task: "Tasks Export PDF endpoint"
-    implemented: true
-    working: "NA"
-    file: "backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Added /api/tasks/export/pdf endpoint using reportlab. Returns .pdf file with filters. Tested with curl - returns 200 with valid file."
-
-  - task: "Tasks CRUD API"
+  - task: "Events CRUD API"
     implemented: true
     working: true
     file: "backend/server.py"
@@ -139,7 +115,112 @@ backend:
     status_history:
       - working: true
         agent: "main"
-        comment: "Full CRUD for tasks verified - create task returned ID, getAll returned count 1, update changed status to in_progress. All working correctly."
+        comment: "Added GET/POST/PUT/DELETE /api/events. Tested with curl - create and get events working correctly."
+
+  - task: "User Documents API"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Added GET/POST/PUT/DELETE /api/users/{user_id}/documents. Tested with curl - upload and retrieve documents working."
+
+  - task: "Settings API"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET/PUT /api/settings working. Saves SMTP, Zoom, Teams keys to DB."
+
+  - task: "Leads CRUD API"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Full CRUD for leads already implemented in previous session."
+
+frontend:
+  - task: "EventsPage - Calendar and List View"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/EventsPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created EventsPage.jsx with calendar view, list view, add/edit/delete event dialog. Connected to /api/events. Added to App.js router and Layout.jsx sidebar."
+
+  - task: "UserProfilePage Documents Tab"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/UserProfilePage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added Documents tab to UserProfilePage. Shows document list with status badges (processing/approved/rejected). Upload and re-upload buttons. Calls documentsAPI."
+
+  - task: "LeadsPage - Remove mock data, add Create modal"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/LeadsPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Removed mockLeads fallback. Added Add Lead dialog with form. Empty state when no leads. Fixed labels/tags field mapping for backend data."
+
+  - task: "Sidebar - Remove My Profile link, Add Events"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/Layout/Layout.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Removed duplicate My Profile link from sidebar bottom. Added Events item (CalendarDays icon) to navigation array."
+
+metadata:
+  created_by: "main_agent"
+  version: "2.0"
+  test_sequence: 2
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "EventsPage - Calendar and List View"
+    - "UserProfilePage Documents Tab"
+    - "LeadsPage - Remove mock data, add Create modal"
+    - "Sidebar - Remove My Profile link, Add Events"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implemented all items from user request: 1) Events API routes (CRUD /api/events) and EventsPage.jsx with calendar/list views 2) User Documents API + Documents tab on UserProfilePage with upload/re-upload/delete 3) Removed mockLeads from LeadsPage, added Add Lead dialog 4) Removed My Profile duplicate link from sidebar 5) Added Events to sidebar navigation. Backend APIs tested via curl and all working. Frontend compiled OK. Please test all UI flows."
 
   - task: "Reports Export Excel/PDF endpoints"
     implemented: true
