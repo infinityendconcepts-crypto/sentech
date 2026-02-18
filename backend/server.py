@@ -1154,6 +1154,7 @@ async def verify_otp(body: dict):
 async def get_users(
     team_id: Optional[str] = None,
     role: Optional[str] = None,
+    search: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
@@ -1161,9 +1162,106 @@ async def get_users(
         query["team_id"] = team_id
     if role:
         query["roles"] = role
-    
+    if search:
+        query["$or"] = [
+            {"full_name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}},
+        ]
     users = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
     return users
+
+@api_router.get("/users/me")
+async def get_my_profile(current_user: dict = Depends(get_current_user)):
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@api_router.put("/users/me")
+async def update_my_profile(update_data: dict, current_user: dict = Depends(get_current_user)):
+    allowed = {"full_name", "phone", "department", "bio", "avatar_initials"}
+    filtered = {k: v for k, v in update_data.items() if k in allowed and v is not None}
+    filtered["updated_at"] = datetime.now(timezone.utc).isoformat()
+    await db.users.update_one({"id": current_user["id"]}, {"$set": filtered})
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
+    return user
+
+@api_router.post("/users/me/change-password")
+async def change_my_password(data: dict, current_user: dict = Depends(get_current_user)):
+    current_password = data.get("current_password", "")
+    new_password = data.get("new_password", "")
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+    user_record = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+    if not user_record:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user_record.get("password_hash"):
+        if not verify_password(current_password, user_record["password_hash"]):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"password_hash": hash_password(new_password), "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Password updated successfully"}
+
+@api_router.post("/users/invite")
+async def invite_user(data: dict, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "manager" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins/managers can invite users")
+    email = data.get("email", "").strip().lower()
+    role = data.get("role", "employee")
+    full_name = data.get("full_name", "")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=409, detail="User with this email already exists")
+    otp_code = "".join([str(secrets.randbelow(10)) for _ in range(6)])
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=60)
+    await db.otps.delete_many({"email": email})
+    await db.otps.insert_one({
+        "email": email, "otp": otp_code, "attempts": 0,
+        "expires_at": expires_at, "created_at": datetime.now(timezone.utc)
+    })
+    return {
+        "message": f"Invitation sent to {email}",
+        "email": email,
+        "role": role,
+        "dev_note": f"Login OTP for invited user: {otp_code}"
+    }
+
+@api_router.put("/users/{user_id}/status")
+async def update_user_status(user_id: str, data: dict, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "manager" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Access denied")
+    is_active = data.get("is_active", True)
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"is_active": is_active, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": f"User {'activated' if is_active else 'deactivated'} successfully"}
+
+@api_router.put("/users/{user_id}/role")
+async def update_user_role(user_id: str, data: dict, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can change roles")
+    roles = data.get("roles", ["employee"])
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"roles": roles, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "User role updated successfully"}
+
+@api_router.delete("/users/{user_id}")
+async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can delete users")
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "User deleted successfully"}
 
 @api_router.get("/users/{user_id}")
 async def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
