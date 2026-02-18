@@ -56,6 +56,7 @@ function App() {
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/files" element={<FilesPage />} />
               <Route path="/events" element={<EventsPage />} />
+              <Route path="/pdp" element={<PDPPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/meetings" element={<MeetingsPage />} />
