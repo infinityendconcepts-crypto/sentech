@@ -324,7 +324,7 @@ const FilesPage = () => {
               className="text-sm font-medium text-primary hover:underline"
               onClick={() => navigateBack(-1)}
             >
-              Files
+              Documents
             </button>
             {folderPath.map((folder, index) => (
               <React.Fragment key={index}>
