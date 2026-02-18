@@ -102,7 +102,109 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Sentech Bursary Management System - Full stack app. User requested to 'do the upcoming tasks' which includes: Settings save working, FilesPage real upload, and verifying all module pages (Meetings, Notes, Messages, Expenses, Tickets, Files, Help) are connected to backend."
+user_problem_statement: "Sentech Bursary Management System - RBAC enforcement (admin vs student roles), Create User with password (admin only), Delete User (admin only). Only two roles: admin and student."
+
+backend:
+  - task: "POST /api/users - Create user directly with password"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "CURL tested. Admin creates student/admin user with email+password. Role validation enforced (admin or student only)."
+
+  - task: "DELETE /api/users/{id} - Admin delete user"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "CURL tested. Admin deletes user. Cannot delete own account."
+
+  - task: "PUT /api/users/{id}/role - Admin change role (admin/student only)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Role change restricted to admin/student. Filters out invalid roles."
+
+frontend:
+  - task: "RBAC - Sidebar navigation filtered by role"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/Layout/Layout.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Admin-only nav items: Sponsors, BBBEE, Projects, Leads, Prospects, Expenses, Reports, Users, Settings. Students see: Dashboard, Applications, Tasks, Meetings, Events, Notes, Messages, Files, Tickets, Team, Help."
+
+  - task: "RBAC - Route protection for admin-only pages"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/RoleProtectedRoute.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "New RoleProtectedRoute component. Admin-only routes in App.js: sponsors, bbbee, projects, leads, prospects, expenses, reports, settings, users. Non-admins see Access Denied UI."
+
+  - task: "UsersPage - Create User dialog with password, delete confirm dialog"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/UsersPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Create User button (admin only). Dialog: name, email, role(admin/student), password, confirm password. Delete now uses a confirmation dialog instead of window.confirm. Role dialog shows admin/student with descriptions."
+
+  - task: "AuthContext - isAdmin / isStudent helpers"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/contexts/AuthContext.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+
+metadata:
+  created_by: "main_agent"
+  version: "4.0"
+  test_sequence: 4
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "RBAC sidebar filtering"
+    - "Admin-only route protection"
+    - "Create User flow"
+    - "Delete User flow"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implemented full RBAC. Login as admin (jane.smith@uct.ac.za / securepass123) and verify: 1) Sidebar shows all nav items including Settings, Users, Reports etc. 2) Can create a student user via Create User dialog with password. 3) Can delete users via confirmation dialog. 4) Can change role between admin/student. Then login as student (test.student@uct.ac.za / password123) and verify: 1) Sidebar shows only student pages (no Settings, Users, Reports, Leads etc.) 2) Navigating to /settings shows Access Denied page. 3) /users shows Access Denied."
 
 backend:
   - task: "All module APIs (Meetings, Notes, Messages, Expenses, Tickets, Files, Settings, Prospects)"
