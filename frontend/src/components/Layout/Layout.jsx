@@ -236,8 +236,7 @@ const Layout = () => {
                       <UserCircle className="w-4 h-4" />
                       My Profile
                     </Link>
-                    <Button
-                      onClick={logout}
+                    <Button                      onClick={logout}
                       variant="outline"
                       size="sm"
                       className="w-full justify-start gap-2"
