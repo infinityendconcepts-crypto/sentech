@@ -152,7 +152,7 @@ const Layout = () => {
             }`}>
               <div className="flex items-center gap-2">
                 <img 
-                  src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/fmq5cwyv_Sentech-logo-e1709490002242-2.png" 
+                  src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/576jxjw8_HeCFT4bk_400x400.jpg" 
                   alt="Sentech Logo" 
                   className={`rounded-md object-contain bg-slate-900 ${sidebarCollapsed && !isMobile ? 'w-9 h-9 p-0.5' : 'w-9 h-9 p-0.5'}`}
                 />
@@ -267,7 +267,7 @@ const Layout = () => {
             </button>
             <div className="flex items-center gap-2">
               <img 
-                src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/fmq5cwyv_Sentech-logo-e1709490002242-2.png" 
+                src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/576jxjw8_HeCFT4bk_400x400.jpg" 
                 alt="Sentech Logo" 
                 className="w-8 h-8 rounded-md object-contain bg-slate-900 p-0.5"
               />

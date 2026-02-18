@@ -92,7 +92,7 @@ const LoginPage = () => {
         <div className="hidden md:flex flex-col justify-center space-y-6">
           <div className="flex items-center gap-4">
             <img 
-              src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/fmq5cwyv_Sentech-logo-e1709490002242-2.png" 
+              src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/576jxjw8_HeCFT4bk_400x400.jpg" 
               alt="Sentech Logo" 
               className="w-20 h-20 rounded-xl object-contain bg-slate-900 p-1"
             />
