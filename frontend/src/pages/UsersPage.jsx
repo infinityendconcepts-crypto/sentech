@@ -343,50 +343,85 @@ const UsersPage = () => {
         </CardContent>
       </Card>
 
-      {/* Invite Dialog */}
-      <Dialog open={inviteDialog} onOpenChange={setInviteDialog}>
+      {/* Create User Dialog */}
+      <Dialog open={createDialog} onOpenChange={setCreateDialog}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Invite New User</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Create New User</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div>
               <Label>Full Name</Label>
               <Input
+                className="mt-1"
                 placeholder="John Smith"
-                value={inviteForm.full_name}
-                onChange={(e) => setInviteForm({ ...inviteForm, full_name: e.target.value })}
-                data-testid="invite-name"
+                value={createForm.full_name}
+                onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
+                data-testid="create-name"
               />
             </div>
             <div>
               <Label>Email Address *</Label>
               <Input
+                className="mt-1"
                 type="email"
                 placeholder="user@example.com"
-                value={inviteForm.email}
-                onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
-                data-testid="invite-email"
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                data-testid="create-email"
               />
             </div>
             <div>
-              <Label>Role</Label>
-              <Select value={inviteForm.role} onValueChange={(v) => setInviteForm({ ...inviteForm, role: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Label>Role *</Label>
+              <Select value={createForm.role} onValueChange={(v) => setCreateForm({ ...createForm, role: v })}>
+                <SelectTrigger className="mt-1" data-testid="create-role-select">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {ROLES.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}
+                  {ROLES.map(r => (
+                    <SelectItem key={r} value={r}>
+                      <div className="flex flex-col">
+                        <span className="capitalize font-medium">{r}</span>
+                        <span className="text-xs text-slate-500">{ROLE_DESCRIPTIONS[r]}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <div className="flex gap-2">
-                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-700">The user will receive a one-time login code to access the system. They can set their password after first login.</p>
+            <div>
+              <Label>Password *</Label>
+              <div className="relative mt-1">
+                <Input
+                  type={showPwd ? 'text' : 'password'}
+                  placeholder="Min. 6 characters"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                  data-testid="create-password"
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                  onClick={() => setShowPwd(v => !v)}
+                >
+                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+            </div>
+            <div>
+              <Label>Confirm Password *</Label>
+              <Input
+                className="mt-1"
+                type="password"
+                placeholder="Repeat password"
+                value={createForm.confirmPassword}
+                onChange={(e) => setCreateForm({ ...createForm, confirmPassword: e.target.value })}
+                data-testid="create-confirm-password"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setInviteDialog(false)}>Cancel</Button>
-            <Button onClick={handleInvite} disabled={saving} data-testid="confirm-invite-btn">
-              {saving ? 'Sending...' : 'Send Invitation'}
+            <Button variant="outline" onClick={() => setCreateDialog(false)}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={saving} data-testid="confirm-create-btn">
+              {saving ? 'Creating...' : 'Create User'}
             </Button>
           </DialogFooter>
         </DialogContent>
