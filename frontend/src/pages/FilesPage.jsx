@@ -81,17 +81,72 @@ const FilesPage = () => {
   };
 
   const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) { toast.error('Folder name is required'); return; }
     try {
-      await filesAPI.createFolder({
-        name: newFolderName,
-        parent_id: currentFolder,
-      });
+      await filesAPI.createFolder({ name: newFolderName, parent_id: currentFolder });
       toast.success('Folder created');
       setNewFolderDialog(false);
       setNewFolderName('');
       fetchFolders();
     } catch (error) {
       toast.error('Failed to create folder');
+    }
+  };
+
+  const getFileType = (mimeType) => {
+    if (!mimeType) return 'other';
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    if (mimeType.includes('pdf') || mimeType.includes('word') || mimeType.includes('document') || mimeType.includes('text')) return 'document';
+    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return 'archive';
+    return 'other';
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setSelectedFile(file);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) setSelectedFile(file);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) { toast.error('Please select a file'); return; }
+    if (selectedFile.size > 10 * 1024 * 1024) { toast.error('File must be under 10MB'); return; }
+    setUploading(true);
+    setUploadProgress(10);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        setUploadProgress(50);
+        const payload = {
+          name: selectedFile.name,
+          file_name: selectedFile.name,
+          file_data: evt.target.result,
+          file_type: getFileType(selectedFile.type),
+          mime_type: selectedFile.type,
+          size: selectedFile.size,
+          folder_id: currentFolder,
+        };
+        setUploadProgress(80);
+        await filesAPI.create(payload);
+        setUploadProgress(100);
+        toast.success(`${selectedFile.name} uploaded successfully`);
+        setUploadDialog(false);
+        setSelectedFile(null);
+        setUploadProgress(0);
+        fetchFiles();
+      };
+      reader.readAsDataURL(selectedFile);
+    } catch {
+      toast.error('Upload failed');
+    } finally {
+      setUploading(false);
     }
   };
 
