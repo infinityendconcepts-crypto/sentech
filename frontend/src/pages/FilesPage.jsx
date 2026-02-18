@@ -395,8 +395,8 @@ const FilesPage = () => {
           <Card className="bg-white border-slate-200">
             <CardContent className="p-12 text-center">
               <File className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-heading font-semibold text-slate-900 mb-2">No files yet</h3>
-              <p className="text-slate-600">Upload files or create folders to organize your documents</p>
+              <h3 className="text-lg font-heading font-semibold text-slate-900 mb-2">No documents yet</h3>
+              <p className="text-slate-600">Upload documents or create folders to organize your MICTSETA files</p>
             </CardContent>
           </Card>
         ) : (
