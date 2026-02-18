@@ -485,7 +485,7 @@ const LeadsPage = () => {
                             <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center">
                               <User className="w-3 h-3 text-slate-600" />
                             </div>
-                            <span className="text-sm text-slate-600">{lead.owner}</span>
+                            <span className="text-sm text-slate-600">{lead.assignee_name || lead.owner || 'Unassigned'}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
