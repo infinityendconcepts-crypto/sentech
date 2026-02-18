@@ -161,7 +161,7 @@ const FilesPage = () => {
   };
 
   const navigateToFolder = (folder) => {
-    setFolderPath([...folderPath, { id: currentFolder, name: folderPath.length === 0 ? 'Files' : folderPath[folderPath.length - 1]?.name }]);
+    setFolderPath([...folderPath, { id: currentFolder, name: folderPath.length === 0 ? 'Documents' : folderPath[folderPath.length - 1]?.name }]);
     setCurrentFolder(folder.id);
   };
 
