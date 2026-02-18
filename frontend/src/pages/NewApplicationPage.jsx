@@ -5,20 +5,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { applicationsAPI } from '../services/api';
-import { CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, FileText, User, Briefcase, GraduationCap, Upload, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 const steps = [
-  { number: 1, name: 'Personal Information', description: 'Basic personal and demographic details' },
-  { number: 2, name: 'Employment Details', description: 'Current employment information' },
-  { number: 3, name: 'Academic & Bursary Details', description: 'Study and bursary information' },
-  { number: 4, name: 'Documents & Submission', description: 'Required documents and final submission' },
+  { number: 1, name: 'Personal Information', description: 'Basic personal and demographic details', icon: User },
+  { number: 2, name: 'Employment Details', description: 'Current employment information', icon: Briefcase },
+  { number: 3, name: 'Academic & Bursary Details', description: 'Study and bursary information', icon: GraduationCap },
+  { number: 4, name: 'Documents & Submission', description: 'Required documents and final submission', icon: Upload },
 ];
 
 const NewApplicationPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -29,6 +38,7 @@ const NewApplicationPage = () => {
       race: '',
       gender: '',
       disability: '',
+      disability_description: '',
     },
     employment_info: {
       division: '',
@@ -61,6 +71,9 @@ const NewApplicationPage = () => {
       },
     }));
   };
+
+  const isNewApplicant = formData.academic_bursary_info.applicant_type === 'NEW APPLICANT';
+  const isContinuationApplicant = formData.academic_bursary_info.applicant_type === 'CONTINUATION APPLICANT';
 
   const handleSaveDraft = async () => {
     setLoading(true);
@@ -104,29 +117,60 @@ const NewApplicationPage = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
+  const getSummarySection = (title, data) => {
+    const entries = Object.entries(data).filter(([key, value]) => value && value !== '');
+    if (entries.length === 0) return null;
+    
+    return (
+      <div className="mb-6">
+        <h4 className="font-semibold text-slate-900 mb-3 border-b pb-2">{title}</h4>
+        <div className="grid grid-cols-2 gap-3">
+          {entries.map(([key, value]) => (
+            <div key={key}>
+              <p className="text-xs text-slate-500 capitalize">{key.replace(/_/g, ' ')}</p>
+              <p className="text-sm font-medium text-slate-900">{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6" data-testid="new-application-page">
-      <div>
-        <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">New Bursary Application</h2>
-        <p className="text-slate-600 mt-1">Complete all steps to submit your application</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">New Bursary Application</h2>
+          <p className="text-slate-600 mt-1">Complete all steps to submit your application</p>
+        </div>
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={() => setShowSummary(true)}
+          data-testid="view-summary-btn"
+        >
+          <Eye className="w-4 h-4" />
+          View Summary
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
         {steps.map((step) => (
           <div
             key={step.number}
-            className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+            className={`p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
               currentStep === step.number
                 ? 'border-primary bg-primary/5'
                 : currentStep > step.number
                 ? 'border-emerald-500 bg-emerald-50'
                 : 'border-slate-200 bg-white'
             }`}
+            onClick={() => setCurrentStep(step.number)}
             data-testid={`step-indicator-${step.number}`}
           >
             <div className="flex items-center gap-3">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm ${
                   currentStep === step.number
                     ? 'bg-primary text-white'
                     : currentStep > step.number
@@ -134,7 +178,7 @@ const NewApplicationPage = () => {
                     : 'bg-slate-200 text-slate-600'
                 }`}
               >
-                {currentStep > step.number ? <CheckCircle2 className="w-5 h-5" /> : step.number}
+                {currentStep > step.number ? <CheckCircle2 className="w-5 h-5" /> : <step.icon className="w-5 h-5" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-slate-900 truncate">{step.name}</p>
@@ -237,6 +281,21 @@ const NewApplicationPage = () => {
                   <option value="Yes">Yes</option>
                 </select>
               </div>
+              {formData.personal_info.disability === 'Yes' && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="disability_description">Disability Description *</Label>
+                  <Textarea
+                    id="disability_description"
+                    placeholder="Please describe your disability"
+                    value={formData.personal_info.disability_description}
+                    onChange={(e) => updateField('personal_info', 'disability_description', e.target.value)}
+                    data-testid="input-disability-description"
+                    rows={3}
+                    required
+                  />
+                  <p className="text-xs text-slate-600">Provide details about your disability to help us accommodate your needs</p>
+                </div>
+              )}
             </div>
           )}
 
@@ -287,7 +346,7 @@ const NewApplicationPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="performance_score">Performance Score *</Label>
+                <Label htmlFor="performance_score">Performance Score (Optional)</Label>
                 <Input
                   id="performance_score"
                   type="number"
@@ -297,9 +356,8 @@ const NewApplicationPage = () => {
                   value={formData.employment_info.performance_score}
                   onChange={(e) => updateField('employment_info', 'performance_score', e.target.value)}
                   data-testid="input-performance-score"
-                  required
                 />
-                <p className="text-xs text-slate-600">Enter your most recent performance evaluation score</p>
+                <p className="text-xs text-slate-600">Enter your most recent performance evaluation score if available</p>
               </div>
             </div>
           )}
@@ -312,7 +370,13 @@ const NewApplicationPage = () => {
                   <select
                     id="applicant_type"
                     value={formData.academic_bursary_info.applicant_type}
-                    onChange={(e) => updateField('academic_bursary_info', 'applicant_type', e.target.value)}
+                    onChange={(e) => {
+                      updateField('academic_bursary_info', 'applicant_type', e.target.value);
+                      // Reset bursary status for new applicants
+                      if (e.target.value === 'NEW APPLICANT') {
+                        updateField('academic_bursary_info', 'bursary_status', '');
+                      }
+                    }}
                     className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     data-testid="select-applicant-type"
                     required
@@ -323,14 +387,21 @@ const NewApplicationPage = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bursary_status">Bursary Status *</Label>
+                  <Label htmlFor="bursary_status">
+                    Bursary Status {isContinuationApplicant ? '*' : '(Not applicable for new applicants)'}
+                  </Label>
                   <select
                     id="bursary_status"
                     value={formData.academic_bursary_info.bursary_status}
                     onChange={(e) => updateField('academic_bursary_info', 'bursary_status', e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      isNewApplicant 
+                        ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed' 
+                        : 'border-slate-200 bg-white'
+                    }`}
                     data-testid="select-bursary-status"
-                    required
+                    disabled={isNewApplicant}
+                    required={isContinuationApplicant}
                   >
                     <option value="">Select status</option>
                     <option value="Active">Active</option>
@@ -338,6 +409,9 @@ const NewApplicationPage = () => {
                     <option value="Completed">Completed</option>
                     <option value="Not Applicable">Not Applicable</option>
                   </select>
+                  {isNewApplicant && (
+                    <p className="text-xs text-amber-600">Bursary status is disabled for new applicants</p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -397,18 +471,34 @@ const NewApplicationPage = () => {
                   />
                   <p className="text-xs text-slate-600">Upload a certified copy of your ID document or passport</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="academic_transcript">Academic Transcript / Statement of Results *</Label>
-                  <Input
-                    id="academic_transcript"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'academic_transcript', e.target.files[0]?.name || '')}
-                    data-testid="input-academic-transcript"
-                    required
-                  />
-                  <p className="text-xs text-slate-600">Upload your most recent academic transcript or statement of results</p>
-                </div>
+                
+                {/* Academic Transcript - Only for Continuation Applicants */}
+                {isContinuationApplicant && (
+                  <div className="space-y-2">
+                    <Label htmlFor="academic_transcript">
+                      Academic Transcript / Statement of Results *
+                      <Badge className="ml-2 bg-blue-100 text-blue-700">Continuation Applicants Only</Badge>
+                    </Label>
+                    <Input
+                      id="academic_transcript"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => updateField('documents', 'academic_transcript', e.target.files[0]?.name || '')}
+                      data-testid="input-academic-transcript"
+                      required
+                    />
+                    <p className="text-xs text-slate-600">Upload your most recent academic transcript or statement of results</p>
+                  </div>
+                )}
+
+                {isNewApplicant && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-sm text-amber-800">
+                      <strong>Note:</strong> Academic transcript is not required for new applicants. You will be required to submit it once you become a continuation applicant.
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="proof_of_registration">Proof of Registration *</Label>
                   <Input
@@ -479,6 +569,36 @@ const NewApplicationPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Application Summary Dialog */}
+      <Dialog open={showSummary} onOpenChange={setShowSummary}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Application Summary
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {getSummarySection('Personal Information', formData.personal_info)}
+            {getSummarySection('Employment Details', formData.employment_info)}
+            {getSummarySection('Academic & Bursary Information', formData.academic_bursary_info)}
+            {getSummarySection('Documents', formData.documents)}
+            
+            {Object.values(formData).every(section => 
+              Object.values(section).every(val => !val || val === '')
+            ) && (
+              <div className="text-center py-8 text-slate-500">
+                <FileText className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                <p>No information entered yet. Start filling out the form to see your summary.</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSummary(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
