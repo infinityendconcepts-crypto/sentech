@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { authAPI } from '../services/api';
-import { Award, Mail, Lock, User, KeyRound, FileText, Users, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Award, Mail, Lock, KeyRound, FileText, Users, ShieldCheck, RefreshCw } from 'lucide-react';
 
 const LoginPage = () => {
   const [activeTab, setActiveTab] = useState('email');
