@@ -323,7 +323,7 @@ const LeadsPage = () => {
             <Upload className="w-4 h-4" />
             Import leads
           </Button>
-          <Button className="gap-2" data-testid="add-lead-btn">
+          <Button className="gap-2" onClick={() => setShowAddDialog(true)} data-testid="add-lead-btn">
             <Plus className="w-4 h-4" />
             Add lead
           </Button>
