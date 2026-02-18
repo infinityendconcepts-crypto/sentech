@@ -126,12 +126,12 @@ const FilesPage = () => {
         setUploadProgress(50);
         const payload = {
           name: selectedFile.name,
-          file_name: selectedFile.name,
-          file_data: evt.target.result,
+          original_name: selectedFile.name,
           file_type: getFileType(selectedFile.type),
-          mime_type: selectedFile.type,
+          mime_type: selectedFile.type || 'application/octet-stream',
           size: selectedFile.size,
-          folder_id: currentFolder,
+          url: evt.target.result, // store base64 as url for now
+          folder_id: currentFolder || null,
         };
         setUploadProgress(80);
         await filesAPI.create(payload);
@@ -145,7 +145,6 @@ const FilesPage = () => {
       reader.readAsDataURL(selectedFile);
     } catch {
       toast.error('Upload failed');
-    } finally {
       setUploading(false);
     }
   };
