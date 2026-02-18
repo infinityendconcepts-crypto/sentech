@@ -1350,7 +1350,12 @@ async def update_user_status(user_id: str, data: dict, current_user: dict = Depe
 async def update_user_role(user_id: str, data: dict, current_user: dict = Depends(get_current_user)):
     if "admin" not in current_user.get("roles", []):
         raise HTTPException(status_code=403, detail="Only admins can change roles")
-    roles = data.get("roles", ["employee"])
+    roles = data.get("roles", ["student"])
+    # Ensure only valid roles
+    valid_roles = {"admin", "student"}
+    roles = [r for r in roles if r in valid_roles]
+    if not roles:
+        roles = ["student"]
     await db.users.update_one(
         {"id": user_id},
         {"$set": {"roles": roles, "updated_at": datetime.now(timezone.utc).isoformat()}}
