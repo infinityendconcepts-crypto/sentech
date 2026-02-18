@@ -182,7 +182,7 @@ const UsersPage = () => {
           { label: 'Total Users', value: stats.total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Active', value: stats.active, icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'Admins', value: stats.admins, icon: Shield, color: 'text-red-600', bg: 'bg-red-50' },
-          { label: 'Managers', value: stats.managers, icon: UserCog, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Students', value: stats.students, icon: UserCog, color: 'text-blue-600', bg: 'bg-blue-50' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <Card key={label} className="bg-white border-slate-200">
             <CardContent className="p-4 flex items-center gap-4">
