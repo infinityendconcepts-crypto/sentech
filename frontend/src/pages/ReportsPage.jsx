@@ -239,6 +239,68 @@ const ReportsPage = () => {
         </Card>
       </div>
 
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {/* Overview Bar Chart */}
+        <Card className="bg-white border-slate-200 xl:col-span-2">
+          <CardHeader><CardTitle className="text-base">System Overview</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={overviewBarData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} />
+                <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
+                <RechartsTooltip contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }} />
+                <Bar dataKey="Total" fill="#0056B3" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Application Status Pie */}
+        <Card className="bg-white border-slate-200">
+          <CardHeader><CardTitle className="text-base">Application Status</CardTitle></CardHeader>
+          <CardContent>
+            {applicationStatusData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={applicationStatusData} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
+                    dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}
+                    fontSize={11}>
+                    {applicationStatusData.map((entry, index) => (
+                      <Cell key={index} fill={entry.fill || CHART_COLORS[index % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[220px] text-slate-400 text-sm">No application data yet</div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Task Status Bar */}
+        <Card className="bg-white border-slate-200 xl:col-span-3">
+          <CardHeader><CardTitle className="text-base">Task Status Breakdown</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={taskStatusData} layout="vertical" margin={{ top: 0, right: 20, left: 30, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 12, fill: '#64748b' }} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} width={80} />
+                <RechartsTooltip contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }} />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  {taskStatusData.map((_, index) => (
+                    <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Report Selection */}
       <Card className="bg-white border-slate-200">
         <CardContent className="p-4">
