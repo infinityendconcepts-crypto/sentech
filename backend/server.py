@@ -2679,8 +2679,9 @@ async def get_settings(current_user: dict = Depends(get_current_user)):
 
 @api_router.put("/settings")
 async def update_settings(update_data: SystemSettingsUpdate, current_user: dict = Depends(get_current_user)):
-    if "admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins can update settings")
+    # Allow managers and admins to update settings
+    if not any(r in current_user.get("roles", []) for r in ["admin", "manager"]):
+        raise HTTPException(status_code=403, detail="Only admins and managers can update settings")
     
     settings = await db.settings.find_one({"id": "system_settings"}, {"_id": 0})
     if not settings:
@@ -2691,7 +2692,7 @@ async def update_settings(update_data: SystemSettingsUpdate, current_user: dict 
         settings_dict['created_at'] = settings_dict['created_at'].isoformat()
         settings_dict['updated_at'] = datetime.now(timezone.utc).isoformat()
         await db.settings.insert_one({**settings_dict})
-        return settings_dict
+        return {k: v for k, v in settings_dict.items() if k != "_id"}
     
     update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
