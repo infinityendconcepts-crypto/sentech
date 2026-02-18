@@ -41,7 +41,16 @@ export const authAPI = {
 export const usersAPI = {
   getAll: (params) => api.get('/users', { params }),
   getOne: (id) => api.get(`/users/${id}`),
+  getMe: () => api.get('/users/me'),
   update: (id, data) => api.put(`/users/${id}`, data),
+  updateMe: (data) => api.put('/users/me', data),
+  changePassword: (data) => api.post('/users/me/change-password', data),
+  invite: (data) => api.post('/users/invite', data),
+  deactivate: (id) => api.put(`/users/${id}/status`, { is_active: false }),
+  activate: (id) => api.put(`/users/${id}/status`, { is_active: true }),
+  changeRole: (id, roles) => api.put(`/users/${id}/role`, { roles }),
+  delete: (id) => api.delete(`/users/${id}`),
+};
 };
 
 export const teamsAPI = {
