@@ -156,51 +156,51 @@ backend:
 frontend:
   - task: "EventsPage - Calendar and List View"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/EventsPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Created EventsPage.jsx with calendar view, list view, add/edit/delete event dialog. Connected to /api/events. Added to App.js router and Layout.jsx sidebar."
+      - working: true
+        agent: "testing"
+        comment: "PASS - Calendar view, list view, add/edit/delete all working. Events appear on calendar."
 
   - task: "UserProfilePage Documents Tab"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/UserProfilePage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Added Documents tab to UserProfilePage. Shows document list with status badges (processing/approved/rejected). Upload and re-upload buttons. Calls documentsAPI."
+      - working: true
+        agent: "testing"
+        comment: "PASS - Documents tab shows, upload section functional, status badges (processing/approved/rejected) correct."
 
   - task: "LeadsPage - Remove mock data, add Create modal"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/LeadsPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Removed mockLeads fallback. Added Add Lead dialog with form. Empty state when no leads. Fixed labels/tags field mapping for backend data."
+      - working: true
+        agent: "testing"
+        comment: "PASS - No mock data. Empty state shows correctly. Add Lead dialog works. Lead appears in list after creation."
 
   - task: "Sidebar - Remove My Profile link, Add Events"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/components/Layout/Layout.jsx"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Removed duplicate My Profile link from sidebar bottom. Added Events item (CalendarDays icon) to navigation array."
+      - working: true
+        agent: "testing"
+        comment: "PASS - My Profile link removed. Events navigation link added and working."
 
 metadata:
   created_by: "main_agent"
