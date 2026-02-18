@@ -798,10 +798,16 @@ class SystemSettings(BaseModel):
     smtp_from_name: str = "Sentech Bursary System"
     zoom_api_key: Optional[str] = None
     zoom_api_secret: Optional[str] = None
+    zoom_account_id: Optional[str] = None
     teams_tenant_id: Optional[str] = None
     teams_client_id: Optional[str] = None
     teams_client_secret: Optional[str] = None
+    teams_webhook_url: Optional[str] = None
     company_name: str = "Sentech"
+    company_tagline: Optional[str] = "Bursary Management System"
+    company_email: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_address: Optional[str] = None
     primary_color: str = "#0056B3"
     timezone: str = "Africa/Johannesburg"
     currency: str = "ZAR"
@@ -811,19 +817,29 @@ class SystemSettings(BaseModel):
     updated_at: datetime = Field(default_factory=current_time)
 
 class SystemSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     smtp_host: Optional[str] = None
     smtp_port: Optional[int] = None
     smtp_username: Optional[str] = None
     smtp_password: Optional[str] = None
     smtp_use_tls: Optional[bool] = None
     smtp_from_email: Optional[str] = None
+    smtp_from_name: Optional[str] = None
     zoom_api_key: Optional[str] = None
     zoom_api_secret: Optional[str] = None
+    zoom_account_id: Optional[str] = None
     teams_tenant_id: Optional[str] = None
     teams_client_id: Optional[str] = None
     teams_client_secret: Optional[str] = None
+    teams_webhook_url: Optional[str] = None
     company_name: Optional[str] = None
+    company_tagline: Optional[str] = None
+    company_email: Optional[str] = None
+    company_phone: Optional[str] = None
+    company_address: Optional[str] = None
     primary_color: Optional[str] = None
+    timezone: Optional[str] = None
+    currency: Optional[str] = None
     features_enabled: Optional[Dict[str, bool]] = None
     page_settings: Optional[Dict[str, Dict[str, Any]]] = None
 
