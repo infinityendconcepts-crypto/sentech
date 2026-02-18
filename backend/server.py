@@ -1279,10 +1279,10 @@ async def change_my_password(data: dict, current_user: dict = Depends(get_curren
 
 @api_router.post("/users/invite")
 async def invite_user(data: dict, current_user: dict = Depends(get_current_user)):
-    if "admin" not in current_user.get("roles", []) and "manager" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins/managers can invite users")
+    if "admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can invite users")
     email = data.get("email", "").strip().lower()
-    role = data.get("role", "employee")
+    role = data.get("role", "student")
     full_name = data.get("full_name", "")
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
@@ -1302,6 +1302,38 @@ async def invite_user(data: dict, current_user: dict = Depends(get_current_user)
         "role": role,
         "dev_note": f"Login OTP for invited user: {otp_code}"
     }
+
+@api_router.post("/users")
+async def create_user(data: dict, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can create users")
+    email = data.get("email", "").strip().lower()
+    full_name = data.get("full_name", "")
+    role = data.get("role", "student")
+    password = data.get("password", "")
+    if role not in ["admin", "student"]:
+        raise HTTPException(status_code=400, detail="Role must be 'admin' or 'student'")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    if not password or len(password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=409, detail="User with this email already exists")
+    new_user = User(
+        email=email,
+        full_name=full_name or email.split("@")[0].title(),
+        roles=[role],
+        is_verified=True,
+        is_active=True,
+        password_hash=get_password_hash(password),
+    )
+    user_dict = new_user.model_dump()
+    user_dict["created_at"] = user_dict["created_at"].isoformat()
+    user_dict["updated_at"] = user_dict["updated_at"].isoformat()
+    await db.users.insert_one(user_dict)
+    return_user = {k: v for k, v in user_dict.items() if k not in ["_id", "password_hash"]}
+    return return_user
 
 @api_router.put("/users/{user_id}/status")
 async def update_user_status(user_id: str, data: dict, current_user: dict = Depends(get_current_user)):
