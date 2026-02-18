@@ -80,7 +80,7 @@ class User(BaseModel):
     email: EmailStr
     full_name: str
     password_hash: Optional[str] = None
-    roles: List[str] = ["employee"]
+    roles: List[str] = ["student"]
     team_id: Optional[str] = None
     department: Optional[str] = None
     position: Optional[str] = None
@@ -98,7 +98,7 @@ class UserCreate(BaseModel):
     full_name: str
     password: str
     student_id: Optional[str] = None
-    roles: List[str] = ["employee"]
+    roles: List[str] = ["student"]
     team_id: Optional[str] = None
     department: Optional[str] = None
     position: Optional[str] = None
