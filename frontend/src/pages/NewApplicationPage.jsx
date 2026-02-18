@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,8 +25,11 @@ const steps = [
 ];
 
 const NewApplicationPage = () => {
+  const { id } = useParams();
+  const isEditing = !!id;
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingApplication, setLoadingApplication] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const navigate = useNavigate();
 
