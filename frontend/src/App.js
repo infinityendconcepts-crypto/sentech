@@ -15,7 +15,7 @@ import ApplicationsPage from './pages/ApplicationsPage';
 import NewApplicationPage from './pages/NewApplicationPage';
 import SponsorsPage from './pages/SponsorsPage';
 import BBBEEPage from './pages/BBBEEPage';
-import TasksPage from './pages/TasksPage';
+import TrainingTrackPage from './pages/TrainingTrackPage';
 import ProjectsPage from './pages/ProjectsPage';
 import LeadsPage from './pages/LeadsPage';
 import ProspectsPage from './pages/ProspectsPage';
