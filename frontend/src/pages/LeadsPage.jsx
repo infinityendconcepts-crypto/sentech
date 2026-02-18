@@ -547,6 +547,75 @@ const LeadsPage = () => {
           </DndContext>
         </TabsContent>
       </Tabs>
+
+      {/* Add Lead Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="bg-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900">Add New Lead</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Name *</Label>
+                <Input className="mt-1" placeholder="Full name" value={leadForm.name} onChange={e => setLeadForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Company</Label>
+                <Input className="mt-1" placeholder="Company name" value={leadForm.company} onChange={e => setLeadForm(f => ({ ...f, company: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input className="mt-1" type="email" placeholder="Email address" value={leadForm.email} onChange={e => setLeadForm(f => ({ ...f, email: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input className="mt-1" placeholder="+27 XX XXX XXXX" value={leadForm.phone} onChange={e => setLeadForm(f => ({ ...f, phone: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={leadForm.status} onValueChange={v => setLeadForm(f => ({ ...f, status: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="qualified">Qualified</SelectItem>
+                    <SelectItem value="discussion">Discussion</SelectItem>
+                    <SelectItem value="negotiation">Negotiation</SelectItem>
+                    <SelectItem value="won">Won</SelectItem>
+                    <SelectItem value="lost">Lost</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Source</Label>
+                <Select value={leadForm.source} onValueChange={v => setLeadForm(f => ({ ...f, source: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="website">Website</SelectItem>
+                    <SelectItem value="referral">Referral</SelectItem>
+                    <SelectItem value="linkedin">LinkedIn</SelectItem>
+                    <SelectItem value="cold_call">Cold Call</SelectItem>
+                    <SelectItem value="email_campaign">Email Campaign</SelectItem>
+                    <SelectItem value="trade_show">Trade Show</SelectItem>
+                    <SelectItem value="partner">Partner</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Input className="mt-1" placeholder="Optional notes" value={leadForm.notes} onChange={e => setLeadForm(f => ({ ...f, notes: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
+            <Button onClick={handleCreateLead} disabled={savingLead}>
+              {savingLead ? 'Saving...' : 'Add Lead'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
