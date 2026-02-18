@@ -854,6 +854,63 @@ class Role(BaseModel):
     created_at: datetime = Field(default_factory=current_time)
     updated_at: datetime = Field(default_factory=current_time)
 
+# ============== EVENT MODEL ==============
+class Event(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_uuid)
+    title: str
+    description: Optional[str] = None
+    start_date: str
+    end_date: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    location: Optional[str] = None
+    event_type: str = "event"  # event, meeting, deadline, holiday, reminder
+    color: Optional[str] = "#0056B3"
+    attendees: List[str] = []
+    all_day: bool = False
+    recurrence: Optional[str] = None
+    created_by: Optional[str] = None
+    created_by_name: Optional[str] = None
+    created_at: datetime = Field(default_factory=current_time)
+    updated_at: datetime = Field(default_factory=current_time)
+
+class EventCreate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    title: str
+    description: Optional[str] = None
+    start_date: str
+    end_date: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    location: Optional[str] = None
+    event_type: Optional[str] = "event"
+    color: Optional[str] = "#0056B3"
+    attendees: Optional[List[str]] = []
+    all_day: Optional[bool] = False
+
+class EventUpdate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    title: Optional[str] = None
+    description: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    location: Optional[str] = None
+    event_type: Optional[str] = None
+    color: Optional[str] = None
+    attendees: Optional[List[str]] = None
+    all_day: Optional[bool] = None
+
+# ============== DOCUMENT STATUS MODEL ==============
+class ApplicationDocumentReupload(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    document_type: str
+    file_name: str
+    file_data: str  # base64 encoded or URL
+    notes: Optional[str] = None
+
 class RoleCreate(BaseModel):
     name: str
     description: Optional[str] = None
