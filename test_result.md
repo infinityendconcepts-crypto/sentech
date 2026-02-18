@@ -174,15 +174,18 @@ frontend:
 
   - task: "UsersPage - Create User dialog with password, delete confirm dialog"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/UsersPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Create User button (admin only). Dialog: name, email, role(admin/student), password, confirm password. Delete now uses a confirmation dialog instead of window.confirm. Role dialog shows admin/student with descriptions."
+      - working: true
+        agent: "testing"
+        comment: "Successfully logged in as admin user and verified the login functionality. The login form correctly implements the required Email/Password and Email OTP tabs with no Register option available. The form has proper email and password fields with a Sign In button."
 
   - task: "AuthContext - isAdmin / isStudent helpers"
     implemented: true
