@@ -218,16 +218,22 @@ const Layout = () => {
                 ) : (
                   <>
                     <div className="flex items-center gap-3 px-3 py-2 mb-2">
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                      <Link to="/profile" className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0 hover:ring-2 hover:ring-primary/30 transition-all">
                         <span className="text-sm font-semibold text-primary">
                           {user?.full_name?.charAt(0) || 'U'}
                         </span>
-                      </div>
+                      </Link>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-900 truncate">{user?.full_name || 'User'}</p>
+                        <Link to="/profile" className="text-sm font-medium text-slate-900 truncate hover:text-primary transition-colors block">
+                          {user?.full_name || 'User'}
+                        </Link>
                         <p className="text-xs text-slate-500 truncate">{user?.email || ''}</p>
                       </div>
                     </div>
+                    <Link to="/profile" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-primary hover:bg-slate-100 rounded-md transition-colors mb-1">
+                      <UserCircle className="w-4 h-4" />
+                      My Profile
+                    </Link>
                     <Button
                       onClick={logout}
                       variant="outline"
