@@ -224,8 +224,8 @@ const FilesPage = () => {
     <div className="space-y-6" data-testid="files-page">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Files</h2>
-          <p className="text-slate-600 mt-1">Manage and share files</p>
+          <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">MICTSETA Documents</h2>
+          <p className="text-slate-600 mt-1">Upload, store, and manage internship and learnership documents in line with MICTSETA requirements</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={newFolderDialog} onOpenChange={setNewFolderDialog}>
