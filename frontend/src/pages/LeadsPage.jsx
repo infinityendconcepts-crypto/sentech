@@ -459,7 +459,17 @@ const LeadsPage = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-slate-200">
-                    {filteredLeads.map((lead) => (
+                    {filteredLeads.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-16 text-center">
+                          <User className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                          <p className="text-slate-500 text-sm">No leads found.</p>
+                          <Button onClick={() => setShowAddDialog(true)} variant="outline" className="mt-4 gap-2" size="sm">
+                            <Plus className="w-4 h-4" /> Add your first lead
+                          </Button>
+                        </td>
+                      </tr>
+                    ) : filteredLeads.map((lead) => (
                       <tr key={lead.id} className="hover:bg-slate-50 transition-colors" data-testid={`lead-row-${lead.id}`}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
