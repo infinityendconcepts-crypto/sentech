@@ -50,6 +50,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/applications" element={<ApplicationsPage />} />
               <Route path="/applications/new" element={<NewApplicationPage />} />
+              <Route path="/applications/:id/edit" element={<NewApplicationPage />} />
               <Route path="/profile" element={<UserProfilePage />} />
               <Route path="/help" element={<HelpPage />} />
               <Route path="/notes" element={<NotesPage />} />
