@@ -168,10 +168,10 @@ const UsersPage = () => {
           <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Users</h2>
           <p className="text-slate-600 mt-1">Manage system users and permissions</p>
         </div>
-        {isManager && (
-          <Button className="gap-2" onClick={() => setInviteDialog(true)} data-testid="invite-user-btn">
+        {isAdmin && (
+          <Button className="gap-2" onClick={() => setCreateDialog(true)} data-testid="create-user-btn">
             <Plus className="w-4 h-4" />
-            Invite User
+            Create User
           </Button>
         )}
       </div>
