@@ -51,7 +51,6 @@ export const usersAPI = {
   changeRole: (id, roles) => api.put(`/users/${id}/role`, { roles }),
   delete: (id) => api.delete(`/users/${id}`),
 };
-};
 
 export const teamsAPI = {
   getAll: () => api.get('/teams'),
