@@ -210,6 +210,14 @@ export const dashboardAPI = {
   getStats: () => api.get('/dashboard/stats'),
 };
 
+export const pdpAPI = {
+  getAll: (params) => api.get('/pdp', { params }),
+  getById: (id) => api.get(`/pdp/${id}`),
+  create: (data) => api.post('/pdp', data),
+  update: (id, data) => api.put(`/pdp/${id}`, data),
+  delete: (id) => api.delete(`/pdp/${id}`),
+};
+
 export const eventsAPI = {  getAll: (params) => api.get('/events', { params }),
   getById: (id) => api.get(`/events/${id}`),
   create: (data) => api.post('/events', data),
