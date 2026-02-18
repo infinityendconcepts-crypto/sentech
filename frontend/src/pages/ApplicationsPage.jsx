@@ -288,12 +288,16 @@ const ApplicationsPage = () => {
                       </Button>
                     </Link>
                     {application.status === 'draft' && (
-                      <Link to={`/applications/${application.id}/edit`}>
-                        <Button size="sm" className="gap-2">
-                          <Edit className="w-4 h-4" />
-                          Continue
-                        </Button>
-                      </Link>
+                      <Button 
+                        size="sm" 
+                        className="gap-2"
+                        onClick={() => handleContinueApplication(application)}
+                        disabled={continuingApplication === application.id}
+                        data-testid={`continue-application-${application.id}`}
+                      >
+                        <Edit className="w-4 h-4" />
+                        {continuingApplication === application.id ? 'Loading...' : 'Continue'}
+                      </Button>
                     )}
                   </div>
                 </div>
