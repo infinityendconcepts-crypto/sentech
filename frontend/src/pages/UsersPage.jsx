@@ -95,18 +95,19 @@ const UsersPage = () => {
     return matchSearch && matchRole && matchStatus;
   });
 
-  const handleInvite = async () => {
-    if (!inviteForm.email.trim()) { toast.error('Email is required'); return; }
+  const handleCreate = async () => {
+    if (!createForm.email.trim()) { toast.error('Email is required'); return; }
+    if (!createForm.password || createForm.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    if (createForm.password !== createForm.confirmPassword) { toast.error('Passwords do not match'); return; }
     setSaving(true);
     try {
-      const res = await usersAPI.invite(inviteForm);
-      toast.success(`Invitation sent to ${inviteForm.email}`);
-      if (res.data.dev_note) toast.info(res.data.dev_note, { duration: 8000 });
-      setInviteDialog(false);
-      setInviteForm({ email: '', full_name: '', role: 'employee' });
+      await usersAPI.create({ email: createForm.email, full_name: createForm.full_name, role: createForm.role, password: createForm.password });
+      toast.success(`User ${createForm.email} created successfully`);
+      setCreateDialog(false);
+      setCreateForm({ email: '', full_name: '', role: 'student', password: '', confirmPassword: '' });
       fetchUsers();
     } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to send invitation');
+      toast.error(err.response?.data?.detail || 'Failed to create user');
     } finally {
       setSaving(false);
     }
