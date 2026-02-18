@@ -116,15 +116,23 @@ const NewApplicationPage = () => {
   const handleSaveDraft = async () => {
     setLoading(true);
     try {
-      await applicationsAPI.create({
-        ...formData,
-        status: 'draft',
-        current_step: currentStep,
-      });
-      toast.success('Draft saved successfully');
+      if (isEditing) {
+        await applicationsAPI.update(id, {
+          ...formData,
+          current_step: currentStep,
+        });
+        toast.success('Application saved successfully');
+      } else {
+        await applicationsAPI.create({
+          ...formData,
+          status: 'draft',
+          current_step: currentStep,
+        });
+        toast.success('Draft saved successfully');
+      }
       navigate('/applications');
     } catch (error) {
-      toast.error('Failed to save draft');
+      toast.error('Failed to save application');
     } finally {
       setLoading(false);
     }
@@ -133,11 +141,19 @@ const NewApplicationPage = () => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await applicationsAPI.create({
-        ...formData,
-        status: 'pending',
-        current_step: 4,
-      });
+      if (isEditing) {
+        await applicationsAPI.update(id, {
+          ...formData,
+          status: 'pending',
+          current_step: 4,
+        });
+      } else {
+        await applicationsAPI.create({
+          ...formData,
+          status: 'pending',
+          current_step: 4,
+        });
+      }
       toast.success('Application submitted successfully');
       navigate('/applications');
     } catch (error) {
