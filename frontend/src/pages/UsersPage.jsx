@@ -308,7 +308,7 @@ const UsersPage = () => {
                   </div>
 
                   {/* Actions */}
-                  {isManager && u.id !== currentUser?.id && (
+                  {isAdmin && u.id !== currentUser?.id && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="w-8 h-8" data-testid={`user-actions-${u.id}`}>
@@ -316,31 +316,23 @@ const UsersPage = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {isAdmin && (
-                          <DropdownMenuItem onClick={() => { setSelectedUser(u); setRoleDialog(true); }}>
-                            <UserCog className="w-4 h-4 mr-2" />Change Role
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => handleToggleStatus(u.id, u.is_active !== false)}
-                        >
+                        <DropdownMenuItem onClick={() => { setSelectedUser(u); setRoleDialog(true); }}>
+                          <UserCog className="w-4 h-4 mr-2" />Change Role
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleStatus(u.id, u.is_active !== false)}>
                           {u.is_active !== false ? (
                             <><ShieldOff className="w-4 h-4 mr-2" />Deactivate</>
                           ) : (
                             <><Shield className="w-4 h-4 mr-2" />Activate</>
                           )}
                         </DropdownMenuItem>
-                        {isAdmin && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-red-600"
-                              onClick={() => handleDelete(u.id, u.full_name || u.email)}
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />Delete User
-                            </DropdownMenuItem>
-                          </>
-                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => setDeleteConfirm({ id: u.id, name: u.full_name || u.email })}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />Delete User
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
