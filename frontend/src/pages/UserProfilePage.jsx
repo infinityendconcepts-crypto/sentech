@@ -424,6 +424,120 @@ const UserProfilePage = () => {
           </Card>
         </TabsContent>
 
+        {/* Documents Tab */}
+        <TabsContent value="documents">
+          <Card className="bg-white border-slate-200">
+            <CardHeader>
+              <CardTitle>My Documents</CardTitle>
+              <CardDescription>Upload and manage your application documents. Re-upload rejected documents below.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {/* Upload Section */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                <p className="text-sm font-medium text-slate-700">Upload New Document</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Document Name</Label>
+                    <Input
+                      className="mt-1"
+                      placeholder="e.g. ID Document, Matric Certificate"
+                      value={docForm.name}
+                      onChange={e => setDocForm(f => ({ ...f, name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Document Type</Label>
+                    <select
+                      className="mt-1 w-full h-9 border border-slate-200 rounded-md px-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={docForm.document_type}
+                      onChange={e => setDocForm(f => ({ ...f, document_type: e.target.value }))}
+                    >
+                      <option value="general">General</option>
+                      <option value="id">ID Document</option>
+                      <option value="academic">Academic Transcript</option>
+                      <option value="financial">Financial Statement</option>
+                      <option value="proof_of_residence">Proof of Residence</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  onChange={(e) => handleFileUpload(e)}
+                />
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="w-4 h-4" />
+                  {uploading ? 'Uploading...' : 'Choose File & Upload'}
+                </Button>
+                <p className="text-xs text-slate-400">Supported: PDF, DOC, DOCX, JPG, PNG. Max 5MB.</p>
+              </div>
+
+              {/* Documents List */}
+              {docsLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : documents.length === 0 ? (
+                <div className="text-center py-10">
+                  <FileText className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-slate-400 text-sm">No documents uploaded yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <input
+                    type="file"
+                    ref={reuploadRef}
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    onChange={(e) => handleFileUpload(e, reuploadDocId)}
+                  />
+                  {documents.map(doc => (
+                    <div key={doc.id} className="flex items-center gap-4 p-4 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 transition-colors">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-slate-900 text-sm truncate">{doc.name}</p>
+                        <p className="text-xs text-slate-500 capitalize">{doc.document_type?.replace(/_/g, ' ')} · Uploaded {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString('en-ZA') : 'N/A'}</p>
+                        {doc.notes && <p className="text-xs text-slate-400 mt-0.5 italic">{doc.notes}</p>}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {getStatusBadge(doc.status)}
+                        {doc.status === 'rejected' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1 text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                            onClick={() => { setReuploadDocId(doc.id); setTimeout(() => reuploadRef.current?.click(), 50); }}
+                          >
+                            <RefreshCw className="w-3 h-3" /> Re-upload
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-slate-400 hover:text-rose-600"
+                          onClick={() => handleDeleteDocument(doc.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Account Info Tab */}
         <TabsContent value="activity">
           <Card className="bg-white border-slate-200">
