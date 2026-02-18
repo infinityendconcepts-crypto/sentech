@@ -431,7 +431,16 @@ const FilesPage = () => {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => window.open(file.url, '_blank')}
+                      onClick={() => {
+                        if (file.url?.startsWith('data:')) {
+                          const a = document.createElement('a');
+                          a.href = file.url;
+                          a.download = file.original_name || file.name;
+                          a.click();
+                        } else {
+                          window.open(file.url, '_blank');
+                        }
+                      }}
                     >
                       <Download className="w-4 h-4 mr-1" />
                       Download
