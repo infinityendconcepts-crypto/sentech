@@ -23,16 +23,19 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const ROLES = ['admin', 'manager', 'employee', 'viewer'];
+const ROLES = ['admin', 'student'];
 
 const getRoleColor = (role) => {
   switch (role) {
     case 'admin': return 'bg-red-100 text-red-700 border-red-200';
-    case 'manager': return 'bg-purple-100 text-purple-700 border-purple-200';
-    case 'employee': return 'bg-blue-100 text-blue-700 border-blue-200';
-    case 'viewer': return 'bg-slate-100 text-slate-700 border-slate-200';
-    default: return 'bg-slate-100 text-slate-700 border-slate-200';
+    case 'student': return 'bg-blue-100 text-blue-700 border-blue-200';
+    default: return 'bg-slate-100 text-slate-600 border-slate-200';
   }
+};
+
+const ROLE_DESCRIPTIONS = {
+  admin: 'Full system access — can manage users, settings, reports, leads, and all modules.',
+  student: 'Standard access — dashboard, applications, tasks, meetings, notes, tickets and personal profile.',
 };
 
 const getInitials = (name) => {
