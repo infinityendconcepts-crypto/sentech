@@ -154,7 +154,7 @@ const Layout = () => {
                 <img 
                   src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/576jxjw8_HeCFT4bk_400x400.jpg" 
                   alt="Sentech Logo" 
-                  className={`rounded-md object-contain bg-slate-900 ${sidebarCollapsed && !isMobile ? 'w-9 h-9 p-0.5' : 'w-9 h-9 p-0.5'}`}
+                  className={`rounded-md object-contain ${sidebarCollapsed && !isMobile ? 'w-9 h-9' : 'w-9 h-9'}`}
                 />
                 {(!sidebarCollapsed || isMobile) && (
                   <span className="font-heading font-bold text-lg text-slate-900">Sentech</span>
