@@ -157,7 +157,7 @@ const UsersPage = () => {
     total: users.length,
     active: users.filter(u => u.is_active !== false).length,
     admins: users.filter(u => (u.roles || []).includes('admin')).length,
-    managers: users.filter(u => (u.roles || []).includes('manager')).length,
+    students: users.filter(u => (u.roles || []).includes('student')).length,
   };
 
   return (
