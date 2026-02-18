@@ -260,6 +260,7 @@ const UserProfilePage = () => {
         <TabsList className="bg-slate-100">
           <TabsTrigger value="profile">Profile Info</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="documents" onClick={fetchDocuments}>Documents</TabsTrigger>
           <TabsTrigger value="activity">Account Info</TabsTrigger>
         </TabsList>
 
