@@ -45,6 +45,7 @@ export const usersAPI = {
   update: (id, data) => api.put(`/users/${id}`, data),
   updateMe: (data) => api.put('/users/me', data),
   changePassword: (data) => api.post('/users/me/change-password', data),
+  create: (data) => api.post('/users', data),
   invite: (data) => api.post('/users/invite', data),
   deactivate: (id) => api.put(`/users/${id}/status`, { is_active: false }),
   activate: (id) => api.put(`/users/${id}/status`, { is_active: true }),
