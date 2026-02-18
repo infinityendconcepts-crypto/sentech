@@ -144,15 +144,18 @@ backend:
 frontend:
   - task: "RBAC - Sidebar navigation filtered by role"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/components/Layout/Layout.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Admin-only nav items: Sponsors, BBBEE, Projects, Leads, Prospects, Expenses, Reports, Users, Settings. Students see: Dashboard, Applications, Tasks, Meetings, Events, Notes, Messages, Files, Tickets, Team, Help."
+      - working: true
+        agent: "testing"
+        comment: "Verified that admin user (jane.smith@uct.ac.za) has access to all navigation items including admin-only sections (Sponsors, BBBEE, Projects, Leads, Prospects, Expenses, Reports, Users, Settings). Login page contains new Sentech logo with dark background and shows both Email/Password and Email OTP login options with no Register option."
 
   - task: "RBAC - Route protection for admin-only pages"
     implemented: true
