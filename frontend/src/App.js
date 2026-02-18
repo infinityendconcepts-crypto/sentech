@@ -65,6 +65,7 @@ function App() {
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/profile" element={<UserProfilePage />} />
+              <Route path="/events" element={<EventsPage />} />
             </Route>
           </Route>
         </Routes>
