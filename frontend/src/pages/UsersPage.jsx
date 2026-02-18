@@ -431,13 +431,13 @@ const UsersPage = () => {
       <Dialog open={roleDialog} onOpenChange={setRoleDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change Role for {selectedUser?.full_name || selectedUser?.email}</DialogTitle>
+            <DialogTitle>Change Role — {selectedUser?.full_name || selectedUser?.email}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
             {ROLES.map(r => (
               <button
                 key={r}
-                className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
+                className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
                   (selectedUser?.roles || []).includes(r)
                     ? 'border-primary bg-primary/5'
                     : 'border-slate-200 hover:border-slate-300'
@@ -446,20 +446,38 @@ const UsersPage = () => {
                 data-testid={`role-option-${r}`}
               >
                 <div className="flex items-center gap-3">
-                  <Badge className={`${getRoleColor(r)} text-xs`}>{r}</Badge>
-                  <span className="text-sm text-slate-700">
-                    {r === 'admin' && 'Full system access'}
-                    {r === 'manager' && 'Manage users and content'}
-                    {r === 'employee' && 'Standard access'}
-                    {r === 'viewer' && 'Read-only access'}
-                  </span>
+                  <Badge className={`${getRoleColor(r)} text-xs capitalize`}>{r}</Badge>
+                  <p className="text-sm text-slate-600 text-left">{ROLE_DESCRIPTIONS[r]}</p>
                 </div>
-                {(selectedUser?.roles || []).includes(r) && <CheckCircle className="w-4 h-4 text-primary" />}
+                {(selectedUser?.roles || []).includes(r) && <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />}
               </button>
             ))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRoleDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+          </DialogHeader>
+          <p className="text-slate-600 text-sm">
+            Are you sure you want to permanently delete <strong>{deleteConfirm?.name}</strong>? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={saving}
+              onClick={() => handleDelete(deleteConfirm.id, deleteConfirm.name)}
+              data-testid="confirm-delete-btn"
+            >
+              {saving ? 'Deleting...' : 'Delete'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
