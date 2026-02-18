@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { Toaster } from './components/ui/sonner';
 import ProtectedRoute from './components/ProtectedRoute';
+import RoleProtectedRoute from './components/RoleProtectedRoute';
 import Layout from './components/Layout/Layout';
 
 import LoginPage from './pages/LoginPage';
@@ -44,28 +45,33 @@ function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
+              {/* ── Routes accessible by ALL authenticated users ── */}
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/applications" element={<ApplicationsPage />} />
               <Route path="/applications/new" element={<NewApplicationPage />} />
-              <Route path="/sponsors" element={<SponsorsPage />} />
-              <Route path="/bbbee" element={<BBBEEPage />} />
-              <Route path="/projects" element={<ProjectsPage />} />
-              <Route path="/tasks" element={<TasksPage />} />
-              <Route path="/leads" element={<LeadsPage />} />
-              <Route path="/prospects" element={<ProspectsPage />} />
-              <Route path="/meetings" element={<MeetingsPage />} />
+              <Route path="/profile" element={<UserProfilePage />} />
+              <Route path="/help" element={<HelpPage />} />
               <Route path="/notes" element={<NotesPage />} />
               <Route path="/messages" element={<MessagesPage />} />
-              <Route path="/team" element={<TeamPage />} />
-              <Route path="/tickets" element={<TicketsPage />} />
-              <Route path="/expenses" element={<ExpensesPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
               <Route path="/files" element={<FilesPage />} />
-              <Route path="/help" element={<HelpPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/users" element={<UsersPage />} />
-              <Route path="/profile" element={<UserProfilePage />} />
               <Route path="/events" element={<EventsPage />} />
+              <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/tickets" element={<TicketsPage />} />
+              <Route path="/meetings" element={<MeetingsPage />} />
+              <Route path="/team" element={<TeamPage />} />
+
+              {/* ── Admin-only routes ── */}
+              <Route element={<RoleProtectedRoute requiredRole="admin" />}>
+                <Route path="/sponsors" element={<SponsorsPage />} />
+                <Route path="/bbbee" element={<BBBEEPage />} />
+                <Route path="/projects" element={<ProjectsPage />} />
+                <Route path="/leads" element={<LeadsPage />} />
+                <Route path="/prospects" element={<ProspectsPage />} />
+                <Route path="/expenses" element={<ExpensesPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/users" element={<UsersPage />} />
+              </Route>
             </Route>
           </Route>
         </Routes>
