@@ -269,7 +269,7 @@ const Layout = () => {
               <img 
                 src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/576jxjw8_HeCFT4bk_400x400.jpg" 
                 alt="Sentech Logo" 
-                className="w-8 h-8 rounded-md object-contain bg-slate-900 p-0.5"
+                className="w-8 h-8 rounded-md object-contain"
               />
               <span className="font-heading font-bold text-slate-900">Sentech</span>
             </div>
