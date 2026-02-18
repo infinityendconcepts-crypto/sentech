@@ -30,6 +30,7 @@ import HelpPage from './pages/HelpPage';
 import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
 import UserProfilePage from './pages/UserProfilePage';
+import EventsPage from './pages/EventsPage';
 
 function App() {
   return (
