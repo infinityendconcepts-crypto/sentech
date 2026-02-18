@@ -86,21 +86,6 @@ const LoginPage = () => {
     }
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const response = await authAPI.register(registerData);
-      login(response.data.access_token, response.data.user);
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8 items-center">
