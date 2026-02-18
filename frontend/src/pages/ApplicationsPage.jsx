@@ -132,6 +132,23 @@ const ApplicationsPage = () => {
     }
   };
 
+  const handleContinueApplication = async (application) => {
+    setContinuingApplication(application.id);
+    try {
+      // Change status from draft to pending when continuing
+      await applicationsAPI.update(application.id, { 
+        status: 'pending',
+        status_updated_at: new Date().toISOString()
+      });
+      toast.success('Application status changed to pending');
+      // Navigate to the edit page
+      navigate(`/applications/${application.id}/edit`);
+    } catch (error) {
+      toast.error('Failed to update application status');
+      setContinuingApplication(null);
+    }
+  };
+
   const getSummarySection = (title, data) => {
     if (!data || typeof data !== 'object') return null;
     const entries = Object.entries(data).filter(([key, value]) => value && value !== '');
