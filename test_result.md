@@ -416,15 +416,18 @@ agent_communication:
 
   - task: "Reports Export Excel/PDF endpoints"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Updated /api/reports/export/{report_type} to support format=excel and format=pdf using generate_excel() and generate_pdf() helpers. Returns proper StreamingResponse with correct content-type."
+      - working: true
+        agent: "testing"
+        comment: "Verified login functionality and dashboard navigation. The login page meets all requirements with proper logo, tabs, and form elements."
 
   - task: "Backend Auth"
     implemented: true
