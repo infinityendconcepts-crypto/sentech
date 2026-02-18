@@ -246,6 +246,32 @@ const LeadsPage = () => {
 
   const activeLead = activeId ? allLeads.find(l => l.id === activeId) : null;
 
+  const handleCreateLead = async () => {
+    if (!leadForm.name.trim()) { toast.error('Name is required'); return; }
+    setSavingLead(true);
+    try {
+      await leadsAPI.create(leadForm);
+      toast.success('Lead created successfully');
+      setShowAddDialog(false);
+      setLeadForm(emptyLead);
+      fetchLeads();
+    } catch {
+      toast.error('Failed to create lead');
+    } finally {
+      setSavingLead(false);
+    }
+  };
+
+  const handleDeleteLead = async (leadId) => {
+    try {
+      await leadsAPI.delete(leadId);
+      setLeads(prev => prev.filter(l => l.id !== leadId));
+      toast.success('Lead deleted');
+    } catch {
+      toast.error('Failed to delete lead');
+    }
+  };
+
   const handleStatusChange = async (leadId, newStatus) => {
     try {
       await leadsAPI.update(leadId, { status: newStatus });
