@@ -19,7 +19,7 @@ import { usersAPI } from '../services/api';
 import {
   Users, Search, Plus, MoreVertical, Shield, ShieldOff,
   Trash2, UserCog, Mail, Phone, Building2, CheckCircle,
-  XCircle, Clock, UserCheck, AlertCircle,
+  XCircle, Clock, UserCheck, AlertCircle, Eye, EyeOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
