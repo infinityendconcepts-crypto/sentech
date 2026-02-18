@@ -19,13 +19,6 @@ const LoginPage = () => {
 
   const [loginData, setLoginData] = useState({ email: '', password: '' });
 
-  // OTP state
-  const [otpEmail, setOtpEmail] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpDevCode, setOtpDevCode] = useState('');
-  const [otpCountdown, setOtpCountdown] = useState(0);
-
   const handleMicrosoftLogin = async () => {
     try {
       const response = await authAPI.getMicrosoftAuthUrl();
