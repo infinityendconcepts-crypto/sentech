@@ -232,11 +232,8 @@ const Layout = () => {
                         <p className="text-xs text-slate-500 truncate">{user?.email || ''}</p>
                       </div>
                     </div>
-                    <Link to="/profile" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-primary hover:bg-slate-100 rounded-md transition-colors mb-1">
-                      <UserCircle className="w-4 h-4" />
-                      My Profile
-                    </Link>
-                    <Button                      onClick={logout}
+                    <Button
+                      onClick={logout}
                       variant="outline"
                       size="sm"
                       className="w-full justify-start gap-2"
