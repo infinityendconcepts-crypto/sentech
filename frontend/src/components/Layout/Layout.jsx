@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
+  UserCircle,
 } from 'lucide-react';
 
 const navigation = [
@@ -43,6 +44,7 @@ const navigation = [
   { name: 'Notes', href: '/notes', icon: StickyNote },
   { name: 'Messages', href: '/messages', icon: MessageSquare },
   { name: 'Team', href: '/team', icon: UsersRound },
+  { name: 'Users', href: '/users', icon: Users },
   { name: 'Tickets', href: '/tickets', icon: Ticket },
   { name: 'Expenses', href: '/expenses', icon: Receipt },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
