@@ -179,123 +179,43 @@ const LoginPage = () => {
               </TabsList>
 
               <TabsContent value="email" className="space-y-4">
-                <Tabs defaultValue="login">
-                  <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="login">Login</TabsTrigger>
-                    <TabsTrigger value="register">Register</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="login">
-                    <form onSubmit={handleLogin} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="login-email">Email</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input
-                            id="login-email"
-                            type="email"
-                            placeholder="your.email@university.edu"
-                            value={loginData.email}
-                            onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                            className="pl-10"
-                            required
-                            data-testid="login-email-input"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="login-password">Password</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input
-                            id="login-password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={loginData.password}
-                            onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                            className="pl-10"
-                            required
-                            data-testid="login-password-input"
-                          />
-                        </div>
-                      </div>
-                      <Button type="submit" className="w-full" disabled={loading} data-testid="login-submit-btn">
-                        {loading ? 'Signing in...' : 'Sign In'}
-                      </Button>
-                    </form>
-                  </TabsContent>
-
-                  <TabsContent value="register">
-                    <form onSubmit={handleRegister} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="register-name">Full Name</Label>
-                        <div className="relative">
-                          <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input
-                            id="register-name"
-                            type="text"
-                            placeholder="John Doe"
-                            value={registerData.full_name}
-                            onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
-                            className="pl-10"
-                            required
-                            data-testid="register-name-input"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="register-email">Email</Label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input
-                            id="register-email"
-                            type="email"
-                            placeholder="your.email@university.edu"
-                            value={registerData.email}
-                            onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                            className="pl-10"
-                            required
-                            data-testid="register-email-input"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="register-student-id">Student ID (Optional)</Label>
-                        <div className="relative">
-                          <KeyRound className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input
-                            id="register-student-id"
-                            type="text"
-                            placeholder="STU-2024-001"
-                            value={registerData.student_id}
-                            onChange={(e) => setRegisterData({ ...registerData, student_id: e.target.value })}
-                            className="pl-10"
-                            data-testid="register-student-id-input"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="register-password">Password</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                          <Input
-                            id="register-password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={registerData.password}
-                            onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                            className="pl-10"
-                            required
-                            data-testid="register-password-input"
-                          />
-                        </div>
-                      </div>
-                      <Button type="submit" className="w-full" disabled={loading} data-testid="register-submit-btn">
-                        {loading ? 'Creating account...' : 'Create Account'}
-                      </Button>
-                    </form>
-                  </TabsContent>
-                </Tabs>
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="your.email@university.edu"
+                        value={loginData.email}
+                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                        className="pl-10"
+                        required
+                        data-testid="login-email-input"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={loginData.password}
+                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                        className="pl-10"
+                        required
+                        data-testid="login-password-input"
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading} data-testid="login-submit-btn">
+                    {loading ? 'Signing in...' : 'Sign In'}
+                  </Button>
+                </form>
               </TabsContent>
 
               <TabsContent value="otp" className="space-y-4">
