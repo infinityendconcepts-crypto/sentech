@@ -37,6 +37,7 @@ import {
 const navigation = [
   { name: 'Dashboard',     href: '/dashboard',   icon: LayoutDashboard },
   { name: 'Applications',  href: '/applications', icon: FileText },
+  { name: 'Dev Plan',      href: '/pdp',          icon: TrendingUp },
   { name: 'Tasks',         href: '/tasks',        icon: CheckSquare },
   { name: 'Meetings',      href: '/meetings',     icon: Calendar },
   { name: 'Events',        href: '/events',       icon: CalendarDays },
