@@ -854,6 +854,52 @@ class Role(BaseModel):
     created_at: datetime = Field(default_factory=current_time)
     updated_at: datetime = Field(default_factory=current_time)
 
+# ============== PERSONAL DEVELOPMENT PLAN MODEL ==============
+class PDPEntry(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_uuid)
+    user_id: str
+    user_name: Optional[str] = None
+    learn_what: str               # What do I need to learn?
+    action_plan: str              # What will I do to achieve this?
+    resources_support: str        # What resources or support will I need?
+    success_criteria: str         # What will my success criteria be?
+    target_date: Optional[str] = None       # Target date for completion
+    review_date: Optional[str] = None       # Target date for review
+    status: str = "not_started"   # not_started | in_progress | completed | overdue
+    priority: str = "medium"      # low | medium | high
+    category: Optional[str] = None
+    notes: Optional[str] = None
+    completed_at: Optional[str] = None
+    created_at: datetime = Field(default_factory=current_time)
+    updated_at: datetime = Field(default_factory=current_time)
+
+class PDPCreate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    learn_what: str
+    action_plan: str
+    resources_support: str
+    success_criteria: str
+    target_date: Optional[str] = None
+    review_date: Optional[str] = None
+    status: Optional[str] = "not_started"
+    priority: Optional[str] = "medium"
+    category: Optional[str] = None
+    notes: Optional[str] = None
+
+class PDPUpdate(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    learn_what: Optional[str] = None
+    action_plan: Optional[str] = None
+    resources_support: Optional[str] = None
+    success_criteria: Optional[str] = None
+    target_date: Optional[str] = None
+    review_date: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    category: Optional[str] = None
+    notes: Optional[str] = None
+
 # ============== EVENT MODEL ==============
 class Event(BaseModel):
     model_config = ConfigDict(extra="ignore")
