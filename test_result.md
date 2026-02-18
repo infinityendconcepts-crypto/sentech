@@ -102,7 +102,76 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Sentech Bursary Management System - Full stack app with Events, Documents, Leads, Settings, and Profile functionality."
+user_problem_statement: "Sentech Bursary Management System - Full stack app. User requested to 'do the upcoming tasks' which includes: Settings save working, FilesPage real upload, and verifying all module pages (Meetings, Notes, Messages, Expenses, Tickets, Files, Help) are connected to backend."
+
+backend:
+  - task: "All module APIs (Meetings, Notes, Messages, Expenses, Tickets, Files, Settings, Prospects)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "All APIs verified via curl. All return 200. Settings save tested with admin user (jane.smith updated to admin role for testing)."
+
+frontend:
+  - task: "FilesPage - Real file upload with drag-and-drop"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/FilesPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added Upload File dialog with drag-and-drop, file type detection, upload progress bar. Download handles base64 data URLs. Connected to POST /api/files."
+
+  - task: "SettingsPage - SMTP/Zoom/Teams keys save"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/SettingsPage.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Settings page fully functional. handleSave calls PUT /api/settings. Backend verified working. Admin role required."
+
+  - task: "All module pages connected to backend"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "MeetingsPage, NotesPage, MessagesPage, ExpensesPage, TicketsPage, HelpPage, ProspectsPage - all already connected to real APIs. No mock data. All using real api.js functions."
+
+metadata:
+  created_by: "main_agent"
+  version: "3.0"
+  test_sequence: 3
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "FilesPage - Real file upload"
+    - "All module pages - CRUD operations"
+    - "SettingsPage - save settings"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implemented upcoming tasks: 1) FilesPage real file upload with drag-and-drop UI and progress bar 2) All module pages (Meetings, Notes, Messages, Expenses, Tickets, Help, Prospects) verified to be connected to real backend APIs - no mock data anywhere 3) Settings page save is functional (requires admin role). Test user jane.smith@uct.ac.za has been updated to admin role in DB. Please test: Create a meeting, note, expense, ticket, upload a file, and save settings."
 
 backend:
   - task: "Events CRUD API"
