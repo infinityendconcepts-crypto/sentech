@@ -1200,7 +1200,7 @@ async def change_my_password(data: dict, current_user: dict = Depends(get_curren
             raise HTTPException(status_code=400, detail="Current password is incorrect")
     await db.users.update_one(
         {"id": current_user["id"]},
-        {"$set": {"password_hash": hash_password(new_password), "updated_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"password_hash": get_password_hash(new_password), "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
     return {"message": "Password updated successfully"}
 
