@@ -62,7 +62,10 @@ const Layout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
+
+  // Filter navigation based on role
+  const visibleNav = navigation.filter(item => !item.adminOnly || isAdmin);
 
   // Handle responsive behavior
   useEffect(() => {
