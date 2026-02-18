@@ -145,12 +145,9 @@ const LoginPage = () => {
             )}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="email" data-testid="tab-email-password">
                   Email/Password
-                </TabsTrigger>
-                <TabsTrigger value="otp" data-testid="tab-email-otp">
-                  Email OTP
                 </TabsTrigger>
                 <TabsTrigger value="microsoft" data-testid="tab-microsoft">
                   Microsoft
