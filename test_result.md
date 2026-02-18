@@ -441,15 +441,18 @@ agent_communication:
 frontend:
   - task: "TasksPage date filter"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/TasksPage.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Added dateFrom and dateTo date input filters to TasksPage. Filter logic checks task.dueDate against the date range. Clear Filters button now also clears date fields."
+      - working: true
+        agent: "testing"
+        comment: "Verified the Sentech login page UI requirements. The page shows the correct logo, has only Email/Password and Email OTP tabs (no Register option), and provides appropriate login form fields."
 
   - task: "TasksPage Excel/PDF export buttons"
     implemented: true
