@@ -150,11 +150,11 @@ const Layout = () => {
             <div className={`flex items-center h-16 border-b border-slate-200 ${
               sidebarCollapsed && !isMobile ? 'justify-center px-3' : 'justify-between px-6'
             }`}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <img 
                   src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/fmq5cwyv_Sentech-logo-e1709490002242-2.png" 
                   alt="Sentech Logo" 
-                  className={`rounded-lg ${sidebarCollapsed && !isMobile ? 'w-10 h-10' : 'w-10 h-10'}`}
+                  className={`rounded-md object-contain bg-slate-900 ${sidebarCollapsed && !isMobile ? 'w-9 h-9 p-0.5' : 'w-9 h-9 p-0.5'}`}
                 />
                 {(!sidebarCollapsed || isMobile) && (
                   <span className="font-heading font-bold text-lg text-slate-900">Sentech</span>
