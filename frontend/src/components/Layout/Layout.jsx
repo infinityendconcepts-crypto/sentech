@@ -30,6 +30,7 @@ import {
   ChevronRight,
   Menu,
   UserCircle,
+  TrendingUp,
 } from 'lucide-react';
 
 // adminOnly: true = visible only to admins
