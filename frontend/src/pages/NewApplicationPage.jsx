@@ -69,7 +69,7 @@ const NewApplicationPage = () => {
   useEffect(() => {
     if (isEditing) {
       setLoadingApplication(true);
-      applicationsAPI.getById(id)
+      applicationsAPI.getOne(id)
         .then(response => {
           const app = response.data;
           setFormData({
