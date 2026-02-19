@@ -559,6 +559,39 @@ const PDPPage = () => {
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
+                  {/* User Selection - Admin Only */}
+                  {isAdmin && (
+                    <div className="col-span-2">
+                      <Label className="text-xs text-slate-500 uppercase tracking-wide">Assign To User *</Label>
+                      <Select 
+                        value={form.assigned_to} 
+                        onValueChange={v => {
+                          const selectedUser = users.find(u => u.id === v);
+                          setForm(f => ({ 
+                            ...f, 
+                            assigned_to: v,
+                            assigned_to_name: selectedUser?.full_name || selectedUser?.email || '',
+                            assigned_to_email: selectedUser?.email || ''
+                          }));
+                        }}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select a user" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {users.map(u => (
+                            <SelectItem key={u.id} value={u.id}>
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-slate-400" />
+                                <span>{u.full_name || u.email}</span>
+                                {u.full_name && <span className="text-slate-400 text-xs">({u.email})</span>}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div>
                     <Label className="text-xs text-slate-500 uppercase tracking-wide">Review Date</Label>
                     <Input type="date" className="mt-1" value={form.review_date} onChange={e => setForm(f => ({ ...f, review_date: e.target.value }))} />
