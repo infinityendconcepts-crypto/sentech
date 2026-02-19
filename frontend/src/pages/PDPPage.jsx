@@ -26,7 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { pdpAPI } from '../services/api';
+import { pdpAPI, usersAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import {
@@ -49,6 +49,7 @@ import {
   Circle,
   Eye,
   X,
+  User,
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
