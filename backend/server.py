@@ -879,6 +879,9 @@ class PDPEntry(BaseModel):
     priority: str = "medium"      # low | medium | high
     category: Optional[str] = None
     notes: Optional[str] = None
+    assigned_to: Optional[str] = None       # User ID of assigned person
+    assigned_to_name: Optional[str] = None  # Name of assigned person
+    assigned_to_email: Optional[str] = None # Email of assigned person
     completed_at: Optional[str] = None
     created_at: datetime = Field(default_factory=current_time)
     updated_at: datetime = Field(default_factory=current_time)
@@ -895,6 +898,9 @@ class PDPCreate(BaseModel):
     priority: Optional[str] = "medium"
     category: Optional[str] = None
     notes: Optional[str] = None
+    assigned_to: Optional[str] = None
+    assigned_to_name: Optional[str] = None
+    assigned_to_email: Optional[str] = None
 
 class PDPUpdate(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -908,6 +914,9 @@ class PDPUpdate(BaseModel):
     priority: Optional[str] = None
     category: Optional[str] = None
     notes: Optional[str] = None
+    assigned_to: Optional[str] = None
+    assigned_to_name: Optional[str] = None
+    assigned_to_email: Optional[str] = None
 
 # ============== EVENT MODEL ==============
 class Event(BaseModel):
