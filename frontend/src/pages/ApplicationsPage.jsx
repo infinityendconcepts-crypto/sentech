@@ -287,18 +287,6 @@ const ApplicationsPage = () => {
                         View Details
                       </Button>
                     </Link>
-                    {application.status === 'draft' && (
-                      <Button 
-                        size="sm" 
-                        className="gap-2"
-                        onClick={() => handleContinueApplication(application)}
-                        disabled={continuingApplication === application.id}
-                        data-testid={`continue-application-${application.id}`}
-                      >
-                        <Edit className="w-4 h-4" />
-                        {continuingApplication === application.id ? 'Loading...' : 'Continue'}
-                      </Button>
-                    )}
                   </div>
                 </div>
               </CardContent>
