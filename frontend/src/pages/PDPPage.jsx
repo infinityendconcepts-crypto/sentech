@@ -176,13 +176,21 @@ const PDPPage = () => {
     if (!form.action_plan.trim()) { toast.error('Please fill in your action plan'); return; }
     if (!form.resources_support.trim()) { toast.error('Please fill in resources & support needed'); return; }
     if (!form.success_criteria.trim()) { toast.error('Please fill in your success criteria'); return; }
+    if (isAdmin && !form.assigned_to) { toast.error('Please select a user to assign this goal to'); return; }
     setSaving(true);
     try {
+      const payload = {
+        ...form,
+        // If not admin, assign to self
+        assigned_to: isAdmin ? form.assigned_to : user?.id,
+        assigned_to_name: isAdmin ? form.assigned_to_name : (user?.full_name || user?.email),
+        assigned_to_email: isAdmin ? form.assigned_to_email : user?.email,
+      };
       if (editingEntry) {
-        await pdpAPI.update(editingEntry.id, form);
+        await pdpAPI.update(editingEntry.id, payload);
         toast.success('Entry updated successfully');
       } else {
-        await pdpAPI.create(form);
+        await pdpAPI.create(payload);
         toast.success('Development plan entry added');
       }
       setShowDialog(false);
