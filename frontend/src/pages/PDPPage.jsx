@@ -218,6 +218,7 @@ const PDPPage = () => {
   const filtered = entries.filter(e => {
     if (filterStatus !== 'all' && e.status !== filterStatus) return false;
     if (filterPriority !== 'all' && e.priority !== filterPriority) return false;
+    if (filterUser !== 'all' && e.assigned_to !== filterUser) return false;
     if (search && !e.learn_what.toLowerCase().includes(search.toLowerCase()) &&
         !e.action_plan.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
