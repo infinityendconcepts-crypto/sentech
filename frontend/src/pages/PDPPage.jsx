@@ -360,6 +360,14 @@ const PDPPage = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
+                  {isAdmin && (
+                    <th className="px-4 py-3 text-left font-semibold text-slate-700 min-w-[150px]">
+                      <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-indigo-50 w-fit">
+                        <User className="w-4 h-4 text-indigo-600" />
+                        <span className="text-xs text-indigo-600">Assigned To</span>
+                      </div>
+                    </th>
+                  )}
                   {COLUMN_HEADERS.map(col => (
                     <th key={col.key} className="px-4 py-3 text-left font-semibold text-slate-700 min-w-[200px]">
                       <div className={`flex items-center gap-2 px-2 py-1 rounded-lg ${col.bg} w-fit`}>
