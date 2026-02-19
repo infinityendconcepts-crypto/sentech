@@ -479,6 +479,8 @@ class Task(BaseModel):
     tags: List[str] = []
     progress: int = 0
     attendance: List[Dict[str, Any]] = []  # Training module attendance records
+    comments: List[Dict[str, Any]] = []  # Training module comments
+    images: List[Dict[str, Any]] = []  # Training module images
     created_at: datetime = Field(default_factory=current_time)
     updated_at: datetime = Field(default_factory=current_time)
 
@@ -496,6 +498,8 @@ class TaskCreate(BaseModel):
     project_name: Optional[str] = None
     tags: List[str] = []
     attendance: List[Dict[str, Any]] = []
+    comments: List[Dict[str, Any]] = []
+    images: List[Dict[str, Any]] = []
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -509,6 +513,8 @@ class TaskUpdate(BaseModel):
     tags: Optional[List[str]] = None
     progress: Optional[int] = None
     attendance: Optional[List[Dict[str, Any]]] = None
+    comments: Optional[List[Dict[str, Any]]] = None
+    images: Optional[List[Dict[str, Any]]] = None
 
 class Project(BaseModel):
     model_config = ConfigDict(extra="ignore")
