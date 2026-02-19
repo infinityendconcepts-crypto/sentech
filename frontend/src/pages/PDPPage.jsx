@@ -159,6 +159,8 @@ const PDPPage = () => {
       priority: entry.priority || 'medium',
       category: entry.category || '',
       notes: entry.notes || '',
+      assigned_to: entry.assigned_to || '',
+      assigned_to_name: entry.assigned_to_name || '',
     });
     setActiveStep(0);
     setShowDialog(true);
