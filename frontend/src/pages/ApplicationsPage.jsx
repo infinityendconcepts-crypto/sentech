@@ -268,6 +268,14 @@ const ApplicationsPage = () => {
                         View Details
                       </Button>
                     </Link>
+                    {!isAdmin && (application.status === 'draft' || application.status === 'pending') && (
+                      <Link to={`/applications/${application.id}/edit`}>
+                        <Button size="sm" className="gap-2" data-testid={`edit-application-${application.id}`}>
+                          <Edit className="w-4 h-4" />
+                          Edit
+                        </Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               </CardContent>
