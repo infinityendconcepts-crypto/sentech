@@ -31,7 +31,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { 
   Plus, 
   Search,
-  CheckCircle2,
   Clock,
   User,
   Calendar,
@@ -45,13 +44,17 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
-  Users,
   ClipboardCheck,
   CalendarDays,
   GraduationCap,
+  MessageSquare,
+  Image,
+  Send,
+  Edit,
+  Trash2,
+  Upload,
 } from 'lucide-react';
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, useDroppable, useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 
 // Draggable Training Module Card Component
@@ -74,6 +77,8 @@ const DraggableModuleCard = ({ module }) => {
   };
 
   const attendanceCount = module.attendance?.length || 0;
+  const commentsCount = module.comments?.length || 0;
+  const imagesCount = module.images?.length || 0;
 
   return (
     <Card
@@ -97,9 +102,19 @@ const DraggableModuleCard = ({ module }) => {
             <Calendar className="w-3 h-3" />
             {(module.due_date || module.dueDate) ? new Date(module.due_date || module.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'}
           </div>
-          <div className="flex items-center gap-2 text-xs text-emerald-600">
-            <ClipboardCheck className="w-3 h-3" />
-            {attendanceCount} attendance record{attendanceCount !== 1 ? 's' : ''}
+          <div className="flex items-center gap-4 text-xs">
+            <span className="flex items-center gap-1 text-emerald-600">
+              <ClipboardCheck className="w-3 h-3" />
+              {attendanceCount}
+            </span>
+            <span className="flex items-center gap-1 text-blue-600">
+              <MessageSquare className="w-3 h-3" />
+              {commentsCount}
+            </span>
+            <span className="flex items-center gap-1 text-purple-600">
+              <Image className="w-3 h-3" />
+              {imagesCount}
+            </span>
           </div>
           {module.status === 'in_progress' && (
             <div className="pt-2">
@@ -161,7 +176,7 @@ const DroppableColumn = ({ id, title, count, children }) => {
 };
 
 const TrainingTrackPage = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState('list');
@@ -201,6 +216,20 @@ const TrainingTrackPage = () => {
   });
   const [savingAttendance, setSavingAttendance] = useState(false);
 
+  // Edit Module Dialog State (Admin only)
+  const [editModuleDialog, setEditModuleDialog] = useState(false);
+  const [editingModule, setEditingModule] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Comments Dialog State
+  const [commentsDialog, setCommentsDialog] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [savingComment, setSavingComment] = useState(false);
+
+  // Images Dialog State
+  const [imagesDialog, setImagesDialog] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -217,12 +246,13 @@ const TrainingTrackPage = () => {
     setLoading(true);
     try {
       const response = await tasksAPI.getAll();
-      // Initialize attendance array if not present
-      const modulesWithAttendance = response.data.map(m => ({
+      const modulesWithDefaults = response.data.map(m => ({
         ...m,
-        attendance: m.attendance || []
+        attendance: m.attendance || [],
+        comments: m.comments || [],
+        images: m.images || []
       }));
-      setModules(modulesWithAttendance);
+      setModules(modulesWithDefaults);
     } catch (error) {
       console.error('Failed to fetch training modules:', error);
       toast.error('Failed to load training modules');
@@ -249,6 +279,8 @@ const TrainingTrackPage = () => {
         tags: newModule.tags ? newModule.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         progress: parseInt(newModule.progress) || 0,
         attendance: [],
+        comments: [],
+        images: [],
       };
       await tasksAPI.create(moduleData);
       toast.success('Training module created successfully');
@@ -279,6 +311,46 @@ const TrainingTrackPage = () => {
       fetchModules();
     } catch (error) {
       toast.error('Failed to update training module');
+    }
+  };
+
+  // Edit Module functions (Admin only)
+  const openEditDialog = (module) => {
+    setEditingModule({
+      ...module,
+      due_date: module.due_date ? module.due_date.split('T')[0] : '',
+      tags: (module.tags || []).join(', '),
+    });
+    setEditModuleDialog(true);
+  };
+
+  const handleUpdateModule = async () => {
+    if (!editingModule.title.trim()) {
+      toast.error('Training module title is required');
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const updateData = {
+        title: editingModule.title,
+        description: editingModule.description || null,
+        status: editingModule.status,
+        priority: editingModule.priority,
+        assignee_name: editingModule.assignee_name || null,
+        due_date: editingModule.due_date ? new Date(editingModule.due_date).toISOString() : null,
+        project_name: editingModule.project_name || null,
+        tags: editingModule.tags ? editingModule.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        progress: parseInt(editingModule.progress) || 0,
+      };
+      await tasksAPI.update(editingModule.id, updateData);
+      toast.success('Training module updated successfully');
+      setEditModuleDialog(false);
+      setEditingModule(null);
+      fetchModules();
+    } catch (error) {
+      toast.error('Failed to update training module');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -330,61 +402,150 @@ const TrainingTrackPage = () => {
     }
   };
 
+  // Comments functions
+  const openCommentsDialog = (module) => {
+    setSelectedModule(module);
+    setNewComment('');
+    setCommentsDialog(true);
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) {
+      toast.error('Comment cannot be empty');
+      return;
+    }
+    setSavingComment(true);
+    try {
+      const comment = {
+        id: `cmt_${Date.now()}`,
+        text: newComment.trim(),
+        author: user?.full_name || user?.email || 'Unknown',
+        author_id: user?.id,
+        created_at: new Date().toISOString(),
+      };
+      
+      const updatedComments = [...(selectedModule.comments || []), comment];
+      await tasksAPI.update(selectedModule.id, { comments: updatedComments });
+      
+      toast.success('Comment added successfully');
+      setNewComment('');
+      // Update local state
+      setSelectedModule(prev => ({ ...prev, comments: updatedComments }));
+      fetchModules();
+    } catch (error) {
+      toast.error('Failed to add comment');
+    } finally {
+      setSavingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      const updatedComments = (selectedModule.comments || []).filter(c => c.id !== commentId);
+      await tasksAPI.update(selectedModule.id, { comments: updatedComments });
+      toast.success('Comment deleted');
+      setSelectedModule(prev => ({ ...prev, comments: updatedComments }));
+      fetchModules();
+    } catch (error) {
+      toast.error('Failed to delete comment');
+    }
+  };
+
+  // Images functions
+  const openImagesDialog = (module) => {
+    setSelectedModule(module);
+    setImagesDialog(true);
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const imageData = {
+          id: `img_${Date.now()}`,
+          name: file.name,
+          data: event.target.result,
+          uploaded_by: user?.full_name || user?.email || 'Unknown',
+          uploaded_at: new Date().toISOString(),
+        };
+        
+        const updatedImages = [...(selectedModule.images || []), imageData];
+        await tasksAPI.update(selectedModule.id, { images: updatedImages });
+        
+        toast.success('Image uploaded successfully');
+        setSelectedModule(prev => ({ ...prev, images: updatedImages }));
+        fetchModules();
+        setUploadingImage(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      toast.error('Failed to upload image');
+      setUploadingImage(false);
+    }
+  };
+
+  const handleDeleteImage = async (imageId) => {
+    try {
+      const updatedImages = (selectedModule.images || []).filter(img => img.id !== imageId);
+      await tasksAPI.update(selectedModule.id, { images: updatedImages });
+      toast.success('Image deleted');
+      setSelectedModule(prev => ({ ...prev, images: updatedImages }));
+      fetchModules();
+    } catch (error) {
+      toast.error('Failed to delete image');
+    }
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'high':
-        return 'bg-rose-100 text-rose-700 border-rose-200';
-      case 'medium':
-        return 'bg-amber-100 text-amber-700 border-amber-200';
-      case 'low':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'high': return 'bg-rose-100 text-rose-700 border-rose-200';
+      case 'medium': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'low': return 'bg-blue-100 text-blue-700 border-blue-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed':
-        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'todo':
-        return 'bg-slate-100 text-slate-700 border-slate-200';
-      case 'blocked':
-        return 'bg-rose-100 text-rose-700 border-rose-200';
-      default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'completed': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'in_progress': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'todo': return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'blocked': return 'bg-rose-100 text-rose-700 border-rose-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'in_progress':
-        return <Clock className="w-4 h-4" />;
-      case 'todo':
-        return <Circle className="w-4 h-4" />;
-      case 'blocked':
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <Circle className="w-4 h-4" />;
+      case 'completed': return <CheckCircle className="w-4 h-4" />;
+      case 'in_progress': return <Clock className="w-4 h-4" />;
+      case 'todo': return <Circle className="w-4 h-4" />;
+      case 'blocked': return <XCircle className="w-4 h-4" />;
+      default: return <Circle className="w-4 h-4" />;
     }
   };
 
   const getAttendanceStatusColor = (status) => {
     switch (status) {
-      case 'present':
-        return 'bg-emerald-100 text-emerald-700';
-      case 'absent':
-        return 'bg-rose-100 text-rose-700';
-      case 'late':
-        return 'bg-amber-100 text-amber-700';
-      case 'excused':
-        return 'bg-blue-100 text-blue-700';
-      default:
-        return 'bg-slate-100 text-slate-700';
+      case 'present': return 'bg-emerald-100 text-emerald-700';
+      case 'absent': return 'bg-rose-100 text-rose-700';
+      case 'late': return 'bg-amber-100 text-amber-700';
+      case 'excused': return 'bg-blue-100 text-blue-700';
+      default: return 'bg-slate-100 text-slate-700';
     }
   };
 
@@ -429,7 +590,6 @@ const TrainingTrackPage = () => {
       toast.success(`Training modules exported as ${format.toUpperCase()} successfully`);
     } catch (error) {
       toast.error('Export failed. Please try again.');
-      console.error('Export error:', error);
     } finally {
       setExporting(false);
     }
@@ -441,16 +601,6 @@ const TrainingTrackPage = () => {
     { id: 'blocked', title: 'Blocked', status: 'blocked' },
     { id: 'completed', title: 'Completed', status: 'completed' }
   ];
-
-  // Gantt chart helper - calculate position
-  const getGanttPosition = (startDate, dueDate) => {
-    const start = new Date(startDate);
-    const end = new Date(dueDate);
-    const today = new Date('2026-01-01');
-    const daysSinceStart = Math.floor((start - today) / (1000 * 60 * 60 * 24));
-    const duration = Math.floor((end - start) / (1000 * 60 * 60 * 24));
-    return { left: daysSinceStart * 40, width: duration * 40 };
-  };
 
   const activeModule = activeId ? modules.find(t => t.id === activeId) : null;
 
@@ -654,25 +804,47 @@ const TrainingTrackPage = () => {
                         </div>
                       </div>
                       
+                      {/* Quick Actions Row */}
+                      <div className="ml-7 flex items-center gap-2 mb-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 text-xs"
+                          onClick={() => openCommentsDialog(module)}
+                          data-testid={`comments-btn-${module.id}`}
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          Comments ({module.comments?.length || 0})
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 text-xs"
+                          onClick={() => openImagesDialog(module)}
+                          data-testid={`images-btn-${module.id}`}
+                        >
+                          <Image className="w-3 h-3" />
+                          Images ({module.images?.length || 0})
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-1 text-xs"
+                          onClick={() => openAttendanceDialog(module)}
+                          data-testid={`mark-attendance-${module.id}`}
+                        >
+                          <ClipboardCheck className="w-3 h-3" />
+                          Attendance ({module.attendance?.length || 0})
+                        </Button>
+                      </div>
+                      
                       {/* Attendance Section */}
-                      <div className="ml-7 mt-4 p-4 bg-slate-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                      {module.attendance && module.attendance.length > 0 && (
+                        <div className="ml-7 mt-4 p-4 bg-slate-50 rounded-lg">
+                          <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
                             <ClipboardCheck className="w-4 h-4" />
-                            Attendance Records ({module.attendance?.length || 0})
+                            Recent Attendance
                           </h4>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1"
-                            onClick={() => openAttendanceDialog(module)}
-                            data-testid={`mark-attendance-${module.id}`}
-                          >
-                            <Plus className="w-3 h-3" />
-                            Mark Attendance
-                          </Button>
-                        </div>
-                        {module.attendance && module.attendance.length > 0 ? (
                           <div className="space-y-2">
                             {module.attendance.slice(-3).map((att, idx) => (
                               <div key={att.id || idx} className="flex items-center justify-between text-sm bg-white p-2 rounded border border-slate-200">
@@ -681,24 +853,14 @@ const TrainingTrackPage = () => {
                                   <span className="font-medium">{att.date}</span>
                                   <span className="text-slate-500">{att.time_in} - {att.time_out || 'Ongoing'}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge className={`${getAttendanceStatusColor(att.status)} text-xs`}>
-                                    {att.status}
-                                  </Badge>
-                                  {att.notes && (
-                                    <span className="text-xs text-slate-500 max-w-[150px] truncate">{att.notes}</span>
-                                  )}
-                                </div>
+                                <Badge className={`${getAttendanceStatusColor(att.status)} text-xs`}>
+                                  {att.status}
+                                </Badge>
                               </div>
                             ))}
-                            {module.attendance.length > 3 && (
-                              <p className="text-xs text-slate-500 text-center">+ {module.attendance.length - 3} more records</p>
-                            )}
                           </div>
-                        ) : (
-                          <p className="text-sm text-slate-500">No attendance records yet</p>
-                        )}
-                      </div>
+                        </div>
+                      )}
 
                       {module.status === 'in_progress' && (
                         <div className="ml-7 mt-3">
@@ -722,6 +884,20 @@ const TrainingTrackPage = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {isAdmin && (
+                          <DropdownMenuItem onClick={() => openEditDialog(module)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit Module
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => openCommentsDialog(module)}>
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Comments
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openImagesDialog(module)}>
+                          <Image className="w-4 h-4 mr-2" />
+                          Images
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openAttendanceDialog(module)}>
                           <ClipboardCheck className="w-4 h-4 mr-2" />
                           Mark Attendance
@@ -734,18 +910,16 @@ const TrainingTrackPage = () => {
                           <Clock className="w-4 h-4 mr-2" />
                           Mark as In Progress
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(module.id, 'blocked')}>
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Mark as Blocked
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleStatusChange(module.id, 'completed')}>
                           <CheckCircle className="w-4 h-4 mr-2" />
                           Mark as Completed
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDeleteModule(module.id)} className="text-red-600">
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Delete Module
-                        </DropdownMenuItem>
+                        {isAdmin && (
+                          <DropdownMenuItem onClick={() => handleDeleteModule(module.id)} className="text-red-600">
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete Module
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -782,7 +956,6 @@ const TrainingTrackPage = () => {
             <CardContent className="p-6">
               <div className="overflow-x-auto">
                 <div className="min-w-[1200px]">
-                  {/* Gantt Header */}
                   <div className="flex border-b border-slate-200 pb-2 mb-4">
                     <div className="w-64 font-semibold text-sm text-slate-700">Training Module</div>
                     <div className="flex-1 grid grid-cols-12 gap-1 text-xs text-slate-600 text-center">
@@ -791,13 +964,8 @@ const TrainingTrackPage = () => {
                       ))}
                     </div>
                   </div>
-
-                  {/* Gantt Rows */}
                   <div className="space-y-3">
                     {filteredModules.map(module => {
-                      const startDate = module.start_date || module.startDate;
-                      const dueDate = module.due_date || module.dueDate;
-                      const position = getGanttPosition(startDate, dueDate);
                       const assignee = module.assignee_name || module.assignee || '';
                       return (
                         <div key={module.id} className="flex items-center" data-testid={`gantt-module-${module.id}`}>
@@ -805,7 +973,7 @@ const TrainingTrackPage = () => {
                             <div className="text-sm font-medium text-slate-900 truncate">{module.title}</div>
                             <div className="text-xs text-slate-600 flex items-center gap-2 mt-1">
                               <User className="w-3 h-3" />
-                              {assignee.split(' ')[0]}
+                              {assignee.split(' ')[0] || 'Unassigned'}
                             </div>
                           </div>
                           <div className="flex-1 relative h-10">
@@ -816,7 +984,7 @@ const TrainingTrackPage = () => {
                             </div>
                             <div
                               className={`absolute top-2 h-6 rounded ${getPriorityColor(module.priority)} flex items-center px-2 text-xs font-medium`}
-                              style={{ left: `${position.left}px`, width: `${Math.max(position.width, 60)}px` }}
+                              style={{ left: '10%', width: '30%' }}
                             >
                               <span className="truncate">{module.progress || 0}%</span>
                             </div>
@@ -897,16 +1065,9 @@ const TrainingTrackPage = () => {
                   type="date"
                   value={newModule.due_date}
                   onChange={(e) => setNewModule({ ...newModule, due_date: e.target.value })}
+                  data-testid="new-module-due-date"
                 />
               </div>
-            </div>
-            <div>
-              <Label>Project</Label>
-              <Input
-                placeholder="Project name"
-                value={newModule.project_name}
-                onChange={(e) => setNewModule({ ...newModule, project_name: e.target.value })}
-              />
             </div>
             <div>
               <Label>Tags (comma separated)</Label>
@@ -921,6 +1082,118 @@ const TrainingTrackPage = () => {
             <Button variant="outline" onClick={() => setAddModuleDialog(false)}>Cancel</Button>
             <Button onClick={handleCreateModule} disabled={savingModule} data-testid="save-module-btn">
               {savingModule ? 'Creating...' : 'Create Module'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Module Dialog (Admin Only) */}
+      <Dialog open={editModuleDialog} onOpenChange={setEditModuleDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5 text-primary" />
+              Edit Training Module
+            </DialogTitle>
+          </DialogHeader>
+          {editingModule && (
+            <div className="space-y-4 py-2">
+              <div>
+                <Label>Title *</Label>
+                <Input
+                  placeholder="Training module title"
+                  value={editingModule.title}
+                  onChange={(e) => setEditingModule({ ...editingModule, title: e.target.value })}
+                  data-testid="edit-module-title"
+                />
+              </div>
+              <div>
+                <Label>Description</Label>
+                <Textarea
+                  placeholder="Describe the training module..."
+                  value={editingModule.description || ''}
+                  onChange={(e) => setEditingModule({ ...editingModule, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Status</Label>
+                  <Select value={editingModule.status} onValueChange={(v) => setEditingModule({ ...editingModule, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todo">To Do</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="blocked">Blocked</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Priority</Label>
+                  <Select value={editingModule.priority} onValueChange={(v) => setEditingModule({ ...editingModule, priority: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Assignee</Label>
+                  <Input
+                    placeholder="Assignee name"
+                    value={editingModule.assignee_name || ''}
+                    onChange={(e) => setEditingModule({ ...editingModule, assignee_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Due Date</Label>
+                  <Input
+                    type="date"
+                    value={editingModule.due_date || ''}
+                    onChange={(e) => setEditingModule({ ...editingModule, due_date: e.target.value })}
+                    data-testid="edit-module-due-date"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Progress (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={editingModule.progress || 0}
+                    onChange={(e) => setEditingModule({ ...editingModule, progress: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Project</Label>
+                  <Input
+                    placeholder="Project name"
+                    value={editingModule.project_name || ''}
+                    onChange={(e) => setEditingModule({ ...editingModule, project_name: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Tags (comma separated)</Label>
+                <Input
+                  placeholder="e.g. urgent, review, compliance"
+                  value={editingModule.tags || ''}
+                  onChange={(e) => setEditingModule({ ...editingModule, tags: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditModuleDialog(false)}>Cancel</Button>
+            <Button onClick={handleUpdateModule} disabled={savingEdit} data-testid="update-module-btn">
+              {savingEdit ? 'Updating...' : 'Update Module'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1007,6 +1280,158 @@ const TrainingTrackPage = () => {
               {savingAttendance ? 'Saving...' : 'Save Attendance'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Comments Dialog */}
+      <Dialog open={commentsDialog} onOpenChange={setCommentsDialog}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-primary" />
+              Comments
+            </DialogTitle>
+          </DialogHeader>
+          {selectedModule && (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <div className="bg-slate-50 p-3 rounded-lg mb-4">
+                <p className="text-sm text-slate-600">Training Module:</p>
+                <p className="font-semibold text-slate-900">{selectedModule.title}</p>
+              </div>
+              
+              {/* Comments List */}
+              <div className="flex-1 overflow-y-auto space-y-3 mb-4 max-h-[300px]">
+                {(selectedModule.comments || []).length === 0 ? (
+                  <div className="text-center py-8 text-slate-500">
+                    <MessageSquare className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                    <p>No comments yet</p>
+                  </div>
+                ) : (
+                  (selectedModule.comments || []).map(comment => (
+                    <div key={comment.id} className="bg-white border border-slate-200 rounded-lg p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm text-slate-900">{comment.author}</span>
+                            <span className="text-xs text-slate-500">
+                              {new Date(comment.created_at).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-700">{comment.text}</p>
+                        </div>
+                        {(isAdmin || comment.author_id === user?.id) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => handleDeleteComment(comment.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Add Comment */}
+              <div className="flex gap-2">
+                <Textarea
+                  placeholder="Write a comment..."
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  rows={2}
+                  className="flex-1"
+                  data-testid="new-comment-input"
+                />
+                <Button 
+                  onClick={handleAddComment} 
+                  disabled={savingComment || !newComment.trim()}
+                  data-testid="add-comment-btn"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Images Dialog */}
+      <Dialog open={imagesDialog} onOpenChange={setImagesDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Image className="w-5 h-5 text-primary" />
+              Images
+            </DialogTitle>
+          </DialogHeader>
+          {selectedModule && (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <div className="bg-slate-50 p-3 rounded-lg mb-4">
+                <p className="text-sm text-slate-600">Training Module:</p>
+                <p className="font-semibold text-slate-900">{selectedModule.title}</p>
+              </div>
+              
+              {/* Upload Button */}
+              <div className="mb-4">
+                <Label htmlFor="image-upload" className="cursor-pointer">
+                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-primary transition-colors">
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+                    <p className="text-sm text-slate-600">
+                      {uploadingImage ? 'Uploading...' : 'Click to upload image (max 5MB)'}
+                    </p>
+                  </div>
+                  <input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImage}
+                    data-testid="image-upload-input"
+                  />
+                </Label>
+              </div>
+
+              {/* Images Grid */}
+              <div className="flex-1 overflow-y-auto">
+                {(selectedModule.images || []).length === 0 ? (
+                  <div className="text-center py-8 text-slate-500">
+                    <Image className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                    <p>No images uploaded yet</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {(selectedModule.images || []).map(img => (
+                      <div key={img.id} className="relative group">
+                        <img
+                          src={img.data}
+                          alt={img.name}
+                          className="w-full h-32 object-cover rounded-lg border border-slate-200"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteImage(img.id)}
+                            data-testid={`delete-image-${img.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-1 truncate">{img.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {new Date(img.uploaded_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
