@@ -290,6 +290,19 @@ const PDPPage = () => {
             onChange={e => setSearch(e.target.value)}
           />
         </div>
+        {isAdmin && (
+          <Select value={filterUser} onValueChange={setFilterUser}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="All Users" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Users</SelectItem>
+              {users.map(u => (
+                <SelectItem key={u.id} value={u.id}>{u.full_name || u.email}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Status" />
@@ -312,8 +325,8 @@ const PDPPage = () => {
             ))}
           </SelectContent>
         </Select>
-        {(filterStatus !== 'all' || filterPriority !== 'all' || search) && (
-          <Button variant="ghost" size="sm" className="gap-1 text-slate-500" onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setSearch(''); }}>
+        {(filterStatus !== 'all' || filterPriority !== 'all' || filterUser !== 'all' || search) && (
+          <Button variant="ghost" size="sm" className="gap-1 text-slate-500" onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterUser('all'); setSearch(''); }}>
             <X className="w-3 h-3" /> Clear
           </Button>
         )}
