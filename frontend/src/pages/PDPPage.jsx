@@ -89,11 +89,14 @@ const emptyForm = {
   priority: 'medium',
   category: '',
   notes: '',
+  assigned_to: '',
+  assigned_to_name: '',
 };
 
 const PDPPage = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [entries, setEntries] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
   const [viewDialog, setViewDialog] = useState(false);
@@ -105,9 +108,15 @@ const PDPPage = () => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
+  const [filterUser, setFilterUser] = useState('all');
   const [activeStep, setActiveStep] = useState(0); // wizard step in dialog
 
-  useEffect(() => { fetchEntries(); }, []);
+  useEffect(() => { 
+    fetchEntries(); 
+    if (isAdmin) {
+      fetchUsers();
+    }
+  }, [isAdmin]);
 
   const fetchEntries = async () => {
     setLoading(true);
@@ -118,6 +127,15 @@ const PDPPage = () => {
       toast.error('Failed to load development plan entries');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await usersAPI.getAll();
+      setUsers(res.data);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
     }
   };
 
