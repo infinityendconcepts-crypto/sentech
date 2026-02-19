@@ -27,7 +27,6 @@ import { Textarea } from '@/components/ui/textarea';
 
 const ApplicationsPage = () => {
   const { isAdmin } = useAuth();
-  const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,7 +36,6 @@ const ApplicationsPage = () => {
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [continuingApplication, setContinuingApplication] = useState(null);
 
   useEffect(() => {
     fetchApplications();
