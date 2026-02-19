@@ -190,11 +190,24 @@ const NewApplicationPage = () => {
     );
   };
 
+  if (loadingApplication) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading application...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6" data-testid="new-application-page">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">New Bursary Application</h2>
+          <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">
+            {isEditing ? 'Continue Application' : 'New Bursary Application'}
+          </h2>
           <p className="text-slate-600 mt-1">Complete all steps to submit your application</p>
         </div>
         <Button
