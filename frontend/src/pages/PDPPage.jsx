@@ -387,6 +387,24 @@ const PDPPage = () => {
                   const StIcon = st.icon;
                   return (
                     <tr key={entry.id} className="hover:bg-slate-50/60 transition-colors group">
+                      {/* Assigned To */}
+                      {isAdmin && (
+                        <td className="px-4 py-4 align-top">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                              <User className="w-4 h-4 text-indigo-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-900 text-sm">
+                                {entry.assigned_to_name || 'Unassigned'}
+                              </p>
+                              {entry.assigned_to_email && (
+                                <p className="text-xs text-slate-500">{entry.assigned_to_email}</p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      )}
                       {/* What to learn */}
                       <td className="px-4 py-4 align-top">
                         <div className="space-y-1">
