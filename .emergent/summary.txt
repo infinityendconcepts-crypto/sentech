@@ -3,113 +3,42 @@ The user wants to create a comprehensive bursary management system named Sentech
 
 **PRODUCT REQUIREMENTS (New & Existing):**
 - **Technology:** React, FastAPI, and MongoDB.
-- **Branding:** Sentech name with a blue (#0056B3) and gray color scheme. The logo has been updated multiple times based on user-provided images.
-- **Authentication:** Microsoft Entra ID SSO, standard email/password, and Email OTP. The public registration option has been removed.
-- **Core Modules (Pages):** Dashboard, Applications, Sponsors, BBBEE, Projects, Tasks, Leads, Prospects, Meetings, Notes, Messages, Team, Tickets, Expenses, Reports, Files, Help and Support, Settings, Users, User Profile, Events, Personal Development Plan (PDP).
-- **Feature Requests:**
-    - **Data Persistence:** Implement the backend for all modules.
-    - **Role-Based Access Control (RBAC):** Implement a full RBAC system. A simplified version with admin and student roles has been implemented. Admins can create and delete users.
-    - **Personal Development Plan (PDP):** A new page to manage PDPs with fields for What to learn, How to achieve, Resources, Success criteria, and Target dates.
-    - **Document Management:** On the profile page, allow users to re-upload rejected application documents, with status tracking (processing, approved, rejected).
-    - **Meetings:** Integrate Zoom/Teams, with API keys managed from the Settings page.
-    - **Settings Page:** Centralized management for SMTP, Zoom/Teams keys, and user permissions. The page is now functional for saving settings.
-    - **Deployment:** The user requested instructions on how to package and deploy the application on a self-hosted VPS.
+- **Branding:** Sentech name with a blue (#0056B3) and gray color scheme.
+- **Authentication:** Microsoft Entra ID SSO, standard email/password.
+- **Core Modules (Pages):** Dashboard, Applications, Sponsors, BBBEE, Projects, Training Track (formerly Tasks), Leads, Prospects, Meetings, Notes, Messages, Team, Tickets, Expenses, Reports, MICTSETA Documents (formerly Files), Help and Support, Settings, Users, User Profile, Events, Personal Development Plan (PDP).
+- **Recent Feature Requests (Implemented):**
+    - **Applications Page:** Add disability description, make performance score optional, disable bursary status for new applicants, add academic transcript upload for Re-apply applicants, view application summary, change application status, and add an Edit button for students on draft/pending applications.
+    - **Login Page:** Remove the Email OTP login option.
+    - **File Management:** Rename Files page to MICTSETA Documents with an updated description.
+    - **Tasks Page:** Rename to Training Track, change Task to Training Module, and add features for comments, image uploads, due dates, and admin-only editing.
+    - **PDP Page:** Rename Dev Plan to Personal Dev Plan, change What to learn to Skills gap, and allow admins to select a user when creating a development goal.
+- **Pending Feature Requests (From last user message):**
+    - Remove Attendance from training modules.
+    - Change continuation applicant to Re-apply.
+    - Add an upload option for quotation amount requested in the application documents section.
+    - Hide the Leads page for now.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A comprehensive full-stack application (React/FastAPI/MongoDB) with a significant number of features implemented. The system now includes robust Role-Based Access Control (RBAC) differentiating between 'admin' and 'student' users, affecting UI visibility and permissions.
+A full-stack application (React/FastAPI/MongoDB) with role-based access control (RBAC) for 'admin' and 'student' roles. The application has undergone significant UI and feature enhancements in the last session.
 
-Key implemented features include:
-- **Core Modules:** Fully functional pages for Tasks, Reports, Users, User Profile (with a Documents tab), Events, and a new Personal Development Plan (PDP).
-- **Authentication:** Standard Login, Microsoft SSO, and Email OTP are functional. The public registration page has been removed.
-- **RBAC:** An 'admin'/'student' role system is in place. Admins have access to the  page to create/delete users, while the navigation sidebar dynamically adjusts to the user's role.
-- **File Management:** The  page supports file upload (via base64) and download. The  also has document upload capabilities.
-- **Settings:** The  page is now functional, allowing an admin user to persist configuration changes to the database.
-- **UI/UX:** The application logo has been updated, and the login page simplified. Kanban boards on  and  use the modern  library.
-- **Deployment Support:** The project's  has been fixed to support installation from private package indexes, a critical step for deployment.
+- **Login/Auth:** The login page has been simplified to only offer Email/Password and Microsoft SSO.
+- **Module Renaming:** Tasks has been successfully renamed to Training Track, and Files has been renamed to MICTSETA Documents throughout the application, including navigation.
+- **Training Track (formerly Tasks):** This module is now a Kanban board for Training Modules. It includes functionality for adding comments, uploading images, setting due dates, and allowing admins to edit modules.
+- **Personal Development Plan (PDP):** The page has been renamed. Admins can now assign a development goal to a specific user, and the page includes a user filter.
+- **Applications:** The application form and management page have been extensively updated. This includes conditional fields (disability description, academic transcript), optional fields (performance score), disabled status for new applicants, and role-based actions (students can Edit drafts, admins can Change Status). The workflow for continuing a draft application has been implemented and refined.
 
 **Last working item**:
-- **Last item agent was working:** The agent was resolving a 
-Usage:   
-  pip <command> [options]
-
-Commands:
-  install                     Install packages.
-  lock                        Generate a lock file.
-  download                    Download packages.
-  uninstall                   Uninstall packages.
-  freeze                      Output installed packages in requirements format.
-  inspect                     Inspect the python environment.
-  list                        List installed packages.
-  show                        Show information about installed packages.
-  check                       Verify installed packages have compatible dependencies.
-  config                      Manage local and global configuration.
-  search                      Search PyPI for packages.
-  cache                       Inspect and manage pip's wheel cache.
-  index                       Inspect information available from package indexes.
-  wheel                       Build wheels from your requirements.
-  hash                        Compute hashes of package archives.
-  completion                  A helper command used for command completion.
-  debug                       Show information useful for debugging.
-  help                        Show help for commands.
-
-General Options:
-  -h, --help                  Show help.
-  --debug                     Let unhandled exceptions propagate outside the
-                              main subroutine, instead of logging them to
-                              stderr.
-  --isolated                  Run pip in an isolated mode, ignoring
-                              environment variables and user configuration.
-  --require-virtualenv        Allow pip to only run in a virtual environment;
-                              exit with an error otherwise.
-  --python <python>           Run pip with the specified Python interpreter.
-  -v, --verbose               Give more output. Option is additive, and can be
-                              used up to 3 times.
-  -V, --version               Show version and exit.
-  -q, --quiet                 Give less output. Option is additive, and can be
-                              used up to 3 times (corresponding to WARNING,
-                              ERROR, and CRITICAL logging levels).
-  --log <path>                Path to a verbose appending log.
-  --no-input                  Disable prompting for input.
-  --keyring-provider <keyring_provider>
-                              Enable the credential lookup via the keyring
-                              library if user input is allowed. Specify which
-                              mechanism to use [auto, disabled, import,
-                              subprocess]. (default: auto)
-  --proxy <proxy>             Specify a proxy in the form
-                              scheme://[user:passwd@]proxy.server:port.
-  --retries <retries>         Maximum attempts to establish a new HTTP
-                              connection. (default: 5)
-  --timeout <sec>             Set the socket timeout (default 15 seconds).
-  --exists-action <action>    Default action when a path already exists:
-                              (s)witch, (i)gnore, (w)ipe, (b)ackup, (a)bort.
-  --trusted-host <hostname>   Mark this host or host:port pair as trusted,
-                              even though it does not have valid or any HTTPS.
-  --cert <path>               Path to PEM-encoded CA certificate bundle. If
-                              provided, overrides the default. See 'SSL
-                              Certificate Verification' in pip documentation
-                              for more information.
-  --client-cert <path>        Path to SSL client certificate, a single file
-                              containing the private key and the certificate
-                              in PEM format.
-  --cache-dir <dir>           Store the cache data in <dir>.
-  --no-cache-dir              Disable the cache.
-  --disable-pip-version-check
-                              Don't periodically check PyPI to determine
-                              whether a new version of pip is available for
-                              download. Implied with --no-index.
-  --no-color                  Suppress colored output.
-  --use-feature <feature>     Enable new functionality, that may be backward
-                              incompatible.
-  --use-deprecated <feature>  Enable deprecated functionality, that will be
-                              removed in the future.
-  --resume-retries <resume_retries>
-                              Maximum attempts to resume or restart an
-                              incomplete download. (default: 5) installation error the user would face during manual deployment. The error No matching distribution found for emergentintegrations occurred because it's a private package. The agent fixed this by adding the private index URL () to the top of .
-- **Status**: RESOLVED
-- **Agent Testing Done**: Y
-- **Which testing method agent to use?**: NA. This was a configuration fix. The next step would be to continue with the upcoming tasks.
+- **Last item agent was working:** The agent was about to implement a new batch of user requests.
+    - Remove attendance tracking from the Training Track module.
+    - Rename continuation applicant to Re-apply on the application form.
+    - Add a quotation amount requested file upload field to the application documents step.
+    - On the PDP page, rename the What to learn field to Skills gap.
+    - Hide the Leads page from the navigation sidebar.
+- **Status**: NOT STARTED
+- **Agent Testing Done**: N
+- **Which testing method agent to use?**: frontend testing agent
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
@@ -117,38 +46,49 @@ General Options:
     - **Description**: The  uses the older  library for its Kanban board, which is inconsistent with the  and  that have been upgraded to . This can lead to a subpar user experience and console warnings.
     - **Next debug checklist**:
         1. Edit .
-        2. Replace the  implementation with , mirroring the logic in .
+        2. Replace the  implementation with , mirroring the logic in  or .
         3. Ensure the backend API call to update the prospect's status is triggered correctly after a drag-and-drop action.
     - **Why fix this issue?**: To standardize the user interface, eliminate console warnings, and provide a consistent, smooth drag-and-drop experience across all Kanban boards.
     - **Status**: NOT STARTED
     - **Is recurring issue?**: N
     - **Should Test frontend/backend/both after fix?**: frontend
+    - **Blocked on other issue**: None
 
 **In progress Task List**:
-None. The last active development tasks were completed.
+None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-- **Task 1: Implement Backend for Remaining Modules (P0):** The primary remaining task is to build out the backend business logic for the placeholder modules. Create CRUD API endpoints in  and implement the logic for: , , , , , , , and .
-- **Task 2: Implement Frontend for Remaining Modules (P1):** Connect the existing placeholder frontend pages to the newly created backend endpoints. This includes: , , , , , and .
+- **Task 1: Implement Latest User Requests (P0):**
+    - Remove attendance feature from .
+    - In , rename continuation applicant to Re-apply and add a file upload for quotation amount requested.
+    - In , change the What to learn field label to Skills gap.
+    - In , hide the Leads navigation item.
+- **Task 2: Implement Backend for Remaining Modules (P1):** Create CRUD API endpoints in  and implement the logic for: , , , , , , , and .
+- **Task 3: Implement Frontend for Remaining Modules (P1):** Connect the existing placeholder frontend pages to the newly created backend endpoints. This includes: , , , , , and .
 
 **Future Tasks:**
-- **Task 3: Meetings Integration (P2):** Use the API keys saved from the  page to integrate Zoom or Microsoft Teams for scheduling and joining meetings within the .
-- **Task 4: Advanced RBAC (P2):** Enhance the current RBAC system. The initial request mentioned defining granular permissions on the  page. This task involves building the UI to manage these permissions and then enforcing them across the entire application.
-- **Task 5: Internal Messaging & Note Sharing (P2):** Implement the real-time features for the  and  modules, allowing for internal team communication and collaboration.
-- **Task 6: Refactor File Uploads (P2):** Improve the file upload functionality on the  from the current base64 implementation to chunked multipart uploads to better handle larger files.
+- **Task 4: Meetings Integration (P2):** Use the API keys saved from the  page to integrate Zoom or Microsoft Teams for scheduling and joining meetings within the .
+- **Task 5: Advanced RBAC (P2):** Enhance the current RBAC system by building a UI on the  page to manage granular permissions.
+- **Task 6: Internal Messaging & Note Sharing (P2):** Implement real-time features for the  and  modules.
+- **Task 7: Refactor File Uploads (P2):** Improve the file upload functionality on  from base64 to chunked multipart uploads to better handle larger files.
 
 **Completed work in this session**
-- **RBAC Implementation:** Successfully implemented a full 'admin'/'student' role system, including protected routes, conditional UI rendering in navigation and the , and admin-only endpoints for user creation/deletion.
-- **Personal Development Plan (PDP) Module:** Created a complete, end-to-end module with a backend model, CRUD API endpoints, and a fully functional frontend page.
-- **Events & User Documents:** Completed the implementation of the  module and the Documents tab on the .
-- **Settings Page:** Made the  page functional, allowing an admin to save configurations.
-- **Logo and Login UI:** Updated the application logo across the app (sidebar, login page) and removed the Register tab from the  to streamline the user flow.
-- **File Upload:** Implemented file upload/download functionality on the  using base64 encoding.
-- **Deployment Support & Troubleshooting:**
-    - Provided comprehensive, step-by-step guides for deploying the application to an Ubuntu 22.04 and 24.04 LTS server.
-    - Ran a deployment health check to verify readiness.
-    - Resolved a critical deployment blocker by adding the necessary  to  to locate a private Python package.
+- **Application Flow Overhaul:**
+  - The application form () was updated with conditional logic for disability descriptions and academic transcripts (continuation applicants). Performance score was made optional.
+  - The  was enhanced to allow students to edit draft/pending applications and admins to change status. The Continue button was implemented to change status to 'pending' and then removed based on user feedback.
+- **UI & UX Refinements:**
+  - Removed the Email OTP login option from .
+  - Renamed Files to MICTSETA Documents and Tasks to Training Track across the app, including in .
+- **Training Track Module:**
+  - Rewrote  into .
+  - Added features for adding comments, uploading images, and setting due dates to training modules.
+  - Implemented admin-only Edit and Delete functionality for modules.
+  - Backend  model and API in  updated to support comments, images, and due dates.
+- **Personal Development Plan (PDP) Module:**
+  - The  was updated to allow admins to assign a plan to a specific user via a dropdown.
+  - The backend  model in  and  was updated to store the  user information.
+  - The main page now includes a filter to view PDPs by user.
 
 **Earlier issues found/mentioned but not fixed**
 - The  drag-and-drop library has not been updated (listed in All Pending/In progress Issue list).
@@ -163,228 +103,71 @@ N/A
 - **Backend:** FastAPI, MongoDB
 - **Frontend:** React.js, Vite
 - **Styling:** Tailwind CSS, Shadcn UI
-- **State Management:** React Context API
+- **State Management:** React Context API (), React 
 - **UI Interactivity:** 
 - **Authentication:** JWT, Role-Based Access Control (RBAC)
-- **Deployment:** Nginx, systemd, ufw, Certbot (for self-hosting on a VPS)
 
 **key DB schema**
 - **pdp:** 
-- **user:** The  field is now actively used ('admin' or 'student').
+- **task:** 
+- **application:** 
 
 **changes in tech stack**
-- No new libraries were added. Configuration for 
-Usage:   
-  pip <command> [options]
-
-Commands:
-  install                     Install packages.
-  lock                        Generate a lock file.
-  download                    Download packages.
-  uninstall                   Uninstall packages.
-  freeze                      Output installed packages in requirements format.
-  inspect                     Inspect the python environment.
-  list                        List installed packages.
-  show                        Show information about installed packages.
-  check                       Verify installed packages have compatible dependencies.
-  config                      Manage local and global configuration.
-  search                      Search PyPI for packages.
-  cache                       Inspect and manage pip's wheel cache.
-  index                       Inspect information available from package indexes.
-  wheel                       Build wheels from your requirements.
-  hash                        Compute hashes of package archives.
-  completion                  A helper command used for command completion.
-  debug                       Show information useful for debugging.
-  help                        Show help for commands.
-
-General Options:
-  -h, --help                  Show help.
-  --debug                     Let unhandled exceptions propagate outside the
-                              main subroutine, instead of logging them to
-                              stderr.
-  --isolated                  Run pip in an isolated mode, ignoring
-                              environment variables and user configuration.
-  --require-virtualenv        Allow pip to only run in a virtual environment;
-                              exit with an error otherwise.
-  --python <python>           Run pip with the specified Python interpreter.
-  -v, --verbose               Give more output. Option is additive, and can be
-                              used up to 3 times.
-  -V, --version               Show version and exit.
-  -q, --quiet                 Give less output. Option is additive, and can be
-                              used up to 3 times (corresponding to WARNING,
-                              ERROR, and CRITICAL logging levels).
-  --log <path>                Path to a verbose appending log.
-  --no-input                  Disable prompting for input.
-  --keyring-provider <keyring_provider>
-                              Enable the credential lookup via the keyring
-                              library if user input is allowed. Specify which
-                              mechanism to use [auto, disabled, import,
-                              subprocess]. (default: auto)
-  --proxy <proxy>             Specify a proxy in the form
-                              scheme://[user:passwd@]proxy.server:port.
-  --retries <retries>         Maximum attempts to establish a new HTTP
-                              connection. (default: 5)
-  --timeout <sec>             Set the socket timeout (default 15 seconds).
-  --exists-action <action>    Default action when a path already exists:
-                              (s)witch, (i)gnore, (w)ipe, (b)ackup, (a)bort.
-  --trusted-host <hostname>   Mark this host or host:port pair as trusted,
-                              even though it does not have valid or any HTTPS.
-  --cert <path>               Path to PEM-encoded CA certificate bundle. If
-                              provided, overrides the default. See 'SSL
-                              Certificate Verification' in pip documentation
-                              for more information.
-  --client-cert <path>        Path to SSL client certificate, a single file
-                              containing the private key and the certificate
-                              in PEM format.
-  --cache-dir <dir>           Store the cache data in <dir>.
-  --no-cache-dir              Disable the cache.
-  --disable-pip-version-check
-                              Don't periodically check PyPI to determine
-                              whether a new version of pip is available for
-                              download. Implied with --no-index.
-  --no-color                  Suppress colored output.
-  --use-feature <feature>     Enable new functionality, that may be backward
-                              incompatible.
-  --use-deprecated <feature>  Enable deprecated functionality, that will be
-                              removed in the future.
-  --resume-retries <resume_retries>
-                              Maximum attempts to resume or restart an
-                              incomplete download. (default: 5) was modified to include a private package index.
+- No changes to the technology stack.
 
 **All files of reference**
-- **Significantly Modified:**
-    - : Added endpoints for Events, PDP, user creation/deletion, and RBAC checks.
-    - : Added  for private package installation.
-    - : Wrapped admin routes with .
-    - : Added API functions for PDP and user creation.
-    - : Exposed user role and  helper.
-    - : Updated logos, removed styling, and implemented role-based navigation filtering.
-    - : Major overhaul to support user creation, deletion, and restrict role changes to admin/student.
-    - : Removed registration tab and simplified the form.
-    - : Implemented upload/download logic.
-- **Newly Created:**
-    - 
-    - 
-    - 
+- : Completely rewritten from the old  to support new features.
+- : Heavily modified to handle new application statuses and role-based actions (Edit/Change Status).
+- : Heavily modified to handle creating/editing applications, and conditional form fields.
+- : Updated to include user assignment and filtering.
+- : Simplified by removing the OTP login tab.
+- : Navigation links renamed.
+- : Updated router to point to .
+- : Modified  and  endpoints to handle new data fields.
+- : Added  fields.
 
 **Areas that need refactoring**:
 - The file upload on  uses base64, which is not efficient for large files. It should be refactored to use chunked multipart uploads.
 - A reusable  component should be created to standardize the  logic and avoid code duplication between , , and eventually .
 
 **key api endpoints**
-- , : Full CRUD for Personal Development Plans.
+- : Updates an application's status.
+- : Fetches a single application for editing.
+- : Updated to handle comments, images, due date, etc.
+- : Updated to handle  field.
 - : Creates a new user (admin only).
-- : Deletes a user (admin only).
-- : Updates a user's role (admin only).
-- : Saves application settings (admin only).
-- : Uploads/lists files.
 
 **Critical Info for New Agent**
-- The user has shown significant interest in self-hosting the application. Be prepared to provide further support on deployment, troubleshooting server environments (Nginx, systemd, ufw), and database management.
-- The  file has been modified to pull from a private repository. This is a critical detail for any future environment setup.
-- The most significant remaining body of work is implementing the backend logic and connecting the frontend for the numerous placeholder modules (, , , etc.). This should be the next development priority.
-- RBAC is now a core part of the application. All new features should be developed with 'admin' and 'student' roles in mind.
+- The user makes frequent, iterative requests. Be prepared to modify recently implemented features.
+- RBAC is a core concept. The  flag from  is used frequently to conditionally render UI elements and control access. Always consider both 'admin' and 'student' user perspectives.
+- The last set of user requests has not been started. This is the highest priority task.
+- The agent was about to run the testing agent before the last user message. It would be a good idea to run a full test after implementing the pending changes to ensure no regressions were introduced.
 
 **documents and test reports created in this job**
-- 
-- Multiple  files were generated from successful test runs.
--  was created, but the agent correctly informed the user to use the Save to GitHub feature instead.
+-  was updated by the previous agent.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **USER:** 
-    - **Status:** COMPLETED. The agent built the PDP module end-to-end.
-2.  **USER:** 
-    - **Status:** COMPLETED. The agent packaged the app and explained why channel hosting (shared hosting) is incompatible, suggesting better alternatives.
-3.  **USER:** 
-    - **Status:** COMPLETED. The agent provided a detailed VPS deployment guide for Ubuntu 22.04.
-4.  **USER:** 
-    - **Status:** COMPLETED. The agent ran the health check, which passed.
-5.  **USER:** 
-    - **Status:** COMPLETED. The agent provided an updated deployment guide for Ubuntu 24.04.
-6.  **USER:** 
-    - **Status:** COMPLETED. The agent rewrote the Ubuntu 24.04 guide for a non-root user with  privileges.
-7.  **USER:** 
-    - **Status:** COMPLETED. The agent diagnosed the 
-Usage:   
-  pip <command> [options]
-
-Commands:
-  install                     Install packages.
-  lock                        Generate a lock file.
-  download                    Download packages.
-  uninstall                   Uninstall packages.
-  freeze                      Output installed packages in requirements format.
-  inspect                     Inspect the python environment.
-  list                        List installed packages.
-  show                        Show information about installed packages.
-  check                       Verify installed packages have compatible dependencies.
-  config                      Manage local and global configuration.
-  search                      Search PyPI for packages.
-  cache                       Inspect and manage pip's wheel cache.
-  index                       Inspect information available from package indexes.
-  wheel                       Build wheels from your requirements.
-  hash                        Compute hashes of package archives.
-  completion                  A helper command used for command completion.
-  debug                       Show information useful for debugging.
-  help                        Show help for commands.
-
-General Options:
-  -h, --help                  Show help.
-  --debug                     Let unhandled exceptions propagate outside the
-                              main subroutine, instead of logging them to
-                              stderr.
-  --isolated                  Run pip in an isolated mode, ignoring
-                              environment variables and user configuration.
-  --require-virtualenv        Allow pip to only run in a virtual environment;
-                              exit with an error otherwise.
-  --python <python>           Run pip with the specified Python interpreter.
-  -v, --verbose               Give more output. Option is additive, and can be
-                              used up to 3 times.
-  -V, --version               Show version and exit.
-  -q, --quiet                 Give less output. Option is additive, and can be
-                              used up to 3 times (corresponding to WARNING,
-                              ERROR, and CRITICAL logging levels).
-  --log <path>                Path to a verbose appending log.
-  --no-input                  Disable prompting for input.
-  --keyring-provider <keyring_provider>
-                              Enable the credential lookup via the keyring
-                              library if user input is allowed. Specify which
-                              mechanism to use [auto, disabled, import,
-                              subprocess]. (default: auto)
-  --proxy <proxy>             Specify a proxy in the form
-                              scheme://[user:passwd@]proxy.server:port.
-  --retries <retries>         Maximum attempts to establish a new HTTP
-                              connection. (default: 5)
-  --timeout <sec>             Set the socket timeout (default 15 seconds).
-  --exists-action <action>    Default action when a path already exists:
-                              (s)witch, (i)gnore, (w)ipe, (b)ackup, (a)bort.
-  --trusted-host <hostname>   Mark this host or host:port pair as trusted,
-                              even though it does not have valid or any HTTPS.
-  --cert <path>               Path to PEM-encoded CA certificate bundle. If
-                              provided, overrides the default. See 'SSL
-                              Certificate Verification' in pip documentation
-                              for more information.
-  --client-cert <path>        Path to SSL client certificate, a single file
-                              containing the private key and the certificate
-                              in PEM format.
-  --cache-dir <dir>           Store the cache data in <dir>.
-  --no-cache-dir              Disable the cache.
-  --disable-pip-version-check
-                              Don't periodically check PyPI to determine
-                              whether a new version of pip is available for
-                              download. Implied with --no-index.
-  --no-color                  Suppress colored output.
-  --use-feature <feature>     Enable new functionality, that may be backward
-                              incompatible.
-  --use-deprecated <feature>  Enable deprecated functionality, that will be
-                              removed in the future.
-  --resume-retries <resume_retries>
-                              Maximum attempts to resume or restart an
-                              incomplete download. (default: 5) error and applied a permanent fix to .
+1. **USER:** on the application when you press continue it should change the status to pending
+   - **Status:** COMPLETED. Agent implemented this, then refined it to also navigate to an editable, pre-filled form.
+2. **USER:** remove the continue button on the application
+   - **Status:** COMPLETED. Agent removed the button.
+3. **USER:** remove the continue button on the application and once you hit submit it should change status to update and also add an edit button only accessible by the student or applicant
+   - **Status:** COMPLETED. Agent implemented the student-only Edit button for draft/pending applications.
+4. **USER:** on the training modules ability to add comment inside the module and upload images and to re edit as admin and add due date
+   - **Status:** COMPLETED.
+5. **USER:** Rename Page Dev Plan to Personal Dev Plan and add the feature to select user when adding the development goal
+   - **Status:** COMPLETED.
+6. **USER:** Remove attendance in training modules, and change continuation applicant to Re apply and in the documents upload section add an upload option to upload quotation amount requested, on the PDP page what do I need to learn change it to Skills gap, Hide the leads page for now
+   - **Status:** PENDING. This is the current highest-priority task.
+7. **USER:** Generate the summary now
+   - **Status:** PENDING. This is the current request.
+8. (No other messages)
+9. (No other messages)
+10. (No other messages)
 
 **Project Health Check:**
-- **Broken:** No. The application is stable and all core features are functional.
-- **Mocked:** Partially. Several modules (, , , , , , , ) exist as frontend pages but lack backend implementation.
+- **Broken:** No. The application is stable.
+- **Mocked:** Partially. Several modules (, , , , , , , , ) exist as frontend pages but lack backend implementation or are hidden.
 
 **3rd Party Integrations**
 - **Existing & Functional:**
@@ -392,20 +175,24 @@ General Options:
     - 
     - 
     - SMTP (via )
-    -  (private package, now installable)
+    - 
 - **Requested (Not Yet Implemented):**
     - Zoom / Microsoft Teams
 
 **Testing status**
-- **Testing agent used after significant changes**: YES. The agent ran the testing agent multiple times after implementing RBAC, the PDP module, and logo changes, with all tests passing.
+- **Testing agent used after significant changes**: NO. Agent performed extensive manual testing via screenshots but was interrupted by the user with new requirements before calling the testing agent.
 - **Troubleshoot agent used after agent stuck in loop**: NO.
-- **Test files created**: Test scenarios in  were updated for the testing agent.
+- **Test files created**: None in this session.
 - **Known regressions**: None.
 
 **Credentials to test flow:**
-- **Email:** 
-- **Password:** 
-- **Note:** This user is currently assigned the 'admin' role.
+- **Admin:**
+    - **Email:** 
+    - **Password:** 
+- **Student:**
+    - **Email:** 
+    - **Password:** 
 
 **What agent forgot to execute**
-The agent has been diligent in following user requests. No explicit tasks were forgotten. The remaining work aligns with the long-term product requirements.</analysis>
+- The agent was interrupted before it could run the  to validate the large number of changes made in the session.
+- The agent has not yet started implementing the user's very last set of requests (remove attendance, rename continuation applicant, etc.).</analysis>
