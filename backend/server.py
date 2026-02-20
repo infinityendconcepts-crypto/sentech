@@ -2722,18 +2722,31 @@ async def create_application(app_data: ApplicationCreate, current_user: dict = D
     application = BursaryApplication(
         user_id=current_user["id"],
         user_email=current_user["email"],
-        personal_info=app_data.personal_info,
-        academic_info=app_data.academic_info,
-        financial_info=app_data.financial_info,
-        documents=app_data.documents
+        status=app_data.status or "draft",
+        current_step=app_data.current_step or 1,
+        personal_info=app_data.personal_info or {},
+        academic_info=app_data.academic_info or {},
+        financial_info=app_data.financial_info or {},
+        documents=app_data.documents or {}
     )
     
+    # Add additional fields from frontend
     app_dict = application.model_dump()
     app_dict['created_at'] = app_dict['created_at'].isoformat()
     app_dict['updated_at'] = app_dict['updated_at'].isoformat()
     
+    # Include employment_info and academic_bursary_info if provided
+    if app_data.employment_info:
+        app_dict['employment_info'] = app_data.employment_info
+    if app_data.academic_bursary_info:
+        app_dict['academic_bursary_info'] = app_data.academic_bursary_info
+    
+    # If status is pending, set submitted_at
+    if app_data.status == "pending":
+        app_dict['submitted_at'] = datetime.now(timezone.utc).isoformat()
+    
     await db.applications.insert_one({**app_dict})
-    return application
+    return app_dict
 
 @api_router.put("/applications/{application_id}")
 async def update_application(application_id: str, update_data: ApplicationUpdate, current_user: dict = Depends(get_current_user)):
