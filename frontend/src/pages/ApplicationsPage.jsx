@@ -255,10 +255,10 @@ const ApplicationsPage = () => {
                       size="sm" 
                       className="gap-1"
                       onClick={() => openSummaryDialog(application)}
-                      data-testid={`view-summary-${application.id}`}
+                      data-testid={`view-application-${application.id}`}
                     >
                       <Eye className="w-4 h-4" />
-                      View Summary
+                      View
                     </Button>
                     {isAdmin && (
                       <Button 
@@ -272,11 +272,6 @@ const ApplicationsPage = () => {
                         Change Status
                       </Button>
                     )}
-                    <Link to={`/applications/${application.id}`}>
-                      <Button variant="outline" size="sm" data-testid={`view-application-${application.id}`}>
-                        View Details
-                      </Button>
-                    </Link>
                     {!isAdmin && (application.status === 'draft' || application.status === 'pending') && (
                       <Link to={`/applications/${application.id}/edit`}>
                         <Button size="sm" className="gap-2" data-testid={`edit-application-${application.id}`}>
