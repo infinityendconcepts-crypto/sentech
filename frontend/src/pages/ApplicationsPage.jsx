@@ -130,19 +130,28 @@ const ApplicationsPage = () => {
     }
   };
 
-  const getSummarySection = (title, data) => {
+  const getSummarySection = (title, data, icon) => {
     if (!data || typeof data !== 'object') return null;
     const entries = Object.entries(data).filter(([key, value]) => value && value !== '');
     if (entries.length === 0) return null;
     
+    const formatLabel = (key) => {
+      return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    };
+    
     return (
-      <div className="mb-6">
-        <h4 className="font-semibold text-slate-900 mb-3 border-b pb-2">{title}</h4>
-        <div className="grid grid-cols-2 gap-3">
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            {icon}
+          </div>
+          <h4 className="text-lg font-semibold text-slate-900">{title}</h4>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {entries.map(([key, value]) => (
-            <div key={key}>
-              <p className="text-xs text-slate-500 capitalize">{key.replace(/_/g, ' ')}</p>
-              <p className="text-sm font-medium text-slate-900">{String(value)}</p>
+            <div key={key} className="bg-slate-50 rounded-lg p-3">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{formatLabel(key)}</p>
+              <p className="text-sm font-semibold text-slate-900">{String(value)}</p>
             </div>
           ))}
         </div>
