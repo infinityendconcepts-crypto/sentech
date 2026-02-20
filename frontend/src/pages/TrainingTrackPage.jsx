@@ -262,7 +262,6 @@ const TrainingTrackPage = () => {
         project_name: newModule.project_name || null,
         tags: newModule.tags ? newModule.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         progress: parseInt(newModule.progress) || 0,
-        attendance: [],
         comments: [],
         images: [],
       };
