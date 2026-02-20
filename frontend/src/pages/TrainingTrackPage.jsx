@@ -751,41 +751,7 @@ const TrainingTrackPage = () => {
                           <Image className="w-3 h-3" />
                           Images ({module.images?.length || 0})
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1 text-xs"
-                          onClick={() => openAttendanceDialog(module)}
-                          data-testid={`mark-attendance-${module.id}`}
-                        >
-                          <ClipboardCheck className="w-3 h-3" />
-                          Attendance ({module.attendance?.length || 0})
-                        </Button>
                       </div>
-                      
-                      {/* Attendance Section */}
-                      {module.attendance && module.attendance.length > 0 && (
-                        <div className="ml-7 mt-4 p-4 bg-slate-50 rounded-lg">
-                          <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3">
-                            <ClipboardCheck className="w-4 h-4" />
-                            Recent Attendance
-                          </h4>
-                          <div className="space-y-2">
-                            {module.attendance.slice(-3).map((att, idx) => (
-                              <div key={att.id || idx} className="flex items-center justify-between text-sm bg-white p-2 rounded border border-slate-200">
-                                <div className="flex items-center gap-3">
-                                  <CalendarDays className="w-4 h-4 text-slate-400" />
-                                  <span className="font-medium">{att.date}</span>
-                                  <span className="text-slate-500">{att.time_in} - {att.time_out || 'Ongoing'}</span>
-                                </div>
-                                <Badge className={`${getAttendanceStatusColor(att.status)} text-xs`}>
-                                  {att.status}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
 
                       {module.status === 'in_progress' && (
                         <div className="ml-7 mt-3">
