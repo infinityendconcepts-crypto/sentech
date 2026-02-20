@@ -2754,13 +2754,16 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
     
-    if application["user_id"] != current_user["id"]:
+    # Allow admin or owner to update
+    is_admin = current_user.get("role") == "admin"
+    if application["user_id"] != current_user["id"] and not is_admin:
         raise HTTPException(status_code=403, detail="Access denied")
     
     update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     
-    if update_data.status == "submitted":
+    # If status is being changed to pending or submitted, set submitted_at
+    if update_data.status in ["pending", "submitted"]:
         update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
     
     await db.applications.update_one({"id": application_id}, {"$set": update_dict})
