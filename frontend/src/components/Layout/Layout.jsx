@@ -41,7 +41,6 @@ const navigation = [
   { name: 'Training Track',href: '/tasks',        icon: CheckSquare },
   { name: 'Meetings',      href: '/meetings',     icon: Calendar },
   { name: 'Events',        href: '/events',       icon: CalendarDays },
-  { name: 'Notes',         href: '/notes',        icon: StickyNote },
   { name: 'Messages',      href: '/messages',     icon: MessageSquare },
   { name: 'MICTSETA Docs', href: '/files',        icon: FolderOpen },
   { name: 'Tickets',       href: '/tickets',      icon: Ticket },
