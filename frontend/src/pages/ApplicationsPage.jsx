@@ -293,38 +293,209 @@ const ApplicationsPage = () => {
         </div>
       )}
 
-      {/* Application Summary Dialog */}
+      {/* Application Full View Dialog - Large Popup */}
       <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              Application Summary
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
           {selectedApplication && (
-            <div className="py-4">
-              <div className="mb-4 p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">Application ID</p>
-                    <p className="font-mono text-sm">{selectedApplication.id}</p>
+            <>
+              {/* Header */}
+              <div className="bg-gradient-to-r from-primary to-blue-600 text-white p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-white/20 rounded-xl flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold">Application Details</h2>
+                      <p className="text-white/80 font-mono text-sm mt-1">ID: {selectedApplication.id}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <Badge className={`${getStatusColor(selectedApplication.status)} gap-1 text-sm px-3 py-1`}>
+                          {getStatusIcon(selectedApplication.status)}
+                          {selectedApplication.status?.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                        <span className="text-white/70 text-sm">
+                          Step {selectedApplication.current_step || 1} of 4
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <Badge className={`${getStatusColor(selectedApplication.status)} gap-1`}>
-                    {getStatusIcon(selectedApplication.status)}
-                    {selectedApplication.status?.replace('_', ' ')}
-                  </Badge>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-white hover:bg-white/20"
+                    onClick={() => setShowSummaryDialog(false)}
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
                 </div>
               </div>
-              {getSummarySection('Personal Information', selectedApplication.personal_info)}
-              {getSummarySection('Employment Details', selectedApplication.employment_info)}
-              {getSummarySection('Academic & Bursary Information', selectedApplication.academic_bursary_info)}
-              {getSummarySection('Documents', selectedApplication.documents)}
-            </div>
+
+              {/* Content */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)] bg-slate-50">
+                {/* Meta Information */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-500 mb-1">
+                      <User className="w-4 h-4" />
+                      <span className="text-xs font-medium uppercase">Applicant</span>
+                    </div>
+                    <p className="font-semibold text-slate-900">
+                      {selectedApplication.personal_info?.surname || ''} {selectedApplication.personal_info?.name || selectedApplication.user_email || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-500 mb-1">
+                      <Calendar className="w-4 h-4" />
+                      <span className="text-xs font-medium uppercase">Submitted</span>
+                    </div>
+                    <p className="font-semibold text-slate-900">
+                      {selectedApplication.created_at ? new Date(selectedApplication.created_at).toLocaleDateString('en-ZA', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      }) : 'N/A'}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-500 mb-1">
+                      <Building className="w-4 h-4" />
+                      <span className="text-xs font-medium uppercase">Institution</span>
+                    </div>
+                    <p className="font-semibold text-slate-900">
+                      {selectedApplication.academic_bursary_info?.institution || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
+                    <div className="flex items-center gap-2 text-slate-500 mb-1">
+                      <GraduationCap className="w-4 h-4" />
+                      <span className="text-xs font-medium uppercase">Amount Requested</span>
+                    </div>
+                    <p className="font-semibold text-slate-900">
+                      {selectedApplication.academic_bursary_info?.total_amount_requested 
+                        ? `R ${Number(selectedApplication.academic_bursary_info.total_amount_requested).toLocaleString()}`
+                        : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Sections */}
+                <div className="space-y-6">
+                  {/* Personal Information */}
+                  {selectedApplication.personal_info && Object.keys(selectedApplication.personal_info).length > 0 ? (
+                    getSummarySection('Personal Information', selectedApplication.personal_info, <User className="w-5 h-5 text-primary" />)
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                          <User className="w-5 h-5 text-slate-400" />
+                        </div>
+                        <h4 className="text-lg font-semibold text-slate-900">Personal Information</h4>
+                      </div>
+                      <p className="text-slate-500 italic">No personal information provided yet.</p>
+                    </div>
+                  )}
+
+                  {/* Employment Details */}
+                  {selectedApplication.employment_info && Object.keys(selectedApplication.employment_info).length > 0 ? (
+                    getSummarySection('Employment Details', selectedApplication.employment_info, <Briefcase className="w-5 h-5 text-primary" />)
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                          <Briefcase className="w-5 h-5 text-slate-400" />
+                        </div>
+                        <h4 className="text-lg font-semibold text-slate-900">Employment Details</h4>
+                      </div>
+                      <p className="text-slate-500 italic">No employment information provided yet.</p>
+                    </div>
+                  )}
+
+                  {/* Academic & Bursary Information */}
+                  {selectedApplication.academic_bursary_info && Object.keys(selectedApplication.academic_bursary_info).length > 0 ? (
+                    getSummarySection('Academic & Bursary Information', selectedApplication.academic_bursary_info, <GraduationCap className="w-5 h-5 text-primary" />)
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                          <GraduationCap className="w-5 h-5 text-slate-400" />
+                        </div>
+                        <h4 className="text-lg font-semibold text-slate-900">Academic & Bursary Information</h4>
+                      </div>
+                      <p className="text-slate-500 italic">No academic information provided yet.</p>
+                    </div>
+                  )}
+
+                  {/* Documents */}
+                  {selectedApplication.documents && Object.keys(selectedApplication.documents).length > 0 ? (
+                    getSummarySection('Uploaded Documents', selectedApplication.documents, <Upload className="w-5 h-5 text-primary" />)
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                          <Upload className="w-5 h-5 text-slate-400" />
+                        </div>
+                        <h4 className="text-lg font-semibold text-slate-900">Uploaded Documents</h4>
+                      </div>
+                      <p className="text-slate-500 italic">No documents uploaded yet.</p>
+                    </div>
+                  )}
+
+                  {/* Status History / Notes */}
+                  {selectedApplication.status_note && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                          <AlertCircle className="w-5 h-5 text-amber-600" />
+                        </div>
+                        <h4 className="text-lg font-semibold text-amber-900">Admin Notes</h4>
+                      </div>
+                      <p className="text-amber-800">{selectedApplication.status_note}</p>
+                      {selectedApplication.status_updated_at && (
+                        <p className="text-xs text-amber-600 mt-2">
+                          Updated: {new Date(selectedApplication.status_updated_at).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-slate-200 bg-white flex justify-between items-center">
+                <div className="text-sm text-slate-500">
+                  Last updated: {selectedApplication.updated_at 
+                    ? new Date(selectedApplication.updated_at).toLocaleString() 
+                    : new Date(selectedApplication.created_at).toLocaleString()}
+                </div>
+                <div className="flex gap-2">
+                  {!isAdmin && (selectedApplication.status === 'draft' || selectedApplication.status === 'pending') && (
+                    <Link to={`/applications/${selectedApplication.id}/edit`}>
+                      <Button className="gap-2">
+                        <Edit className="w-4 h-4" />
+                        Edit Application
+                      </Button>
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <Button 
+                      variant="outline" 
+                      className="gap-2"
+                      onClick={() => {
+                        setShowSummaryDialog(false);
+                        openStatusDialog(selectedApplication);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                      Change Status
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => setShowSummaryDialog(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSummaryDialog(false)}>Close</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
