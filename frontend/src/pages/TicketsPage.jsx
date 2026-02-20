@@ -122,7 +122,7 @@ const TicketsPage = () => {
       await ticketsAPI.create(newTicket);
       toast.success('Ticket created successfully');
       setNewTicketDialog(false);
-      setNewTicket({ title: '', description: '', category: 'general', priority: 'medium' });
+      setNewTicket({ title: '', description: '', category: 'technical_support', priority: 'medium' });
       fetchTickets();
       fetchStats();
     } catch (error) {
