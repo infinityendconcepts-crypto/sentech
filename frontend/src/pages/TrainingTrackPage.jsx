@@ -789,10 +789,6 @@ const TrainingTrackPage = () => {
                           <Image className="w-4 h-4 mr-2" />
                           Images
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openAttendanceDialog(module)}>
-                          <ClipboardCheck className="w-4 h-4 mr-2" />
-                          Mark Attendance
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleStatusChange(module.id, 'todo')}>
                           <Circle className="w-4 h-4 mr-2" />
                           Mark as To Do
