@@ -770,8 +770,12 @@ class BursaryApplication(BaseModel):
     submitted_at: Optional[datetime] = None
 
 class ApplicationCreate(BaseModel):
+    status: Optional[str] = "draft"
+    current_step: Optional[int] = 1
     personal_info: Optional[Dict[str, Any]] = {}
     academic_info: Optional[Dict[str, Any]] = {}
+    academic_bursary_info: Optional[Dict[str, Any]] = {}
+    employment_info: Optional[Dict[str, Any]] = {}
     financial_info: Optional[Dict[str, Any]] = {}
     documents: Optional[Dict[str, Any]] = {}
 
