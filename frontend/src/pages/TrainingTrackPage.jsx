@@ -199,18 +199,6 @@ const TrainingTrackPage = () => {
     progress: 0,
   });
 
-  // Attendance Dialog State
-  const [attendanceDialog, setAttendanceDialog] = useState(false);
-  const [selectedModule, setSelectedModule] = useState(null);
-  const [attendanceForm, setAttendanceForm] = useState({
-    date: new Date().toISOString().split('T')[0],
-    time_in: '',
-    time_out: '',
-    status: 'present',
-    notes: '',
-  });
-  const [savingAttendance, setSavingAttendance] = useState(false);
-
   // Edit Module Dialog State (Admin only)
   const [editModuleDialog, setEditModuleDialog] = useState(false);
   const [editingModule, setEditingModule] = useState(null);
@@ -218,6 +206,7 @@ const TrainingTrackPage = () => {
 
   // Comments Dialog State
   const [commentsDialog, setCommentsDialog] = useState(false);
+  const [selectedModule, setSelectedModule] = useState(null);
   const [newComment, setNewComment] = useState('');
   const [savingComment, setSavingComment] = useState(false);
 
