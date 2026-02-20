@@ -51,7 +51,6 @@ const navigation = [
   { name: 'Sponsors',   href: '/sponsors',   icon: Users,        adminOnly: true },
   { name: 'BBBEE',      href: '/bbbee',      icon: Award,        adminOnly: true },
   { name: 'Projects',   href: '/projects',   icon: FolderKanban, adminOnly: true },
-  { name: 'Leads',      href: '/leads',      icon: UserPlus,     adminOnly: true },
   { name: 'Prospects',  href: '/prospects',  icon: Users2,       adminOnly: true },
   { name: 'Expenses',   href: '/expenses',   icon: Receipt,      adminOnly: true },
   { name: 'Reports',    href: '/reports',    icon: BarChart3,    adminOnly: true },
