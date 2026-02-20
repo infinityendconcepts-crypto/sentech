@@ -782,8 +782,12 @@ class ApplicationCreate(BaseModel):
 class ApplicationUpdate(BaseModel):
     current_step: Optional[int] = None
     status: Optional[str] = None
+    status_note: Optional[str] = None
+    status_updated_at: Optional[str] = None
     personal_info: Optional[Dict[str, Any]] = None
     academic_info: Optional[Dict[str, Any]] = None
+    academic_bursary_info: Optional[Dict[str, Any]] = None
+    employment_info: Optional[Dict[str, Any]] = None
     financial_info: Optional[Dict[str, Any]] = None
     documents: Optional[Dict[str, Any]] = None
 
