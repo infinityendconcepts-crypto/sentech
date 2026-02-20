@@ -337,54 +337,6 @@ const TrainingTrackPage = () => {
     }
   };
 
-  // Attendance functions
-  const openAttendanceDialog = (module) => {
-    setSelectedModule(module);
-    setAttendanceForm({
-      date: new Date().toISOString().split('T')[0],
-      time_in: '',
-      time_out: '',
-      status: 'present',
-      notes: '',
-    });
-    setAttendanceDialog(true);
-  };
-
-  const handleAddAttendance = async () => {
-    if (!attendanceForm.date) {
-      toast.error('Date is required');
-      return;
-    }
-    if (!attendanceForm.time_in) {
-      toast.error('Time in is required');
-      return;
-    }
-    setSavingAttendance(true);
-    try {
-      const newAttendance = {
-        id: `att_${Date.now()}`,
-        date: attendanceForm.date,
-        time_in: attendanceForm.time_in,
-        time_out: attendanceForm.time_out || null,
-        status: attendanceForm.status,
-        notes: attendanceForm.notes || '',
-        marked_by: user?.full_name || user?.email || 'Unknown',
-        marked_at: new Date().toISOString(),
-      };
-      
-      const updatedAttendance = [...(selectedModule.attendance || []), newAttendance];
-      await tasksAPI.update(selectedModule.id, { attendance: updatedAttendance });
-      
-      toast.success('Attendance recorded successfully');
-      setAttendanceDialog(false);
-      fetchModules();
-    } catch (error) {
-      toast.error('Failed to record attendance');
-    } finally {
-      setSavingAttendance(false);
-    }
-  };
-
   // Comments functions
   const openCommentsDialog = (module) => {
     setSelectedModule(module);
