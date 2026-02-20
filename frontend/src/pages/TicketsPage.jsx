@@ -59,11 +59,10 @@ const TicketsPage = () => {
   const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('support');
 
   const categories = [
-    { value: 'general', label: 'General' },
-    { value: 'technical', label: 'Technical' },
-    { value: 'billing', label: 'Billing' },
-    { value: 'feature_request', label: 'Feature Request' },
-    { value: 'bug', label: 'Bug Report' },
+    { value: 'technical_support', label: 'Technical Support' },
+    { value: 'hr_query', label: 'HR Query' },
+    { value: 'bursary_query', label: 'Bursary Query' },
+    { value: 'other', label: 'Other' },
   ];
 
   const priorities = [
