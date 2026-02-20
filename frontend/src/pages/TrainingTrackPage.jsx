@@ -76,7 +76,6 @@ const DraggableModuleCard = ({ module }) => {
     }
   };
 
-  const attendanceCount = module.attendance?.length || 0;
   const commentsCount = module.comments?.length || 0;
   const imagesCount = module.images?.length || 0;
 
@@ -103,10 +102,6 @@ const DraggableModuleCard = ({ module }) => {
             {(module.due_date || module.dueDate) ? new Date(module.due_date || module.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'}
           </div>
           <div className="flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1 text-emerald-600">
-              <ClipboardCheck className="w-3 h-3" />
-              {attendanceCount}
-            </span>
             <span className="flex items-center gap-1 text-blue-600">
               <MessageSquare className="w-3 h-3" />
               {commentsCount}
@@ -628,7 +623,7 @@ const TrainingTrackPage = () => {
             <GraduationCap className="w-8 h-8 text-primary" />
             Training Track
           </h2>
-          <p className="text-slate-600 mt-1">Manage training modules and track attendance</p>
+          <p className="text-slate-600 mt-1">Manage training modules and track progress</p>
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>
