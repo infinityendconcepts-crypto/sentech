@@ -54,6 +54,7 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Status management: draft, pending, under review, approved, rejected
 - Student can edit draft/pending applications
 - Admin can change application status
+- **Large detailed view popup** showing all application information in a comprehensive layout
 
 ### Training Track Module
 - Kanban board with drag-and-drop (using @dnd-kit)
