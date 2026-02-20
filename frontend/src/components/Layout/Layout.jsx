@@ -11,11 +11,8 @@ import {
   Award,
   FolderKanban,
   CheckSquare,
-  UserPlus,
-  Users2,
   Calendar,
   CalendarDays,
-  StickyNote,
   MessageSquare,
   UsersRound,
   Ticket,
@@ -29,7 +26,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  UserCircle,
   TrendingUp,
 } from 'lucide-react';
 
