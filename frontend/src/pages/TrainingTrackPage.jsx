@@ -474,16 +474,6 @@ const TrainingTrackPage = () => {
     }
   };
 
-  const getAttendanceStatusColor = (status) => {
-    switch (status) {
-      case 'present': return 'bg-emerald-100 text-emerald-700';
-      case 'absent': return 'bg-rose-100 text-rose-700';
-      case 'late': return 'bg-amber-100 text-amber-700';
-      case 'excused': return 'bg-blue-100 text-blue-700';
-      default: return 'bg-slate-100 text-slate-700';
-    }
-  };
-
   const filteredModules = modules.filter(module => {
     const moduleDueDate = module.due_date || module.dueDate || '';
     const moduleAssignee = module.assignee_name || module.assignee || '';
