@@ -52,7 +52,7 @@ const TicketsPage = () => {
   const [newTicket, setNewTicket] = useState({
     title: '',
     description: '',
-    category: 'general',
+    category: 'technical_support',
     priority: 'medium',
   });
 
