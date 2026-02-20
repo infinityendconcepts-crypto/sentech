@@ -44,8 +44,6 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
-  ClipboardCheck,
-  CalendarDays,
   GraduationCap,
   MessageSquare,
   Image,
