@@ -61,6 +61,7 @@ const NewApplicationPage = () => {
       id_document: '',
       academic_transcript: '',
       proof_of_registration: '',
+      quotation_amount_requested: '',
       other_documents: '',
     },
   });
@@ -83,7 +84,7 @@ const NewApplicationPage = () => {
               bursary_status: '', institution: '', course_of_study: '', total_amount_requested: '', applicant_type: ''
             },
             documents: app.documents || {
-              id_document: '', academic_transcript: '', proof_of_registration: '', other_documents: ''
+              id_document: '', academic_transcript: '', proof_of_registration: '', quotation_amount_requested: '', other_documents: ''
             },
           });
           if (app.current_step) {
@@ -111,7 +112,7 @@ const NewApplicationPage = () => {
   };
 
   const isNewApplicant = formData.academic_bursary_info.applicant_type === 'NEW APPLICANT';
-  const isContinuationApplicant = formData.academic_bursary_info.applicant_type === 'CONTINUATION APPLICANT';
+  const isReApplyApplicant = formData.academic_bursary_info.applicant_type === 'RE-APPLY';
 
   const handleSaveDraft = async () => {
     setLoading(true);
@@ -450,12 +451,12 @@ const NewApplicationPage = () => {
                   >
                     <option value="">Select type</option>
                     <option value="NEW APPLICANT">NEW APPLICANT</option>
-                    <option value="CONTINUATION APPLICANT">CONTINUATION APPLICANT</option>
+                    <option value="RE-APPLY">RE-APPLY</option>
                   </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bursary_status">
-                    Bursary Status {isContinuationApplicant ? '*' : '(Not applicable for new applicants)'}
+                    Bursary Status {isReApplyApplicant ? '*' : '(Not applicable for new applicants)'}
                   </Label>
                   <select
                     id="bursary_status"
@@ -468,7 +469,7 @@ const NewApplicationPage = () => {
                     }`}
                     data-testid="select-bursary-status"
                     disabled={isNewApplicant}
-                    required={isContinuationApplicant}
+                    required={isReApplyApplicant}
                   >
                     <option value="">Select status</option>
                     <option value="Active">Active</option>
@@ -539,12 +540,12 @@ const NewApplicationPage = () => {
                   <p className="text-xs text-slate-600">Upload a certified copy of your ID document or passport</p>
                 </div>
                 
-                {/* Academic Transcript - Only for Continuation Applicants */}
-                {isContinuationApplicant && (
+                {/* Academic Transcript - Only for Re-apply Applicants */}
+                {isReApplyApplicant && (
                   <div className="space-y-2">
                     <Label htmlFor="academic_transcript">
                       Academic Transcript / Statement of Results *
-                      <Badge className="ml-2 bg-blue-100 text-blue-700">Continuation Applicants Only</Badge>
+                      <Badge className="ml-2 bg-blue-100 text-blue-700">Re-apply Applicants Only</Badge>
                     </Label>
                     <Input
                       id="academic_transcript"
@@ -561,7 +562,7 @@ const NewApplicationPage = () => {
                 {isNewApplicant && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <p className="text-sm text-amber-800">
-                      <strong>Note:</strong> Academic transcript is not required for new applicants. You will be required to submit it once you become a continuation applicant.
+                      <strong>Note:</strong> Academic transcript is not required for new applicants. You will be required to submit it when you re-apply.
                     </p>
                   </div>
                 )}
@@ -577,6 +578,18 @@ const NewApplicationPage = () => {
                     required
                   />
                   <p className="text-xs text-slate-600">Upload your proof of registration or acceptance letter from the institution</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quotation_amount_requested">Quotation Amount Requested *</Label>
+                  <Input
+                    id="quotation_amount_requested"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => updateField('documents', 'quotation_amount_requested', e.target.files[0]?.name || '')}
+                    data-testid="input-quotation-amount-requested"
+                    required
+                  />
+                  <p className="text-xs text-slate-600">Upload your quotation or fee statement showing the amount requested</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="other_documents">Other Supporting Documents (Optional)</Label>

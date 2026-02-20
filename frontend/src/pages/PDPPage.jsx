@@ -71,7 +71,7 @@ const CATEGORIES = [
 ];
 
 const COLUMN_HEADERS = [
-  { key: 'learn_what',        label: 'What do I need to learn?',          icon: BookOpen,    color: 'text-blue-600',    bg: 'bg-blue-50' },
+  { key: 'learn_what',        label: 'Skills gap',          icon: BookOpen,    color: 'text-blue-600',    bg: 'bg-blue-50' },
   { key: 'action_plan',       label: 'What will I do to achieve this?',    icon: Target,      color: 'text-purple-600',  bg: 'bg-purple-50' },
   { key: 'resources_support', label: 'What resources or support will I need?', icon: Users,  color: 'text-amber-600',   bg: 'bg-amber-50' },
   { key: 'success_criteria',  label: 'What will my success criteria be?',  icon: CheckSquare, color: 'text-emerald-600', bg: 'bg-emerald-50' },
@@ -172,7 +172,7 @@ const PDPPage = () => {
   };
 
   const handleSave = async () => {
-    if (!form.learn_what.trim()) { toast.error('Please fill in what you need to learn'); return; }
+    if (!form.learn_what.trim()) { toast.error('Please fill in your skills gap'); return; }
     if (!form.action_plan.trim()) { toast.error('Please fill in your action plan'); return; }
     if (!form.resources_support.trim()) { toast.error('Please fill in resources & support needed'); return; }
     if (!form.success_criteria.trim()) { toast.error('Please fill in your success criteria'); return; }
@@ -241,7 +241,7 @@ const PDPPage = () => {
 
   // Wizard steps config
   const steps = [
-    { key: 'learn_what',        label: 'What to Learn',    icon: BookOpen,    question: 'What do I need to learn?', placeholder: 'Describe the skill, knowledge, or competency you want to develop...' },
+    { key: 'learn_what',        label: 'Skills Gap',    icon: BookOpen,    question: 'What is your skills gap?', placeholder: 'Describe the skill, knowledge, or competency you need to develop...' },
     { key: 'action_plan',       label: 'Action Plan',      icon: Target,      question: 'What will I do to achieve this?', placeholder: 'Describe specific steps, courses, projects or activities you will undertake...' },
     { key: 'resources_support', label: 'Resources',        icon: Users,       question: 'What resources or support will I need?', placeholder: 'List books, courses, mentors, tools, or colleagues that can help...' },
     { key: 'success_criteria',  label: 'Success Criteria', icon: CheckSquare, question: 'What will my success criteria be?', placeholder: 'Define measurable outcomes that will tell you when you\'ve succeeded...' },
