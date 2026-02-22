@@ -601,6 +601,73 @@ const ApplicationsPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Approved Application Documents Upload Dialog */}
+      <Dialog open={showApprovedDocsDialog} onOpenChange={setShowApprovedDocsDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5 text-emerald-600" />
+              Upload Required Documents
+            </DialogTitle>
+          </DialogHeader>
+          {selectedApplication && (
+            <div className="space-y-4 py-4">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                <p className="text-sm text-emerald-800 font-medium">
+                  Congratulations! Your bursary application has been approved.
+                </p>
+                <p className="text-sm text-emerald-700 mt-1">
+                  Please upload the following documents to complete the process:
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="invoice">Invoice *</Label>
+                  <Input
+                    id="invoice"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => setApprovedDocs({ ...approvedDocs, invoice: e.target.files[0]?.name || '' })}
+                    data-testid="input-approved-invoice"
+                  />
+                  <p className="text-xs text-slate-600">Upload your invoice from the institution</p>
+                  {approvedDocs.invoice && (
+                    <Badge className="bg-emerald-100 text-emerald-700">{approvedDocs.invoice}</Badge>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="bursary_agreement">Bursary Agreement *</Label>
+                  <Input
+                    id="bursary_agreement"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => setApprovedDocs({ ...approvedDocs, bursary_agreement: e.target.files[0]?.name || '' })}
+                    data-testid="input-bursary-agreement"
+                  />
+                  <p className="text-xs text-slate-600">Upload the signed bursary agreement (template will be shared with you)</p>
+                  {approvedDocs.bursary_agreement && (
+                    <Badge className="bg-emerald-100 text-emerald-700">{approvedDocs.bursary_agreement}</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApprovedDocsDialog(false)}>Cancel</Button>
+            <Button 
+              onClick={handleUploadApprovedDocs} 
+              disabled={uploadingApprovedDocs || !approvedDocs.invoice || !approvedDocs.bursary_agreement}
+              className="bg-emerald-600 hover:bg-emerald-700"
+              data-testid="submit-approved-docs-btn"
+            >
+              {uploadingApprovedDocs ? 'Uploading...' : 'Submit Documents'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
