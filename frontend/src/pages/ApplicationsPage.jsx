@@ -197,7 +197,7 @@ const ApplicationsPage = () => {
     <div className="space-y-6" data-testid="applications-page">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Applications</h2>
+          <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Bursary Applications</h2>
           <p className="text-slate-600 mt-1">Manage and track your bursary applications</p>
         </div>
         <Link to="/applications/new">
