@@ -32,7 +32,7 @@ import {
 // adminOnly: true = visible only to admins
 const navigation = [
   { name: 'Dashboard',     href: '/dashboard',   icon: LayoutDashboard },
-  { name: 'Applications',  href: '/applications', icon: FileText },
+  { name: 'Bursary Applications',  href: '/applications', icon: FileText },
   { name: 'Personal Dev Plan', href: '/pdp',      icon: TrendingUp },
   { name: 'Training Track',href: '/tasks',        icon: CheckSquare },
   { name: 'Meetings',      href: '/meetings',     icon: Calendar },
