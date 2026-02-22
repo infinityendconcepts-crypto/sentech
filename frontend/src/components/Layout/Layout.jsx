@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Menu,
   TrendingUp,
+  GraduationCap,
 } from 'lucide-react';
 
 // adminOnly: true = visible only to admins
