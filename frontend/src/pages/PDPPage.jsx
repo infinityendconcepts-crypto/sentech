@@ -382,11 +382,82 @@ const PDPPage = () => {
           <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Personal Development Plan</h2>
           <p className="text-slate-500 mt-1">Track your learning goals, actions, resources, and milestones</p>
         </div>
-        <Button onClick={openCreate} className="gap-2 self-start sm:self-auto">
-          <Plus className="w-4 h-4" />
-          Add Development Goal
-        </Button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleFileImport}
+          />
+          <Button variant="outline" onClick={downloadSampleSpreadsheet} className="gap-2" data-testid="download-template-btn">
+            <Download className="w-4 h-4" />
+            Sample Template
+          </Button>
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="gap-2" data-testid="import-excel-btn">
+            <Upload className="w-4 h-4" />
+            Import Excel
+          </Button>
+          <Button onClick={openCreate} className="gap-2" data-testid="add-goal-btn">
+            <Plus className="w-4 h-4" />
+            Add Development Goal
+          </Button>
+        </div>
       </div>
+
+      {/* Import Preview Dialog */}
+      <Dialog open={importDialog} onOpenChange={setImportDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-primary" />
+              Import Preview
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 overflow-y-auto max-h-[50vh]">
+            <p className="text-sm text-slate-600 mb-4">
+              Found {importPreview.length} entries to import. Review and confirm:
+            </p>
+            <div className="space-y-3">
+              {importPreview.map((entry, idx) => (
+                <Card key={idx} className="bg-slate-50 border-slate-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-semibold text-slate-900">{entry.learn_what || 'No skills gap specified'}</h4>
+                        <p className="text-sm text-slate-600 mt-1 line-clamp-2">{entry.action_plan}</p>
+                        <div className="flex gap-2 mt-2">
+                          <Badge variant="outline" className="text-xs">{entry.priority || 'medium'}</Badge>
+                          <Badge variant="outline" className="text-xs">{entry.status || 'not_started'}</Badge>
+                          {entry.target_date && (
+                            <Badge variant="outline" className="text-xs">Target: {entry.target_date}</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-rose-600"
+                        onClick={() => setImportPreview(importPreview.filter((_, i) => i !== idx))}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setImportDialog(false); setImportPreview([]); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleImportConfirm} disabled={importing || importPreview.length === 0} className="gap-2">
+              {importing ? 'Importing...' : `Import ${importPreview.length} Entries`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
