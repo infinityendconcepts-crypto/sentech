@@ -365,6 +365,49 @@ const NewApplicationPage = () => {
                   required
                 />
               </div>
+              <div className="space-y-2 relative">
+                <Label htmlFor="district_municipality">District Municipality *</Label>
+                <div className="relative">
+                  <Input
+                    id="district_municipality"
+                    placeholder="Search and select municipality..."
+                    value={showMunicipalityDropdown ? municipalitySearch : formData.personal_info.district_municipality}
+                    onChange={(e) => {
+                      setMunicipalitySearch(e.target.value);
+                      setShowMunicipalityDropdown(true);
+                    }}
+                    onFocus={() => {
+                      setShowMunicipalityDropdown(true);
+                      setMunicipalitySearch('');
+                    }}
+                    data-testid="input-district-municipality"
+                    required
+                  />
+                  <Search className="absolute right-3 top-3 h-4 w-4 text-slate-400" />
+                </div>
+                {showMunicipalityDropdown && (
+                  <div className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-white border border-slate-200 rounded-md shadow-lg">
+                    {filteredMunicipalities.length > 0 ? (
+                      filteredMunicipalities.map((municipality) => (
+                        <button
+                          key={municipality}
+                          type="button"
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 focus:bg-slate-100"
+                          onClick={() => {
+                            updateField('personal_info', 'district_municipality', municipality);
+                            setShowMunicipalityDropdown(false);
+                            setMunicipalitySearch('');
+                          }}
+                        >
+                          {municipality}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-slate-500">No municipalities found</div>
+                    )}
+                  </div>
+                )}
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="race">Race *</Label>
                 <select
@@ -416,19 +459,36 @@ const NewApplicationPage = () => {
                 </select>
               </div>
               {formData.personal_info.disability === 'Yes' && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="disability_description">Disability Description *</Label>
-                  <Textarea
-                    id="disability_description"
-                    placeholder="Please describe your disability"
-                    value={formData.personal_info.disability_description}
-                    onChange={(e) => updateField('personal_info', 'disability_description', e.target.value)}
-                    data-testid="input-disability-description"
-                    rows={3}
-                    required
-                  />
-                  <p className="text-xs text-slate-600">Provide details about your disability to help us accommodate your needs</p>
-                </div>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="disability_description">Disability Description *</Label>
+                    <Textarea
+                      id="disability_description"
+                      placeholder="Please describe your disability"
+                      value={formData.personal_info.disability_description}
+                      onChange={(e) => updateField('personal_info', 'disability_description', e.target.value)}
+                      data-testid="input-disability-description"
+                      rows={3}
+                      required
+                    />
+                    <p className="text-xs text-slate-600">Provide details about your disability to help us accommodate your needs</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="medical_certificate">
+                      Medical Certificate *
+                      <Badge className="ml-2 bg-amber-100 text-amber-700">Required for Disability</Badge>
+                    </Label>
+                    <Input
+                      id="medical_certificate"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => updateField('personal_info', 'medical_certificate', e.target.files[0]?.name || '')}
+                      data-testid="input-medical-certificate"
+                      required
+                    />
+                    <p className="text-xs text-slate-600">Upload a medical certificate confirming your disability</p>
+                  </div>
+                </>
               )}
             </div>
           )}
