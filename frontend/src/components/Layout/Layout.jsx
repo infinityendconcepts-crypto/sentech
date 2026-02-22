@@ -34,6 +34,7 @@ import {
 const navigation = [
   { name: 'Dashboard',     href: '/dashboard',   icon: LayoutDashboard },
   { name: 'Bursary Applications',  href: '/applications', icon: FileText },
+  { name: 'Training Applications', href: '/training-applications', icon: GraduationCap },
   { name: 'Personal Dev Plan', href: '/pdp',      icon: TrendingUp },
   { name: 'Training Track',href: '/tasks',        icon: CheckSquare },
   { name: 'Meetings',      href: '/meetings',     icon: Calendar },
