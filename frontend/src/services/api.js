@@ -179,6 +179,15 @@ export const applicationsAPI = {
   getOne: (id) => api.get(`/applications/${id}`),
   create: (data) => api.post('/applications', data),
   update: (id, data) => api.put(`/applications/${id}`, data),
+  updateStatus: (id, data) => api.put(`/applications/${id}/status`, data),
+};
+
+export const trainingApplicationsAPI = {
+  getAll: () => api.get('/training-applications'),
+  getOne: (id) => api.get(`/training-applications/${id}`),
+  create: (data) => api.post('/training-applications', data),
+  update: (id, data) => api.put(`/training-applications/${id}`, data),
+  updateStatus: (id, data) => api.put(`/training-applications/${id}/status`, data),
 };
 
 export const bbbeeAPI = {
