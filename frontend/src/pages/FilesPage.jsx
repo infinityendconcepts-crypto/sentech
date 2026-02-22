@@ -51,7 +51,23 @@ const FilesPage = () => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
   const fileInputRef = useRef(null);
+
+  // MICTSETA Document Categories Structure
+  const documentCategories = {
+    '2025-26 FY': {
+      label: '2025-26 FY',
+      color: '#0056B3',
+      subCategories: ['Internships', 'University Placements']
+    },
+    '2026-27 FY': {
+      label: '2026-27 FY',
+      color: '#00875A',
+      subCategories: ['Internships', 'University Placements']
+    }
+  };
 
   useEffect(() => {
     fetchFiles();
