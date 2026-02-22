@@ -659,16 +659,16 @@ const NewApplicationPage = () => {
             <div className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="id_document">ID Document / Passport *</Label>
+                  <Label htmlFor="signed_performance_contract">Signed Performance Contract *</Label>
                   <Input
-                    id="id_document"
+                    id="signed_performance_contract"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'id_document', e.target.files[0]?.name || '')}
-                    data-testid="input-id-document"
+                    onChange={(e) => updateField('documents', 'signed_performance_contract', e.target.files[0]?.name || '')}
+                    data-testid="input-signed-performance-contract"
                     required
                   />
-                  <p className="text-xs text-slate-600">Upload a certified copy of your ID document or passport</p>
+                  <p className="text-xs text-slate-600">Upload your signed performance contract</p>
                 </div>
                 
                 {/* Academic Transcript - Only for Re-apply Applicants */}
@@ -699,7 +699,7 @@ const NewApplicationPage = () => {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="proof_of_registration">Proof of Registration *</Label>
+                  <Label htmlFor="proof_of_registration">Proof of Registration / Acceptance Letter *</Label>
                   <Input
                     id="proof_of_registration"
                     type="file"
@@ -708,7 +708,7 @@ const NewApplicationPage = () => {
                     data-testid="input-proof-of-registration"
                     required
                   />
-                  <p className="text-xs text-slate-600">Upload your proof of registration or acceptance letter from the institution</p>
+                  <p className="text-xs text-slate-600">Upload your Proof of Registration / Acceptance Letter from the institution</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="quotation_amount_requested">Quotation Amount Requested *</Label>
@@ -721,6 +721,18 @@ const NewApplicationPage = () => {
                     required
                   />
                   <p className="text-xs text-slate-600">Upload your quotation or fee statement showing the amount requested</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="motivation_document">Motivation Document *</Label>
+                  <Input
+                    id="motivation_document"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => updateField('documents', 'motivation_document', e.target.files[0]?.name || '')}
+                    data-testid="input-motivation-document"
+                    required
+                  />
+                  <p className="text-xs text-slate-600">Upload your motivation letter explaining why you are applying for this bursary</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="other_documents">Other Supporting Documents (Optional)</Label>
