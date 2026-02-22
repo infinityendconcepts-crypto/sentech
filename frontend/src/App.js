@@ -13,6 +13,8 @@ import AuthCallbackPage from './pages/AuthCallbackPage';
 import DashboardPage from './pages/DashboardPage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import NewApplicationPage from './pages/NewApplicationPage';
+import TrainingApplicationsPage from './pages/TrainingApplicationsPage';
+import TrainingApplicationPage from './pages/TrainingApplicationPage';
 import SponsorsPage from './pages/SponsorsPage';
 import BBBEEPage from './pages/BBBEEPage';
 import TrainingTrackPage from './pages/TrainingTrackPage';
