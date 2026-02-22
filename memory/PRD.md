@@ -46,15 +46,22 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Dashboard with stats and quick actions
 - Full application management workflow
 
-### Application Flow
+### Bursary Application Flow (Renamed from Applications)
 - Multi-step application form with validation
+- **District Municipality dropdown** with search feature (all 52 SA municipalities)
 - Conditional fields (disability description for disabled applicants)
+- **Medical Certificate upload** (required when disability = Yes)
+- **Performance Score dropdown (1-5)** with labels
 - Academic transcript upload for Re-apply applicants
-- "Quotation Amount Requested" file upload in documents section
+- **Signed Performance Contract** upload (replaced ID Document)
+- **Proof of Registration / Acceptance Letter** upload
+- "Quotation Amount Requested" file upload
+- **Motivation Document** upload (new)
 - Status management: draft, pending, under review, approved, rejected
 - Student can edit draft/pending applications
 - Admin can change application status
-- **Large detailed view popup** showing all application information in a comprehensive layout
+- **Invoice and Bursary Agreement upload** for approved applications
+- Large detailed view popup showing all application information
 
 ### Training Track Module
 - Kanban board with drag-and-drop (using @dnd-kit)
@@ -64,7 +71,7 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Due dates for modules
 - Admin-only edit/delete
 - Export to Excel/PDF
-- **Attendance feature removed per user request**
+- Attendance feature removed per user request
 
 ### Personal Development Plan (PDP)
 - Goal creation with "Skills gap" (renamed from "What to learn")
@@ -73,8 +80,23 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Status tracking (not started, in progress, completed, overdue)
 - Priority levels (low, medium, high)
 - Category tags
+- **Excel Import feature** with downloadable sample template
+- Import preview with ability to remove entries before importing
+
+### MICTSETA Documents (Renamed from Files)
+- **New category-based structure:**
+  - Main Categories: 2025-26 FY, 2026-27 FY
+  - Sub Categories: Internships, University Placements
+- Folder creation within categories
+- File upload with drag-and-drop
+- File download and deletion
+
+### Tickets Module
+- Categories updated to: Technical Support, HR Query, Bursary Query, Other
 
 ### UI/UX Refinements
+- "Applications" renamed to "Bursary Applications"
+- "Team" renamed to "Teams"
 - Simplified login page (Email/Password and Microsoft SSO only - OTP removed)
 - "Tasks" renamed to "Training Track"
 - "Files" renamed to "MICTSETA Documents"
