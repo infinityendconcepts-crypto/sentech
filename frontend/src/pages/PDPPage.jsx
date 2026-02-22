@@ -114,6 +114,12 @@ const PDPPage = () => {
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
   const [activeStep, setActiveStep] = useState(0); // wizard step in dialog
+  
+  // Excel import state
+  const [importDialog, setImportDialog] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importPreview, setImportPreview] = useState([]);
+  const fileInputRef = useRef(null);
 
   useEffect(() => { 
     fetchEntries(); 
