@@ -314,6 +314,17 @@ const ApplicationsPage = () => {
                         </Button>
                       </Link>
                     )}
+                    {!isAdmin && application.status === 'approved' && (
+                      <Button 
+                        size="sm" 
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                        onClick={() => openApprovedDocsDialog(application)}
+                        data-testid={`upload-approved-docs-${application.id}`}
+                      >
+                        <Upload className="w-4 h-4" />
+                        Upload Required Docs
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>
