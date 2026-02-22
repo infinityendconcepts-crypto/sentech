@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +50,11 @@ import {
   Eye,
   X,
   User,
+  Upload,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const STATUS_CONFIG = {
   not_started: { label: 'Not Started', color: 'bg-slate-100 text-slate-600', icon: Circle },
