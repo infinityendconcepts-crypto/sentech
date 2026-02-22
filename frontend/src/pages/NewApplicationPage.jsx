@@ -141,7 +141,7 @@ const NewApplicationPage = () => {
           const app = response.data;
           setFormData({
             personal_info: app.personal_info || {
-              surname: '', name: '', id_number: '', race: '', gender: '', disability: '', disability_description: ''
+              surname: '', name: '', id_number: '', race: '', gender: '', disability: '', disability_description: '', medical_certificate: '', district_municipality: ''
             },
             employment_info: app.employment_info || {
               division: '', department: '', position_description: '', date_of_appointment: '', performance_score: ''
@@ -150,7 +150,7 @@ const NewApplicationPage = () => {
               bursary_status: '', institution: '', course_of_study: '', total_amount_requested: '', applicant_type: ''
             },
             documents: app.documents || {
-              id_document: '', academic_transcript: '', proof_of_registration: '', quotation_amount_requested: '', other_documents: ''
+              signed_performance_contract: '', academic_transcript: '', proof_of_registration: '', quotation_amount_requested: '', motivation_document: '', other_documents: ''
             },
           });
           if (app.current_step) {
