@@ -2770,6 +2770,125 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
     updated_app = await db.applications.find_one({"id": application_id}, {"_id": 0})
     return updated_app
 
+# ============== TRAINING APPLICATIONS ROUTES ==============
+
+class TrainingApplicationCreate(BaseModel):
+    status: Optional[str] = "draft"
+    current_step: Optional[int] = 1
+    personal_info: Optional[Dict[str, Any]] = {}
+    employment_info: Optional[Dict[str, Any]] = {}
+    training_info: Optional[Dict[str, Any]] = {}
+    documents: Optional[Dict[str, Any]] = {}
+
+class TrainingApplicationUpdate(BaseModel):
+    current_step: Optional[int] = None
+    status: Optional[str] = None
+    status_note: Optional[str] = None
+    personal_info: Optional[Dict[str, Any]] = None
+    employment_info: Optional[Dict[str, Any]] = None
+    training_info: Optional[Dict[str, Any]] = None
+    documents: Optional[Dict[str, Any]] = None
+
+@api_router.get("/training-applications")
+async def get_training_applications(current_user: dict = Depends(get_current_user)):
+    if "admin" in current_user.get("roles", []):
+        applications = await db.training_applications.find({}, {"_id": 0}).to_list(1000)
+    else:
+        applications = await db.training_applications.find({"user_id": current_user["id"]}, {"_id": 0}).to_list(1000)
+    return applications
+
+@api_router.get("/training-applications/{application_id}")
+async def get_training_application(application_id: str, current_user: dict = Depends(get_current_user)):
+    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Training application not found")
+    
+    if application["user_id"] != current_user["id"] and "admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    return application
+
+@api_router.post("/training-applications")
+async def create_training_application(app_data: TrainingApplicationCreate, current_user: dict = Depends(get_current_user)):
+    app_dict = {
+        "id": generate_uuid(),
+        "user_id": current_user["id"],
+        "user_email": current_user["email"],
+        "status": app_data.status or "draft",
+        "current_step": app_data.current_step or 1,
+        "personal_info": app_data.personal_info or {},
+        "employment_info": app_data.employment_info or {},
+        "training_info": app_data.training_info or {},
+        "documents": app_data.documents or {},
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    # If status is pending, set submitted_at
+    if app_data.status == "pending":
+        app_dict['submitted_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.training_applications.insert_one({**app_dict})
+    return app_dict
+
+@api_router.put("/training-applications/{application_id}")
+async def update_training_application(application_id: str, update_data: TrainingApplicationUpdate, current_user: dict = Depends(get_current_user)):
+    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Training application not found")
+    
+    # Allow admin or owner to update
+    is_admin = "admin" in current_user.get("roles", [])
+    if application["user_id"] != current_user["id"] and not is_admin:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # If status is being changed to pending or submitted, set submitted_at
+    if update_data.status in ["pending", "submitted"]:
+        update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
+    updated_app = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    return updated_app
+
+@api_router.put("/training-applications/{application_id}/status")
+async def update_training_application_status(application_id: str, status_data: dict, current_user: dict = Depends(get_current_user)):
+    # Only admins can update status
+    if "admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can update application status")
+    
+    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Training application not found")
+    
+    update_dict = {
+        "status": status_data.get("status"),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    
+    if status_data.get("status_note"):
+        update_dict["status_note"] = status_data.get("status_note")
+    
+    await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
+    updated_app = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    return updated_app
+
+@api_router.delete("/training-applications/{application_id}")
+async def delete_training_application(application_id: str, current_user: dict = Depends(get_current_user)):
+    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Training application not found")
+    
+    # Only owner or admin can delete
+    is_admin = "admin" in current_user.get("roles", [])
+    if application["user_id"] != current_user["id"] and not is_admin:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    await db.training_applications.delete_one({"id": application_id})
+    return {"message": "Training application deleted successfully"}
+
 # ============== BBBEE ROUTES ==============
 
 @api_router.get("/bbbee")
