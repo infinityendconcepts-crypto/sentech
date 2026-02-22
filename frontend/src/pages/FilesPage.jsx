@@ -332,71 +332,45 @@ const FilesPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Breadcrumb */}
-      <Card className="bg-white border-slate-200">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2">
-            <button
-              className="text-sm font-medium text-primary hover:underline"
-              onClick={() => navigateBack(-1)}
-            >
-              Documents
-            </button>
-            {folderPath.map((folder, index) => (
-              <React.Fragment key={index}>
-                <ChevronRight className="w-4 h-4 text-slate-400" />
-                <button
-                  className="text-sm font-medium text-primary hover:underline"
-                  onClick={() => navigateBack(index)}
-                >
-                  {folder.name}
-                </button>
-              </React.Fragment>
-            ))}
-            {currentFolder && (
-              <>
-                <ChevronRight className="w-4 h-4 text-slate-400" />
-                <span className="text-sm font-medium text-slate-900">
-                  {folders.find(f => f.id === currentFolder)?.name || 'Current'}
-                </span>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-        <Input
-          placeholder="Search files and folders..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-white"
-          data-testid="search-files-input"
-        />
-      </div>
-
-      {/* Folders */}
-      {filteredFolders.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-slate-700 mb-3">Folders</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {filteredFolders.map((folder) => (
+      {/* MICTSETA Document Categories */}
+      {!selectedCategory && !selectedSubCategory && (
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-slate-900">Main Categories</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {Object.entries(documentCategories).map(([key, category]) => (
               <Card
-                key={folder.id}
-                className="bg-white border-slate-200 hover:shadow-md transition-all duration-200 cursor-pointer"
-                onClick={() => navigateToFolder(folder)}
-                data-testid={`folder-${folder.id}`}
+                key={key}
+                className="bg-white border-slate-200 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                onClick={() => setSelectedCategory(key)}
+                data-testid={`category-${key}`}
               >
-                <CardContent className="p-4 text-center">
-                  <Folder
-                    className="w-12 h-12 mx-auto mb-2"
-                    style={{ color: folder.color || '#0056B3' }}
-                    fill={folder.color || '#0056B3'}
-                    fillOpacity={0.2}
-                  />
-                  <p className="font-medium text-sm text-slate-900 truncate">{folder.name}</p>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div 
+                      className="w-16 h-16 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: `${category.color}20` }}
+                    >
+                      <Folder 
+                        className="w-8 h-8"
+                        style={{ color: category.color }}
+                        fill={category.color}
+                        fillOpacity={0.3}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-semibold text-slate-900">{category.label}</h4>
+                      <p className="text-sm text-slate-500 mt-1">
+                        {category.subCategories.length} sub-categories
+                      </p>
+                      <div className="flex gap-2 mt-2">
+                        {category.subCategories.map((sub) => (
+                          <Badge key={sub} variant="outline" className="text-xs">
+                            {sub}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -404,78 +378,165 @@ const FilesPage = () => {
         </div>
       )}
 
-      {/* Files */}
-      <div>
-        <h3 className="text-sm font-semibold text-slate-700 mb-3">Files</h3>
-        {filteredFiles.length === 0 && filteredFolders.length === 0 ? (
-          <Card className="bg-white border-slate-200">
-            <CardContent className="p-12 text-center">
-              <File className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-heading font-semibold text-slate-900 mb-2">No documents yet</h3>
-              <p className="text-slate-600">Upload documents or create folders to organize your MICTSETA files</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {filteredFiles.map((file) => (
+      {/* Sub-Categories View */}
+      {selectedCategory && !selectedSubCategory && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)}>
+              ← Back
+            </Button>
+            <h3 className="text-lg font-semibold text-slate-900">{selectedCategory}</h3>
+          </div>
+          <h4 className="text-md font-medium text-slate-700">Sub Categories</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {documentCategories[selectedCategory].subCategories.map((subCat) => (
               <Card
-                key={file.id}
-                className="bg-white border-slate-200 hover:shadow-md transition-all duration-200"
-                data-testid={`file-${file.id}`}
+                key={subCat}
+                className="bg-white border-slate-200 hover:shadow-md transition-all duration-200 cursor-pointer"
+                onClick={() => setSelectedSubCategory(subCat)}
+                data-testid={`subcategory-${subCat}`}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    {getFileIcon(file.file_type)}
-                    <div className="flex gap-1">
-                      {file.is_shared && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Share2 className="w-3 h-3" />
-                        </Badge>
-                      )}
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
+                      <Folder className="w-6 h-6 text-slate-600" />
                     </div>
-                  </div>
-                  <h4 className="font-medium text-sm text-slate-900 truncate mb-1">{file.name}</h4>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>{formatFileSize(file.size)}</span>
-                    <span>{formatDate(file.created_at)}</span>
-                  </div>
-                  <div className="flex gap-2 mt-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        if (file.url?.startsWith('data:')) {
-                          const a = document.createElement('a');
-                          a.href = file.url;
-                          a.download = file.original_name || file.name;
-                          a.click();
-                        } else {
-                          window.open(file.url, '_blank');
-                        }
-                      }}
-                    >
-                      <Download className="w-4 h-4 mr-1" />
-                      Download
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-rose-600"
-                      onClick={() => handleDeleteFile(file.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div>
+                      <h4 className="font-semibold text-slate-900">{subCat}</h4>
+                      <p className="text-sm text-slate-500">View documents</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Files View (when in a sub-category) */}
+      {selectedCategory && selectedSubCategory && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setSelectedSubCategory(null)}>
+              ← Back to {selectedCategory}
+            </Button>
+            <span className="text-slate-400">/</span>
+            <h3 className="text-lg font-semibold text-slate-900">{selectedSubCategory}</h3>
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search files..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white"
+              data-testid="search-files-input"
+            />
+          </div>
+
+          {/* Custom Folders */}
+          {filteredFolders.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Folders</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {filteredFolders.map((folder) => (
+                  <Card
+                    key={folder.id}
+                    className="bg-white border-slate-200 hover:shadow-md transition-all duration-200 cursor-pointer"
+                    onClick={() => navigateToFolder(folder)}
+                    data-testid={`folder-${folder.id}`}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <Folder
+                        className="w-12 h-12 mx-auto mb-2"
+                        style={{ color: folder.color || '#0056B3' }}
+                        fill={folder.color || '#0056B3'}
+                        fillOpacity={0.2}
+                      />
+                      <p className="font-medium text-sm text-slate-900 truncate">{folder.name}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Files */}
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">Files</h3>
+            {filteredFiles.length === 0 ? (
+              <Card className="bg-white border-slate-200">
+                <CardContent className="p-12 text-center">
+                  <File className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-heading font-semibold text-slate-900 mb-2">No documents yet</h3>
+                  <p className="text-slate-600">Upload documents for {selectedCategory} - {selectedSubCategory}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {filteredFiles.map((file) => (
+                  <Card
+                    key={file.id}
+                    className="bg-white border-slate-200 hover:shadow-md transition-all duration-200"
+                    data-testid={`file-${file.id}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        {getFileIcon(file.file_type)}
+                        <div className="flex gap-1">
+                          {file.is_shared && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Share2 className="w-3 h-3" />
+                            </Badge>
+                          )}
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <h4 className="font-medium text-sm text-slate-900 truncate mb-1">{file.name}</h4>
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <span>{formatFileSize(file.size)}</span>
+                        <span>{formatDate(file.created_at)}</span>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            if (file.url?.startsWith('data:')) {
+                              const a = document.createElement('a');
+                              a.href = file.url;
+                              a.download = file.original_name || file.name;
+                              a.click();
+                            } else {
+                              window.open(file.url, '_blank');
+                            }
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-1" />
+                          Download
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-rose-600"
+                          onClick={() => handleDeleteFile(file.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
