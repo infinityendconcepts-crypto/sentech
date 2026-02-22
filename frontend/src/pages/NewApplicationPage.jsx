@@ -550,11 +550,11 @@ const NewApplicationPage = () => {
                   required
                 >
                   <option value="">Select score</option>
-                  <option value="1">1 - Needs Improvement</option>
-                  <option value="2">2 - Below Expectations</option>
-                  <option value="3">3 - Meets Expectations</option>
-                  <option value="4">4 - Exceeds Expectations</option>
-                  <option value="5">5 - Outstanding</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
                 </select>
                 <p className="text-xs text-slate-600">Select your most recent performance evaluation score</p>
               </div>
