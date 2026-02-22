@@ -113,6 +113,35 @@ const ApplicationsPage = () => {
     setShowStatusDialog(true);
   };
 
+  const openApprovedDocsDialog = (application) => {
+    setSelectedApplication(application);
+    setApprovedDocs({
+      invoice: application.approved_documents?.invoice || '',
+      bursary_agreement: application.approved_documents?.bursary_agreement || ''
+    });
+    setShowApprovedDocsDialog(true);
+  };
+
+  const handleUploadApprovedDocs = async () => {
+    if (!approvedDocs.invoice || !approvedDocs.bursary_agreement) {
+      toast.error('Please upload both Invoice and Bursary Agreement');
+      return;
+    }
+    setUploadingApprovedDocs(true);
+    try {
+      await applicationsAPI.update(selectedApplication.id, {
+        approved_documents: approvedDocs
+      });
+      toast.success('Documents uploaded successfully');
+      setShowApprovedDocsDialog(false);
+      fetchApplications();
+    } catch (error) {
+      toast.error('Failed to upload documents');
+    } finally {
+      setUploadingApprovedDocs(false);
+    }
+  };
+
   const handleStatusChange = async () => {
     if (!newStatus) {
       toast.error('Please select a status');
