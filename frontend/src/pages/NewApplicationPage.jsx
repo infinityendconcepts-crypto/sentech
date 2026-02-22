@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { applicationsAPI } from '../services/api';
-import { CheckCircle2, ChevronLeft, ChevronRight, FileText, User, Briefcase, GraduationCap, Upload, Eye } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, FileText, User, Briefcase, GraduationCap, Upload, Eye, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -16,6 +16,61 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+
+// South African District Municipalities
+const DISTRICT_MUNICIPALITIES = [
+  "Alfred Nzo District Municipality",
+  "Amajuba District Municipality",
+  "Amathole District Municipality",
+  "Bojanala Platinum District Municipality",
+  "Buffalo City Metropolitan Municipality",
+  "Cape Winelands District Municipality",
+  "Capricorn District Municipality",
+  "Central Karoo District Municipality",
+  "Chris Hani District Municipality",
+  "City of Cape Town Metropolitan Municipality",
+  "City of Ekurhuleni Metropolitan Municipality",
+  "City of Johannesburg Metropolitan Municipality",
+  "City of Tshwane Metropolitan Municipality",
+  "Dr Kenneth Kaunda District Municipality",
+  "Dr Ruth Segomotsi Mompati District Municipality",
+  "Ehlanzeni District Municipality",
+  "eThekwini Metropolitan Municipality",
+  "Fezile Dabi District Municipality",
+  "Frances Baard District Municipality",
+  "Garden Route District Municipality",
+  "Gert Sibande District Municipality",
+  "Harry Gwala District Municipality",
+  "iLembe District Municipality",
+  "Joe Gqabi District Municipality",
+  "John Taolo Gaetsewe District Municipality",
+  "King Cetshwayo District Municipality",
+  "Lejweleputswa District Municipality",
+  "Mangaung Metropolitan Municipality",
+  "Mopani District Municipality",
+  "Namakwa District Municipality",
+  "Nelson Mandela Bay Metropolitan Municipality",
+  "Ngaka Modiri Molema District Municipality",
+  "Nkangala District Municipality",
+  "O.R. Tambo District Municipality",
+  "Overberg District Municipality",
+  "Pixley ka Seme District Municipality",
+  "Sedibeng District Municipality",
+  "Sekhukhune District Municipality",
+  "Thabo Mofutsanyana District Municipality",
+  "Ugu District Municipality",
+  "uMgungundlovu District Municipality",
+  "uMkhanyakude District Municipality",
+  "uMzinyathi District Municipality",
+  "uThukela District Municipality",
+  "Vhembe District Municipality",
+  "Waterberg District Municipality",
+  "West Coast District Municipality",
+  "West Rand District Municipality",
+  "Xhariep District Municipality",
+  "ZF Mgcawu District Municipality",
+  "Zululand District Municipality",
+];
 
 const steps = [
   { number: 1, name: 'Personal Information', description: 'Basic personal and demographic details', icon: User },
