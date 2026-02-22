@@ -36,6 +36,11 @@ const ApplicationsPage = () => {
   const [newStatus, setNewStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  
+  // Approved application document uploads
+  const [showApprovedDocsDialog, setShowApprovedDocsDialog] = useState(false);
+  const [approvedDocs, setApprovedDocs] = useState({ invoice: '', bursary_agreement: '' });
+  const [uploadingApprovedDocs, setUploadingApprovedDocs] = useState(false);
 
   useEffect(() => {
     fetchApplications();
