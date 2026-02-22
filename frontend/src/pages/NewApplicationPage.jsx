@@ -540,18 +540,23 @@ const NewApplicationPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="performance_score">Performance Score (Optional)</Label>
-                <Input
+                <Label htmlFor="performance_score">Performance Score (1-5) *</Label>
+                <select
                   id="performance_score"
-                  type="number"
-                  placeholder="Enter score (0-100)"
-                  min="0"
-                  max="100"
                   value={formData.employment_info.performance_score}
                   onChange={(e) => updateField('employment_info', 'performance_score', e.target.value)}
-                  data-testid="input-performance-score"
-                />
-                <p className="text-xs text-slate-600">Enter your most recent performance evaluation score if available</p>
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  data-testid="select-performance-score"
+                  required
+                >
+                  <option value="">Select score</option>
+                  <option value="1">1 - Needs Improvement</option>
+                  <option value="2">2 - Below Expectations</option>
+                  <option value="3">3 - Meets Expectations</option>
+                  <option value="4">4 - Exceeds Expectations</option>
+                  <option value="5">5 - Outstanding</option>
+                </select>
+                <p className="text-xs text-slate-600">Select your most recent performance evaluation score</p>
               </div>
             </div>
           )}
