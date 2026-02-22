@@ -53,6 +53,9 @@ function App() {
               <Route path="/applications" element={<ApplicationsPage />} />
               <Route path="/applications/new" element={<NewApplicationPage />} />
               <Route path="/applications/:id/edit" element={<NewApplicationPage />} />
+              <Route path="/training-applications" element={<TrainingApplicationsPage />} />
+              <Route path="/training-applications/new" element={<TrainingApplicationPage />} />
+              <Route path="/training-applications/:id/edit" element={<TrainingApplicationPage />} />
               <Route path="/profile" element={<UserProfilePage />} />
               <Route path="/help" element={<HelpPage />} />
               <Route path="/notes" element={<NotesPage />} />
