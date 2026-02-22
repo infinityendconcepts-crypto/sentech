@@ -4,91 +4,103 @@ The user wants to create a comprehensive bursary management system named Sentech
 **PRODUCT REQUIREMENTS (New & Existing):**
 - **Technology:** React, FastAPI, and MongoDB.
 - **Branding:** Sentech name with a blue (#0056B3) and gray color scheme.
-- **Authentication:** Microsoft Entra ID SSO, standard email/password.
-- **Core Modules (Pages):** Dashboard, Applications, Sponsors, BBBEE, Projects, Training Track (formerly Tasks), Leads, Prospects, Meetings, Notes, Messages, Team, Tickets, Expenses, Reports, MICTSETA Documents (formerly Files), Help and Support, Settings, Users, User Profile, Events, Personal Development Plan (PDP).
-- **Recent Feature Requests (Implemented):**
-    - **Applications Page:** Add disability description, make performance score optional, disable bursary status for new applicants, add academic transcript upload for Re-apply applicants, view application summary, change application status, and add an Edit button for students on draft/pending applications.
-    - **Login Page:** Remove the Email OTP login option.
-    - **File Management:** Rename Files page to MICTSETA Documents with an updated description.
-    - **Tasks Page:** Rename to Training Track, change Task to Training Module, and add features for comments, image uploads, due dates, and admin-only editing.
-    - **PDP Page:** Rename Dev Plan to Personal Dev Plan, change What to learn to Skills gap, and allow admins to select a user when creating a development goal.
+- **Core Modules (Pages):** Dashboard, Bursary Applications, Sponsors, BBBEE, Projects, Training Track, Meetings, Notes, Messages, Team, Tickets, Expenses, Reports, MICTSETA Documents, Help and Support, Settings, Users, User Profile, Events, Personal Development Plan (PDP).
+- **Recently Implemented Features:**
+    - **Bursary Application:** Renamed from Applications. Added searchable District Municipality dropdown, conditional medical certificate upload, performance score changed to a 1-5 scale, and updated document requirements (Signed Performance Contract, Motivation Document). Added post-approval document uploads (Invoice, Bursary Agreement).
+    - **Application View:** Replaced the simple summary with a large, comprehensive modal displaying all application details.
+    - **Application Status:** Fixed a bug to ensure applications are correctly set to 'pending' status upon submission.
+    - **MICTSETA Documents:** Page restructured with main categories (Fiscal Year) and sub-categories (Internships, Placements).
+    - **Personal Development Plan (PDP):** Added functionality to import data from an Excel spreadsheet and download a sample template. Field What to learn was renamed to Skills gap.
+    - **Navigation:** Team page renamed to Teams. Leads, Notes, and Prospects pages have been hidden from the sidebar.
+    - **Training Track:** Removed the Attendance feature.
+    - **Tickets:** Updated categories to Technical support, HR query, Bursary Query, and other.
 - **Pending Feature Requests (From last user message):**
-    - Remove Attendance from training modules.
-    - Change continuation applicant to Re-apply.
-    - Add an upload option for quotation amount requested in the application documents section.
-    - Hide the Leads page for now.
+    - Rename Re-apply to continuation on the bursary application form.
+    - Use numbers only (1-5) for the performance score.
+    - Create a new Training application page, reusing the bursary application steps but with significant modifications to Step 3 (Academic/Service Details) and Step 4 (Documents), including conditional logic based on training cost and supplier choice.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application (React/FastAPI/MongoDB) with role-based access control (RBAC) for 'admin' and 'student' roles. The application has undergone significant UI and feature enhancements in the last session.
+A full-stack application (React/FastAPI/MongoDB) with role-based access control. The last session saw extensive feature additions and UI modifications across multiple modules.
 
-- **Login/Auth:** The login page has been simplified to only offer Email/Password and Microsoft SSO.
-- **Module Renaming:** Tasks has been successfully renamed to Training Track, and Files has been renamed to MICTSETA Documents throughout the application, including navigation.
-- **Training Track (formerly Tasks):** This module is now a Kanban board for Training Modules. It includes functionality for adding comments, uploading images, setting due dates, and allowing admins to edit modules.
-- **Personal Development Plan (PDP):** The page has been renamed. Admins can now assign a development goal to a specific user, and the page includes a user filter.
-- **Applications:** The application form and management page have been extensively updated. This includes conditional fields (disability description, academic transcript), optional fields (performance score), disabled status for new applicants, and role-based actions (students can Edit drafts, admins can Change Status). The workflow for continuing a draft application has been implemented and refined.
+- **Bursary Application:** The application form () has been heavily modified with a searchable district municipality dropdown, a 1-5 performance score, a conditional medical certificate upload, and updated document requirements. The list page () now features a comprehensive View modal and includes functionality to upload documents for Approved applications. The backend now correctly handles the 'pending' status on submission.
+- **PDP & MICTSETA:** The PDP page now supports Excel data import. The MICTSETA Documents page has a new folder-like structure.
+- **Navigation:** The main navigation bar in  has been cleaned up, hiding several pages and renaming Team to Teams.
+- **Training Application:** The foundation for this new module has been laid. New files (, ) have been created, routes have been added to , and a new API service file has been created. The core implementation is pending.
 
 **Last working item**:
-- **Last item agent was working:** The agent was about to implement a new batch of user requests.
-    - Remove attendance tracking from the Training Track module.
-    - Rename continuation applicant to Re-apply on the application form.
-    - Add a quotation amount requested file upload field to the application documents step.
-    - On the PDP page, rename the What to learn field to Skills gap.
-    - Hide the Leads page from the navigation sidebar.
-- **Status**: NOT STARTED
-- **Agent Testing Done**: N
-- **Which testing method agent to use?**: frontend testing agent
+- **Last item agent was working:** The agent was implementing a new Training Application module, which is a variant of the existing Bursary Application flow. It also actioned two minor changes on the bursary form.
+    - Renamed Re-apply to continuation. (DONE)
+    - Changed performance score to be numbers only. (DONE)
+    - Created placeholder files, API services, and routes for the new Training Application feature. (DONE)
+    - **Next step is to build the full UI and backend logic for the Training Application module.**
+- **Status**: IN PROGRESS
+- **Agent Testing Done**: N (Only for the new files/routes, not the full feature)
+- **Which testing method agent to use?**: both (The feature involves significant frontend and backend changes)
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
 - **Issue 1: Outdated Drag-and-Drop on Prospects Page (P1)**
-    - **Description**: The  uses the older  library for its Kanban board, which is inconsistent with the  and  that have been upgraded to . This can lead to a subpar user experience and console warnings.
+    - **Description**: The  uses the older  library, which is inconsistent with other Kanban boards (, ) that use . This causes UI inconsistency and potential console warnings.
     - **Next debug checklist**:
-        1. Edit .
-        2. Replace the  implementation with , mirroring the logic in  or .
-        3. Ensure the backend API call to update the prospect's status is triggered correctly after a drag-and-drop action.
-    - **Why fix this issue?**: To standardize the user interface, eliminate console warnings, and provide a consistent, smooth drag-and-drop experience across all Kanban boards.
+        1.  Edit .
+        2.  Replace  with , referencing the implementation in .
+        3.  Ensure the backend API call to update prospect status is correctly triggered on drop.
+    - **Why fix this issue?**: To standardize the UI/UX, eliminate console warnings, and improve maintainability.
     - **Status**: NOT STARTED
     - **Is recurring issue?**: N
     - **Should Test frontend/backend/both after fix?**: frontend
     - **Blocked on other issue**: None
 
 **In progress Task List**:
-None.
+- **Task 1: Complete Training Application Module (P0)**
+    - **Description**: The user requested a new application flow for training, separate from bursaries. The initial files have been created, but the core logic is missing.
+    - **Where to resume**:
+        1.  **Frontend ():** Copy the content from  and apply the required modifications:
+            -   Change page title and headings.
+            -   In Step 3, rename Bursary status to Training status, Institution to Service Provider, and Course of study to Training type.
+            -   In Step 4, implement conditional document uploads based on training cost (under/over R15,000).
+            -   Add a dropdown for supplier choice (preferred supplier vs. RFQ) and a conditional upload for Scope of work.
+        2.  **Frontend ():** Implement the list view for all training applications, similar to .
+        3.  **Backend ():** Create new CRUD endpoints () for the module. This requires a new MongoDB collection (e.g., ) and new Pydantic models.
+        4.  **Navigation ():** Add a link to Training Applications in the sidebar.
+    - **What will be achieved with this?**: A complete, functional module for managing training applications as requested by the user.
+    - **Status**: IN PROGRESS
+    - **Should Test frontend/backend/both after fix?**: both
+    - **Blocked on something**: No
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
-- **Task 1: Implement Latest User Requests (P0):**
-    - Remove attendance feature from .
-    - In , rename continuation applicant to Re-apply and add a file upload for quotation amount requested.
-    - In , change the What to learn field label to Skills gap.
-    - In , hide the Leads navigation item.
-- **Task 2: Implement Backend for Remaining Modules (P1):** Create CRUD API endpoints in  and implement the logic for: , , , , , , , and .
-- **Task 3: Implement Frontend for Remaining Modules (P1):** Connect the existing placeholder frontend pages to the newly created backend endpoints. This includes: , , , , , and .
+- **Task 1: Implement Backend for Remaining Modules (P1):** Create CRUD API endpoints in  for: , , , , , , , and .
+- **Task 2: Implement Frontend for Remaining Modules (P1):** Connect the placeholder frontend pages to the backend endpoints for: , , , , , and .
 
 **Future Tasks:**
-- **Task 4: Meetings Integration (P2):** Use the API keys saved from the  page to integrate Zoom or Microsoft Teams for scheduling and joining meetings within the .
-- **Task 5: Advanced RBAC (P2):** Enhance the current RBAC system by building a UI on the  page to manage granular permissions.
-- **Task 6: Internal Messaging & Note Sharing (P2):** Implement real-time features for the  and  modules.
-- **Task 7: Refactor File Uploads (P2):** Improve the file upload functionality on  from base64 to chunked multipart uploads to better handle larger files.
+- **Task 3: Meetings Integration (P2):** Integrate Zoom or Microsoft Teams for scheduling meetings via the .
+- **Task 4: Advanced RBAC (P2):** Build a UI on the  page to manage granular permissions.
+- **Task 5: Refactor File Uploads (P2):** Refactor the file upload functionality on  from base64 to chunked multipart uploads to handle larger files more efficiently.
 
 **Completed work in this session**
-- **Application Flow Overhaul:**
-  - The application form () was updated with conditional logic for disability descriptions and academic transcripts (continuation applicants). Performance score was made optional.
-  - The  was enhanced to allow students to edit draft/pending applications and admins to change status. The Continue button was implemented to change status to 'pending' and then removed based on user feedback.
-- **UI & UX Refinements:**
-  - Removed the Email OTP login option from .
-  - Renamed Files to MICTSETA Documents and Tasks to Training Track across the app, including in .
-- **Training Track Module:**
-  - Rewrote  into .
-  - Added features for adding comments, uploading images, and setting due dates to training modules.
-  - Implemented admin-only Edit and Delete functionality for modules.
-  - Backend  model and API in  updated to support comments, images, and due dates.
-- **Personal Development Plan (PDP) Module:**
-  - The  was updated to allow admins to assign a plan to a specific user via a dropdown.
-  - The backend  model in  and  was updated to store the  user information.
-  - The main page now includes a filter to view PDPs by user.
+- **Bursary Application Overhaul:**
+  - Renamed from Applications to Bursary Applications.
+  - Added a searchable District Municipality dropdown.
+  - Added a conditional medical certificate upload for disabled applicants.
+  - Replaced the performance score input with a 1-5 dropdown.
+  - Updated document uploads: ID Document replaced with Signed Performance Contract, and Motivation Document was added.
+  - Implemented a feature for approved applicants to upload an Invoice and Bursary Agreement.
+  - Renamed Re-apply to continuation in the applicant type dropdown.
+- **Application 'View' Functionality:**
+  - Created a large, detailed popup modal to display a full application summary, fixing a bug where the view appeared blank.
+- **Application Status Fix:**
+  - Modified backend models () to ensure applications are correctly saved with a pending status upon submission.
+- **Module Updates:**
+  - **MICTSETA Documents:** The page was restructured to show a hierarchy of Fiscal Years and sub-categories (Internships, Placements).
+  - **PDP Page:** Implemented Excel data import with a downloadable sample template.
+  - **Training Track:** Removed all Attendance related UI and logic.
+- **UI/UX Cleanup:**
+  - Renamed Team to Teams in the navigation.
+  - Updated the categories on the .
+  - Hid Leads, Notes, and Prospects pages from the main navigation sidebar.
 
 **Earlier issues found/mentioned but not fixed**
 - The  drag-and-drop library has not been updated (listed in All Pending/In progress Issue list).
@@ -100,90 +112,86 @@ N/A
 
 
 **Key Technical Concepts**
-- **Backend:** FastAPI, MongoDB
+- **Backend:** FastAPI, Pydantic, MongoDB
 - **Frontend:** React.js, Vite
 - **Styling:** Tailwind CSS, Shadcn UI
-- **State Management:** React Context API (), React 
-- **UI Interactivity:** 
+- **State Management:** React Context API, , 
+- **UI Interactivity:** ,  for Excel parsing
 - **Authentication:** JWT, Role-Based Access Control (RBAC)
 
 **key DB schema**
-- **pdp:** 
-- **task:** 
 - **application:** 
+- **pdp:**  (No schema changes, but now supports bulk import)
+- **task:** 
+- **training_application:** (New schema to be created, will be similar to  but with different fields for step 3 and 4)
 
 **changes in tech stack**
-- No changes to the technology stack.
+- **Added dependency:**  for parsing Excel files on the frontend.
 
 **All files of reference**
-- : Completely rewritten from the old  to support new features.
-- : Heavily modified to handle new application statuses and role-based actions (Edit/Change Status).
-- : Heavily modified to handle creating/editing applications, and conditional form fields.
-- : Updated to include user assignment and filtering.
-- : Simplified by removing the OTP login tab.
-- : Navigation links renamed.
-- : Updated router to point to .
-- : Modified  and  endpoints to handle new data fields.
-- : Added  fields.
+- : Major overhaul with new fields, conditional logic, and updated document requirements.
+- : Major overhaul to add the comprehensive view modal and post-approval document uploads.
+- : Updated to include Excel import functionality.
+- : Rewritten to display a categorical structure.
+- : Updated to remove all attendance functionality.
+- : Navigation links updated (renamed, hidden).
+- : Updated  and  models.
+- : Updated application creation/update endpoints.
+- : New file created for the training application form.
+- : New file created for the training application list.
+- : New file for training application API calls.
+- : Updated with routes for the new Training Application module.
 
 **Areas that need refactoring**:
-- The file upload on  uses base64, which is not efficient for large files. It should be refactored to use chunked multipart uploads.
-- A reusable  component should be created to standardize the  logic and avoid code duplication between , , and eventually .
+- A reusable  component should be created to standardize the  logic across , , and .
+- The file uploads are still using base64. They should be refactored to use chunked multipart uploads for better performance with large files.
 
 **key api endpoints**
-- : Updates an application's status.
-- : Fetches a single application for editing.
-- : Updated to handle comments, images, due date, etc.
-- : Updated to handle  field.
-- : Creates a new user (admin only).
+- : Modified to accept  on creation.
+- : Modified for new fields.
+- : To be implemented.
+- : To be implemented.
 
 **Critical Info for New Agent**
-- The user makes frequent, iterative requests. Be prepared to modify recently implemented features.
-- RBAC is a core concept. The  flag from  is used frequently to conditionally render UI elements and control access. Always consider both 'admin' and 'student' user perspectives.
-- The last set of user requests has not been started. This is the highest priority task.
-- The agent was about to run the testing agent before the last user message. It would be a good idea to run a full test after implementing the pending changes to ensure no regressions were introduced.
+- The most critical task is to complete the Training Application module. The foundational files and routes are in place, but the UI logic in  and the entire backend (models, endpoints in ) need to be built.
+- The user provides large, detailed feature requests in batches. Read them carefully. The latest request is multi-part and requires creating a new page that is a variation of an existing one.
+- Many new features have been added but have only been verified via screenshots. A full regression test using the  is highly recommended after completing the current Training Application task.
 
 **documents and test reports created in this job**
--  was updated by the previous agent.
+-  was updated.
+-  was created and passed successfully early in the session, but is now outdated due to numerous subsequent changes.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1. **USER:** on the application when you press continue it should change the status to pending
-   - **Status:** COMPLETED. Agent implemented this, then refined it to also navigate to an editable, pre-filled form.
-2. **USER:** remove the continue button on the application
-   - **Status:** COMPLETED. Agent removed the button.
-3. **USER:** remove the continue button on the application and once you hit submit it should change status to update and also add an edit button only accessible by the student or applicant
-   - **Status:** COMPLETED. Agent implemented the student-only Edit button for draft/pending applications.
-4. **USER:** on the training modules ability to add comment inside the module and upload images and to re edit as admin and add due date
-   - **Status:** COMPLETED.
-5. **USER:** Rename Page Dev Plan to Personal Dev Plan and add the feature to select user when adding the development goal
-   - **Status:** COMPLETED.
-6. **USER:** Remove attendance in training modules, and change continuation applicant to Re apply and in the documents upload section add an upload option to upload quotation amount requested, on the PDP page what do I need to learn change it to Skills gap, Hide the leads page for now
-   - **Status:** PENDING. This is the current highest-priority task.
-7. **USER:** Generate the summary now
-   - **Status:** PENDING. This is the current request.
-8. (No other messages)
-9. (No other messages)
-10. (No other messages)
+1. **USER:** when we click submit on application change the status to pending
+    - **Status:** COMPLETED. Agent fixed the backend model to allow this.
+2. **USER:** change page name to Teams from team and in the Tickets the categories should be...
+    - **Status:** COMPLETED.
+3. **USER:** lets adjust the application page change name to Bursary application and add these changes... (District Municipality, Disability upload, Performance score, new documents) ...ONCE BURSARY APPLICATION status IS APPROVED... (add invoice upload) ...PERSONAL DEVELOPMENT PLAN... (add excel import) ...On the MICTSETA Page use this structure...
+    - **Status:** COMPLETED. This was a massive batch of changes that the agent implemented across multiple files.
+4. **USER:** 1 yes 2 use dropdown 3 yes but no template 4 use that structure or use them as examples 5 it should match
+    - **Status:** COMPLETED. User provided clarification for the agent's plan.
+5. **USER:** Rename Re-apply to continuation and leave numbers only on the performance score and add a new page called Training application and use the same bursary application steps but change the third step to... (and many other details for the new page)
+    - **Status:** IN PROGRESS. This is the current, active task.
 
 **Project Health Check:**
-- **Broken:** No. The application is stable.
-- **Mocked:** Partially. Several modules (, , , , , , , , ) exist as frontend pages but lack backend implementation or are hidden.
+- **Broken:** No. The application is stable, but a major feature is half-implemented.
+- **Mocked:** Partially. The new Training Application module is mocked on the frontend (files exist, but no logic). Several other modules (, , , etc.) remain as placeholders.
 
 **3rd Party Integrations**
 - **Existing & Functional:**
     - Microsoft Entra ID ()
     - 
     - 
+    -  (new)
     - SMTP (via )
-    - 
 - **Requested (Not Yet Implemented):**
     - Zoom / Microsoft Teams
 
 **Testing status**
-- **Testing agent used after significant changes**: NO. Agent performed extensive manual testing via screenshots but was interrupted by the user with new requirements before calling the testing agent.
+- **Testing agent used after significant changes**: YES, but early in the session. A large number of features were added *after* the last test run.
 - **Troubleshoot agent used after agent stuck in loop**: NO.
-- **Test files created**: None in this session.
-- **Known regressions**: None.
+- **Test files created**: None.
+- **Known regressions**: None known, but high potential due to the volume of recent changes that have not been regression tested.
 
 **Credentials to test flow:**
 - **Admin:**
@@ -194,5 +202,5 @@ N/A
     - **Password:** 
 
 **What agent forgot to execute**
-- The agent was interrupted before it could run the  to validate the large number of changes made in the session.
-- The agent has not yet started implementing the user's very last set of requests (remove attendance, rename continuation applicant, etc.).</analysis>
+- The agent has not yet added a link to the new Training Application page in the main navigation layout ().
+- The agent did not run the testing agent after the last several large batches of feature implementations, relying only on manual screenshot verification.</analysis>

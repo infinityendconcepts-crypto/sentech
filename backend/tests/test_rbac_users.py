@@ -6,7 +6,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://sentech-grants.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://training-app-hub.preview.emergentagent.com')
 
 class TestRBACUserManagement:
     """Tests for admin-only user management (create/delete)"""
