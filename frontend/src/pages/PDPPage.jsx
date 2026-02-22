@@ -149,6 +149,114 @@ const PDPPage = () => {
     }
   };
 
+  // Excel Import Functions
+  const downloadSampleSpreadsheet = () => {
+    const sampleData = [
+      {
+        'Skills Gap': 'Example: Data Analysis using Python',
+        'Action Plan': 'Complete online course on Coursera, practice with real datasets',
+        'Resources/Support': 'Coursera subscription, mentor guidance, Python documentation',
+        'Success Criteria': 'Complete 3 data analysis projects, obtain certification',
+        'Target Date': '2025-06-30',
+        'Review Date': '2025-03-31',
+        'Status': 'not_started',
+        'Priority': 'high',
+        'Category': 'Technical Skills',
+      },
+      {
+        'Skills Gap': 'Example: Public Speaking',
+        'Action Plan': 'Join Toastmasters, present at team meetings monthly',
+        'Resources/Support': 'Toastmasters membership, feedback from manager',
+        'Success Criteria': 'Deliver 5 presentations without notes',
+        'Target Date': '2025-08-31',
+        'Review Date': '2025-05-15',
+        'Status': 'in_progress',
+        'Priority': 'medium',
+        'Category': 'Soft Skills',
+      },
+    ];
+    
+    const ws = XLSX.utils.json_to_sheet(sampleData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'PDP Template');
+    
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 30 }, { wch: 50 }, { wch: 40 }, { wch: 40 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 20 }
+    ];
+    
+    XLSX.writeFile(wb, 'PDP_Import_Template.xlsx');
+    toast.success('Sample spreadsheet downloaded');
+  };
+
+  const handleFileImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        
+        // Map Excel columns to form fields
+        const mappedData = jsonData.map(row => ({
+          learn_what: row['Skills Gap'] || '',
+          action_plan: row['Action Plan'] || '',
+          resources_support: row['Resources/Support'] || '',
+          success_criteria: row['Success Criteria'] || '',
+          target_date: row['Target Date'] || '',
+          review_date: row['Review Date'] || '',
+          status: row['Status'] || 'not_started',
+          priority: row['Priority'] || 'medium',
+          category: row['Category'] || '',
+        }));
+        
+        setImportPreview(mappedData);
+        setImportDialog(true);
+      } catch (error) {
+        console.error('Error parsing file:', error);
+        toast.error('Failed to parse Excel file. Please check the format.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value = '';
+  };
+
+  const handleImportConfirm = async () => {
+    if (importPreview.length === 0) {
+      toast.error('No data to import');
+      return;
+    }
+    
+    setImporting(true);
+    try {
+      let successCount = 0;
+      for (const entry of importPreview) {
+        if (entry.learn_what) {
+          await pdpAPI.create({
+            ...entry,
+            assigned_to: user?.id,
+            assigned_to_name: user?.full_name || user?.email,
+            assigned_to_email: user?.email,
+          });
+          successCount++;
+        }
+      }
+      toast.success(`Successfully imported ${successCount} entries`);
+      setImportDialog(false);
+      setImportPreview([]);
+      fetchEntries();
+    } catch (error) {
+      toast.error('Failed to import some entries');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const openCreate = () => {
     setEditingEntry(null);
     setForm(emptyForm);
