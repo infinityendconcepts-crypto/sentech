@@ -97,6 +97,8 @@ const NewApplicationPage = () => {
       gender: '',
       disability: '',
       disability_description: '',
+      medical_certificate: '',
+      district_municipality: '',
     },
     employment_info: {
       division: '',
@@ -113,13 +115,22 @@ const NewApplicationPage = () => {
       applicant_type: '',
     },
     documents: {
-      id_document: '',
+      signed_performance_contract: '',
       academic_transcript: '',
       proof_of_registration: '',
       quotation_amount_requested: '',
+      motivation_document: '',
       other_documents: '',
     },
   });
+
+  // Search state for district municipality dropdown
+  const [municipalitySearch, setMunicipalitySearch] = useState('');
+  const [showMunicipalityDropdown, setShowMunicipalityDropdown] = useState(false);
+
+  const filteredMunicipalities = DISTRICT_MUNICIPALITIES.filter(m =>
+    m.toLowerCase().includes(municipalitySearch.toLowerCase())
+  );
 
   // Load existing application data when editing
   useEffect(() => {
