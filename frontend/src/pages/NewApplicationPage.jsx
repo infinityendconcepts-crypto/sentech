@@ -178,7 +178,7 @@ const NewApplicationPage = () => {
   };
 
   const isNewApplicant = formData.academic_bursary_info.applicant_type === 'NEW APPLICANT';
-  const isReApplyApplicant = formData.academic_bursary_info.applicant_type === 'RE-APPLY';
+  const isContinuationApplicant = formData.academic_bursary_info.applicant_type === 'CONTINUATION';
 
   const handleSaveDraft = async () => {
     setLoading(true);
@@ -582,12 +582,12 @@ const NewApplicationPage = () => {
                   >
                     <option value="">Select type</option>
                     <option value="NEW APPLICANT">NEW APPLICANT</option>
-                    <option value="RE-APPLY">RE-APPLY</option>
+                    <option value="CONTINUATION">CONTINUATION</option>
                   </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="bursary_status">
-                    Bursary Status {isReApplyApplicant ? '*' : '(Not applicable for new applicants)'}
+                    Bursary Status {isContinuationApplicant ? '*' : '(Not applicable for new applicants)'}
                   </Label>
                   <select
                     id="bursary_status"
@@ -600,7 +600,7 @@ const NewApplicationPage = () => {
                     }`}
                     data-testid="select-bursary-status"
                     disabled={isNewApplicant}
-                    required={isReApplyApplicant}
+                    required={isContinuationApplicant}
                   >
                     <option value="">Select status</option>
                     <option value="Active">Active</option>
@@ -671,12 +671,12 @@ const NewApplicationPage = () => {
                   <p className="text-xs text-slate-600">Upload your signed performance contract</p>
                 </div>
                 
-                {/* Academic Transcript - Only for Re-apply Applicants */}
-                {isReApplyApplicant && (
+                {/* Academic Transcript - Only for Continuation Applicants */}
+                {isContinuationApplicant && (
                   <div className="space-y-2">
                     <Label htmlFor="academic_transcript">
                       Academic Transcript / Statement of Results *
-                      <Badge className="ml-2 bg-blue-100 text-blue-700">Re-apply Applicants Only</Badge>
+                      <Badge className="ml-2 bg-blue-100 text-blue-700">Continuation Applicants Only</Badge>
                     </Label>
                     <Input
                       id="academic_transcript"
@@ -693,7 +693,7 @@ const NewApplicationPage = () => {
                 {isNewApplicant && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <p className="text-sm text-amber-800">
-                      <strong>Note:</strong> Academic transcript is not required for new applicants. You will be required to submit it when you re-apply.
+                      <strong>Note:</strong> Academic transcript is not required for new applicants. You will be required to submit it when you become a continuation applicant.
                     </p>
                   </div>
                 )}
