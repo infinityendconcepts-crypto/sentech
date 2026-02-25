@@ -644,24 +644,6 @@ const TrainingApplicationPage = () => {
                   </div>
                 </div>
               )}
-
-              {isRFQRequired && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 mt-0.5 text-purple-600" />
-                    <div>
-                      <h4 className="font-semibold text-purple-900">RFQ Route Selected</h4>
-                      <p className="text-sm mt-1 text-purple-800">
-                        Since you selected the RFQ route, you only need to upload the Scope of Work document in Step 4.
-                        All other documents will be handled through the SCM RFQ process.
-                      </p>
-                      <ul className="text-sm mt-2 space-y-1 ml-4 list-disc text-purple-700">
-                        <li className="font-semibold">Scope of Work (Only document required)</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
