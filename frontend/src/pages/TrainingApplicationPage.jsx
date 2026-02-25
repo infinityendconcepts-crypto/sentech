@@ -626,106 +626,22 @@ const TrainingApplicationPage = () => {
           {/* Step 4: Documents */}
           {currentStep === 4 && (
             <div className="space-y-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signed_performance_contract">Signed Performance Contract *</Label>
-                  <Input
-                    id="signed_performance_contract"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'signed_performance_contract', e.target.files[0]?.name || '')}
-                    data-testid="input-signed-performance-contract"
-                    required
-                  />
-                  <p className="text-xs text-slate-600">Upload your signed performance contract</p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="quotation">Quotation *</Label>
-                  <Input
-                    id="quotation"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'quotation', e.target.files[0]?.name || '')}
-                    data-testid="input-quotation"
-                    required
-                  />
-                  <p className="text-xs text-slate-600">Upload the quotation from the service provider</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="sbd4_form">SBD 4 Form *</Label>
-                  <Input
-                    id="sbd4_form"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'sbd4_form', e.target.files[0]?.name || '')}
-                    data-testid="input-sbd4-form"
-                    required
-                  />
-                  <p className="text-xs text-slate-600">Upload the completed SBD 4 declaration form</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="consent_form">Consent Form *</Label>
-                  <Input
-                    id="consent_form"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'consent_form', e.target.files[0]?.name || '')}
-                    data-testid="input-consent-form"
-                    required
-                  />
-                  <p className="text-xs text-slate-600">Upload the signed consent form</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="csd_report">CSD Report *</Label>
-                  <Input
-                    id="csd_report"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'csd_report', e.target.files[0]?.name || '')}
-                    data-testid="input-csd-report"
-                    required
-                  />
-                  <p className="text-xs text-slate-600">Upload the Central Supplier Database (CSD) report</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bbbee_certificate">BBBEE Certificate *</Label>
-                  <Input
-                    id="bbbee_certificate"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'bbbee_certificate', e.target.files[0]?.name || '')}
-                    data-testid="input-bbbee-certificate"
-                    required
-                  />
-                  <p className="text-xs text-slate-600">Upload the service provider&apos;s BBBEE certificate</p>
-                </div>
-
-                {/* Motivation - Required for training over R15,000 */}
-                {isOverThreshold && (
-                  <div className="space-y-2">
-                    <Label htmlFor="motivation">
-                      Motivation *
-                      <Badge className="ml-2 bg-amber-100 text-amber-700">Required for amounts over R15,000</Badge>
-                    </Label>
-                    <Input
-                      id="motivation"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => updateField('documents', 'motivation', e.target.files[0]?.name || '')}
-                      data-testid="input-motivation"
-                      required
-                    />
-                    <p className="text-xs text-slate-600">Upload your motivation letter explaining the need for this training</p>
+              {/* RFQ Route - Only show Scope of Work */}
+              {isRFQRequired ? (
+                <div className="space-y-4">
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 mt-0.5 text-purple-600" />
+                      <div>
+                        <h4 className="font-semibold text-purple-900">RFQ Route Selected</h4>
+                        <p className="text-sm mt-1 text-purple-800">
+                          Since you require SCM to go the RFQ route, please upload only the Scope of Work document.
+                          All other documents will be handled through the RFQ process.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                )}
-
-                {/* Scope of Work - Required if RFQ is selected */}
-                {isRFQRequired && (
+                  
                   <div className="space-y-2">
                     <Label htmlFor="scope_of_work">
                       Scope of Work *
@@ -741,21 +657,122 @@ const TrainingApplicationPage = () => {
                     />
                     <p className="text-xs text-slate-600">Upload the scope of work document for the RFQ process</p>
                   </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="other_documents">Other Supporting Documents (Optional)</Label>
-                  <Input
-                    id="other_documents"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    multiple
-                    onChange={(e) => updateField('documents', 'other_documents', e.target.files[0]?.name || '')}
-                    data-testid="input-other-documents"
-                  />
-                  <p className="text-xs text-slate-600">Upload any other relevant supporting documents</p>
                 </div>
-              </div>
+              ) : (
+                /* Non-RFQ Route - Show all document uploads */
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signed_performance_contract">Signed Performance Contract *</Label>
+                    <Input
+                      id="signed_performance_contract"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => updateField('documents', 'signed_performance_contract', e.target.files[0]?.name || '')}
+                      data-testid="input-signed-performance-contract"
+                      required
+                    />
+                    <p className="text-xs text-slate-600">Upload your signed performance contract</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="quotation">Quotation *</Label>
+                    <Input
+                      id="quotation"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => updateField('documents', 'quotation', e.target.files[0]?.name || '')}
+                      data-testid="input-quotation"
+                      required
+                    />
+                    <p className="text-xs text-slate-600">Upload the quotation from the service provider</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="sbd4_form">SBD 4 Form *</Label>
+                    <Input
+                      id="sbd4_form"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => updateField('documents', 'sbd4_form', e.target.files[0]?.name || '')}
+                      data-testid="input-sbd4-form"
+                      required
+                    />
+                    <p className="text-xs text-slate-600">Upload the completed SBD 4 declaration form</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="consent_form">Consent Form *</Label>
+                    <Input
+                      id="consent_form"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => updateField('documents', 'consent_form', e.target.files[0]?.name || '')}
+                      data-testid="input-consent-form"
+                      required
+                    />
+                    <p className="text-xs text-slate-600">Upload the signed consent form</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="csd_report">CSD Report *</Label>
+                    <Input
+                      id="csd_report"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => updateField('documents', 'csd_report', e.target.files[0]?.name || '')}
+                      data-testid="input-csd-report"
+                      required
+                    />
+                    <p className="text-xs text-slate-600">Upload the Central Supplier Database (CSD) report</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bbbee_certificate">BBBEE Certificate *</Label>
+                    <Input
+                      id="bbbee_certificate"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => updateField('documents', 'bbbee_certificate', e.target.files[0]?.name || '')}
+                      data-testid="input-bbbee-certificate"
+                      required
+                    />
+                    <p className="text-xs text-slate-600">Upload the service provider&apos;s BBBEE certificate</p>
+                  </div>
+
+                  {/* Motivation - Required for training over R15,000 */}
+                  {isOverThreshold && (
+                    <div className="space-y-2">
+                      <Label htmlFor="motivation">
+                        Motivation *
+                        <Badge className="ml-2 bg-amber-100 text-amber-700">Required for amounts over R15,000</Badge>
+                      </Label>
+                      <Input
+                        id="motivation"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => updateField('documents', 'motivation', e.target.files[0]?.name || '')}
+                        data-testid="input-motivation"
+                        required
+                      />
+                      <p className="text-xs text-slate-600">Upload your motivation letter explaining the need for this training</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="other_documents">Other Supporting Documents (Optional)</Label>
+                    <Input
+                      id="other_documents"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      multiple
+                      onChange={(e) => updateField('documents', 'other_documents', e.target.files[0]?.name || '')}
+                      data-testid="input-other-documents"
+                    />
+                    <p className="text-xs text-slate-600">Upload any other relevant supporting documents</p>
+                  </div>
+                </div>
+              )}
+              
               <div className="bg-accent/50 p-4 rounded-lg">
                 <h4 className="font-semibold text-slate-900 mb-2">Declaration</h4>
                 <p className="text-sm text-slate-700 mb-3">
