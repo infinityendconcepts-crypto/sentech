@@ -171,46 +171,16 @@ Both Bursary and Training Applications use this specific list:
 ### P2 - UI Consistency
 - Update ProspectsPage to use @dnd-kit (currently uses react-beautiful-dnd)
 
-## Known Technical Debt
-- ProspectsPage uses outdated drag-and-drop library (react-beautiful-dnd)
-- File uploads use base64 encoding (should be chunked multipart)
-- Several modules are frontend-only placeholders
-
-## Test Credentials
-- **Admin:** jane.smith@uct.ac.za / securepass123
-- **Student:** test.student@example.com / password123
-
-## Architecture
-```
-/app/
-├── backend/
-│   ├── models/
-│   │   ├── pdp.py
-│   │   └── ...
-│   ├── server.py
-│   └── requirements.txt
-├── frontend/
-│   └── src/
-│       ├── components/
-│       │   └── Layout/
-│       │       └── Layout.jsx
-│       ├── contexts/
-│       │   └── AuthContext.jsx
-│       ├── pages/
-│       │   ├── ApplicationsPage.jsx
-│       │   ├── FilesPage.jsx (MICTSETA Documents)
-│       │   ├── LoginPage.jsx
-│       │   ├── NewApplicationPage.jsx
-│       │   ├── PDPPage.jsx
-│       │   └── TrainingTrackPage.jsx
-│       ├── services/
-│       │   └── api.js
-│       └── App.js
-```
-
 ## Key API Endpoints
+- `GET /api/applications` - List bursary applications
+- `POST /api/applications` - Create bursary application
+- `PUT /api/applications/{app_id}` - Update bursary application
 - `PUT /api/applications/{app_id}/status` - Update application status
-- `GET /api/applications/{app_id}` - Get single application
+- `GET /api/training-applications` - List training applications
+- `POST /api/training-applications` - Create training application
+- `PUT /api/training-applications/{app_id}` - Update training application
+- `PUT /api/training-applications/{app_id}/status` - Update training status (admin only)
+- `DELETE /api/training-applications/{app_id}` - Delete training application
 - `PUT /api/tasks/{task_id}` - Update training module (comments, images, due date)
 - `PUT /api/pdp/{pdp_id}` - Update PDP entry (assigned_to, skills gap)
 - `POST /api/users` - Create user (admin only)
