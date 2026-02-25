@@ -512,16 +512,57 @@ const TrainingApplicationPage = () => {
           {/* Step 3: Training Information */}
           {currentStep === 3 && (
             <div className="space-y-6">
+              {/* Supplier Type - At the top */}
+              <div className="space-y-2">
+                <Label htmlFor="supplier_type">Supplier Type *</Label>
+                <select
+                  id="supplier_type"
+                  value={formData.training_info.supplier_type}
+                  onChange={(e) => updateField('training_info', 'supplier_type', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  data-testid="select-supplier-type"
+                  required
+                >
+                  <option value="">Select supplier type</option>
+                  <option value="preferred_supplier">Preferred Supplier</option>
+                  <option value="rfq_required">RFQ Required (SCM Route)</option>
+                </select>
+              </div>
+
+              {/* RFQ Selected Info Box */}
+              {isRFQRequired && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 mt-0.5 text-purple-600" />
+                    <div>
+                      <h4 className="font-semibold text-purple-900">RFQ Route Selected</h4>
+                      <p className="text-sm mt-1 text-purple-800">
+                        Since you selected the RFQ route, you only need to upload the Scope of Work document in Step 4.
+                        All other fields and documents will be handled through the SCM RFQ process.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Other fields - disabled when RFQ is selected */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="training_status">Training Status *</Label>
+                  <Label htmlFor="training_status" className={isRFQRequired ? 'text-slate-400' : ''}>
+                    Training Status {!isRFQRequired && '*'}
+                  </Label>
                   <select
                     id="training_status"
                     value={formData.training_info.training_status}
                     onChange={(e) => updateField('training_info', 'training_status', e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      isRFQRequired 
+                        ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed' 
+                        : 'border-slate-200 bg-white'
+                    }`}
                     data-testid="select-training-status"
-                    required
+                    disabled={isRFQRequired}
+                    required={!isRFQRequired}
                   >
                     <option value="">Select status</option>
                     <option value="new">New Training</option>
@@ -530,54 +571,51 @@ const TrainingApplicationPage = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="service_provider">Service Provider *</Label>
+                  <Label htmlFor="service_provider" className={isRFQRequired ? 'text-slate-400' : ''}>
+                    Service Provider {!isRFQRequired && '*'}
+                  </Label>
                   <Input
                     id="service_provider"
                     placeholder="Enter service provider name"
                     value={formData.training_info.service_provider}
                     onChange={(e) => updateField('training_info', 'service_provider', e.target.value)}
+                    className={isRFQRequired ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
                     data-testid="input-service-provider"
-                    required
+                    disabled={isRFQRequired}
+                    required={!isRFQRequired}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="training_type">Training Type *</Label>
+                  <Label htmlFor="training_type" className={isRFQRequired ? 'text-slate-400' : ''}>
+                    Training Type {!isRFQRequired && '*'}
+                  </Label>
                   <Input
                     id="training_type"
                     placeholder="e.g., Project Management, Excel Advanced"
                     value={formData.training_info.training_type}
                     onChange={(e) => updateField('training_info', 'training_type', e.target.value)}
+                    className={isRFQRequired ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
                     data-testid="input-training-type"
-                    required
+                    disabled={isRFQRequired}
+                    required={!isRFQRequired}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="total_amount">Total Amount (R) *</Label>
+                  <Label htmlFor="total_amount" className={isRFQRequired ? 'text-slate-400' : ''}>
+                    Total Amount (R) {!isRFQRequired && '*'}
+                  </Label>
                   <Input
                     id="total_amount"
                     type="number"
                     placeholder="e.g., 15000"
                     value={formData.training_info.total_amount}
                     onChange={(e) => updateField('training_info', 'total_amount', e.target.value)}
+                    className={isRFQRequired ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
                     data-testid="input-total-amount"
-                    required
+                    disabled={isRFQRequired}
+                    required={!isRFQRequired}
                   />
-                  <p className="text-xs text-slate-600">Enter the total training cost including VAT</p>
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="supplier_type">Supplier Type *</Label>
-                  <select
-                    id="supplier_type"
-                    value={formData.training_info.supplier_type}
-                    onChange={(e) => updateField('training_info', 'supplier_type', e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    data-testid="select-supplier-type"
-                    required
-                  >
-                    <option value="">Select supplier type</option>
-                    <option value="preferred_supplier">Preferred Supplier</option>
-                    <option value="rfq_required">RFQ Required (SCM Route)</option>
-                  </select>
+                  {!isRFQRequired && <p className="text-xs text-slate-600">Enter the total training cost including VAT</p>}
                 </div>
               </div>
 
