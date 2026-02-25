@@ -581,28 +581,31 @@ const TrainingApplicationPage = () => {
                 </div>
               </div>
 
-              {/* Document Requirements Info */}
-              <div className={`rounded-lg p-4 ${isOverThreshold ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className={`w-5 h-5 mt-0.5 ${isOverThreshold ? 'text-amber-600' : 'text-blue-600'}`} />
-                  <div>
-                    <h4 className={`font-semibold ${isOverThreshold ? 'text-amber-900' : 'text-blue-900'}`}>
-                      Required Documents for {isOverThreshold ? 'Training over R15,000' : 'Training under R15,000'}
-                    </h4>
-                    <p className={`text-sm mt-1 ${isOverThreshold ? 'text-amber-800' : 'text-blue-800'}`}>
-                      Based on your training amount, please ensure you upload the following documents in Step 4:
-                    </p>
-                    <ul className={`text-sm mt-2 space-y-1 ml-4 list-disc ${isOverThreshold ? 'text-amber-700' : 'text-blue-700'}`}>
-                      <li>Quotation</li>
-                      <li>SBD 4 Form</li>
-                      <li>Consent Form</li>
-                      <li>CSD Report</li>
-                      <li>BBBEE Certificate</li>
-                      {isOverThreshold && <li className="font-semibold">Motivation (Required for amounts over R15,000)</li>}
-                    </ul>
+              {/* Document Requirements Info - Only show if NOT RFQ route */}
+              {!isRFQRequired && (
+                <div className={`rounded-lg p-4 ${isOverThreshold ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className={`w-5 h-5 mt-0.5 ${isOverThreshold ? 'text-amber-600' : 'text-blue-600'}`} />
+                    <div>
+                      <h4 className={`font-semibold ${isOverThreshold ? 'text-amber-900' : 'text-blue-900'}`}>
+                        Required Documents for {isOverThreshold ? 'Training over R15,000' : 'Training under R15,000'}
+                      </h4>
+                      <p className={`text-sm mt-1 ${isOverThreshold ? 'text-amber-800' : 'text-blue-800'}`}>
+                        Based on your training amount, please ensure you upload the following documents in Step 4:
+                      </p>
+                      <ul className={`text-sm mt-2 space-y-1 ml-4 list-disc ${isOverThreshold ? 'text-amber-700' : 'text-blue-700'}`}>
+                        <li>Signed Performance Contract</li>
+                        <li>Quotation</li>
+                        <li>SBD 4 Form</li>
+                        <li>Consent Form</li>
+                        <li>CSD Report</li>
+                        <li>BBBEE Certificate</li>
+                        {isOverThreshold && <li className="font-semibold">Motivation (Required for amounts over R15,000)</li>}
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {isRFQRequired && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -611,10 +614,11 @@ const TrainingApplicationPage = () => {
                     <div>
                       <h4 className="font-semibold text-purple-900">RFQ Route Selected</h4>
                       <p className="text-sm mt-1 text-purple-800">
-                        Since you require SCM to go the RFQ route, please also upload:
+                        Since you selected the RFQ route, you only need to upload the Scope of Work document in Step 4.
+                        All other documents will be handled through the SCM RFQ process.
                       </p>
                       <ul className="text-sm mt-2 space-y-1 ml-4 list-disc text-purple-700">
-                        <li className="font-semibold">Scope of Work</li>
+                        <li className="font-semibold">Scope of Work (Only document required)</li>
                       </ul>
                     </div>
                   </div>
