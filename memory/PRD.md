@@ -10,7 +10,8 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 
 ## Core Modules (Pages)
 - Dashboard
-- Applications
+- Bursary Applications
+- Training Applications (NEW - Feb 2026)
 - Sponsors
 - BBBEE
 - Projects
@@ -38,7 +39,7 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - **Admin:** Full access to all modules, can manage users, edit training modules, assign PDP goals
 - **Student:** Can view and manage their own applications, view training modules, manage personal PDP
 
-## What's Been Implemented (December 2025)
+## What's Been Implemented (February 2026)
 
 ### Core Features
 - User authentication with JWT and Microsoft SSO
@@ -46,22 +47,58 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Dashboard with stats and quick actions
 - Full application management workflow
 
-### Bursary Application Flow (Renamed from Applications)
+### Bursary Application Flow
 - Multi-step application form with validation
-- **District Municipality dropdown** with search feature (all 52 SA municipalities)
+- **District Municipality dropdown** with 14 specific municipalities
 - Conditional fields (disability description for disabled applicants)
 - **Medical Certificate upload** (required when disability = Yes)
-- **Performance Score dropdown (1-5)** with labels
-- Academic transcript upload for Re-apply applicants
-- **Signed Performance Contract** upload (replaced ID Document)
+- **Performance Score dropdown (1-5)** - numbers only
+- Academic transcript upload for Continuation applicants
+- **Signed Performance Contract** upload
 - **Proof of Registration / Acceptance Letter** upload
 - "Quotation Amount Requested" file upload
-- **Motivation Document** upload (new)
+- **Motivation Document** upload
 - Status management: draft, pending, under review, approved, rejected
 - Student can edit draft/pending applications
 - Admin can change application status
 - **Invoice and Bursary Agreement upload** for approved applications
 - Large detailed view popup showing all application information
+- **"Re-apply" renamed to "Continuation"**
+
+### Training Application Module (NEW - Feb 2026)
+- Multi-step application form (4 steps)
+- Step 1: Personal Information with district municipality dropdown
+- Step 2: Employment Details with performance score (1-5)
+- Step 3: Training Information
+  - Training Status (New Training, Continuation, Upgrade/Advanced)
+  - Service Provider (renamed from Institution)
+  - Training Type (renamed from Course of Study)
+  - Total Amount (R) for cost
+  - Supplier Type: Preferred Supplier or RFQ Required
+- Step 4: Documents with conditional logic
+  - **If training < R15,000:** Signed Performance Contract, Quotation, SBD 4 Form, Consent Form, CSD Report, BBBEE Certificate
+  - **If training > R15,000:** Same + Motivation document
+  - **If RFQ route selected:** Only Scope of Work upload (all other documents disabled)
+- Full CRUD backend endpoints
+- List view with search, status management, and view modal
+- Admin status change functionality
+
+### District Municipalities List (Updated Feb 2026)
+Both Bursary and Training Applications use this specific list:
+- 1724 RADIOKOP, ROODEPOORT - City of Johannesburg Metropolitan Municipality
+- 7500 PLATTEKLOOF EXT 3, PAROW - City of Cape Town Metropolitan Municipality
+- 9301 NAVAL VIEW, BLOEMFONTEIN - Mangaung Metropolitan Municipality
+- 4051 BROADWAY, DURBAN NORTH - eThekwini Metropolitan Municipality
+- 2351 ERMELO, ERMELO - Gert Sibande District Municipality
+- 5247 VINCENT, EAST LONDON - Buffalo City Metropolitan Municipality
+- 6529 LOERIE PARK, GEORGE - Garden Route District Municipality
+- 0699 POLOKWANE, POLOKWANE - Capricorn District Municipality
+- 6001 GLENDINNINGVALE, PORT ELIZABETH - Nelson Mandela Bay Metropolitan Municipality
+- 3100 VRYHEID, VRYHEID - Amajuba District Municipality
+- 8601 VRYBURG, VRYBURG - Dr Ruth Segomotsi Mompati District Municipality
+- 5900 MIDROS, MIDDELBURG - Chris Hani District Municipality
+- 8801 RAND, UPINGTON - Namakwa District Municipality
+- 8160 VREDENDAL, VREDENDAL - City of Cape Town Metropolitan Municipality
 
 ### Training Track Module
 - Kanban board with drag-and-drop (using @dnd-kit)
