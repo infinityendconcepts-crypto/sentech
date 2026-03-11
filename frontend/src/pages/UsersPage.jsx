@@ -15,27 +15,26 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '../contexts/AuthContext';
-import { usersAPI } from '../services/api';
+import { usersAPI, divisionsAPI } from '../services/api';
 import {
-  Users, Search, Plus, MoreVertical, Shield, ShieldOff,
-  Trash2, UserCog, Mail, Phone, Building2, CheckCircle,
-  XCircle, Clock, UserCheck, AlertCircle, Eye, EyeOff,
+  Users, Search, MoreVertical, Shield, ShieldOff,
+  Trash2, Mail, Building2, CheckCircle, XCircle, UserCheck,
+  Briefcase, Calendar, Hash, Filter, X, ChevronDown, Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const ROLES = ['admin', 'student'];
+const ROLES = ['super_admin', 'manager', 'professional', 'technician', 'clerical', 'employee'];
 
 const getRoleColor = (role) => {
   switch (role) {
+    case 'super_admin': return 'bg-purple-100 text-purple-700 border-purple-200';
     case 'admin': return 'bg-red-100 text-red-700 border-red-200';
-    case 'student': return 'bg-blue-100 text-blue-700 border-blue-200';
+    case 'manager': return 'bg-blue-100 text-blue-700 border-blue-200';
+    case 'professional': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    case 'technician': return 'bg-orange-100 text-orange-700 border-orange-200';
+    case 'clerical': return 'bg-amber-100 text-amber-700 border-amber-200';
     default: return 'bg-slate-100 text-slate-600 border-slate-200';
   }
-};
-
-const ROLE_DESCRIPTIONS = {
-  admin: 'Full system access — can manage users, settings, reports, leads, and all modules.',
-  student: 'Standard access — dashboard, applications, tasks, meetings, notes, tickets and personal profile.',
 };
 
 const getInitials = (name) => {
@@ -56,22 +55,25 @@ const getAvatarColor = (email) => {
 const UsersPage = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
+  const [divisions, setDivisions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filterDivision, setFilterDivision] = useState('all');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterGender, setFilterGender] = useState('all');
 
-  const [createDialog, setCreateDialog] = useState(false);
-  const [roleDialog, setRoleDialog] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // { id, name }
+  const [viewDialog, setViewDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [createForm, setCreateForm] = useState({ email: '', full_name: '', role: 'student', password: '', confirmPassword: '' });
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [showPwd, setShowPwd] = useState(false);
 
-  const isAdmin = currentUser?.roles?.includes('admin');
+  const isAdmin = currentUser?.roles?.includes('admin') || currentUser?.roles?.includes('super_admin');
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { 
+    fetchUsers();
+    fetchDivisions();
+  }, []);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -85,44 +87,31 @@ const UsersPage = () => {
     }
   };
 
+  const fetchDivisions = async () => {
+    try {
+      const res = await divisionsAPI.getAll();
+      // Get unique division names
+      const uniqueDivisions = [...new Set(res.data.map(d => d.name))].sort();
+      setDivisions(uniqueDivisions);
+    } catch {
+      console.error('Failed to load divisions');
+    }
+  };
+
   const filteredUsers = users.filter(u => {
     const matchSearch = !search ||
       u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-      u.email?.toLowerCase().includes(search.toLowerCase());
+      u.email?.toLowerCase().includes(search.toLowerCase()) ||
+      u.department?.toLowerCase().includes(search.toLowerCase()) ||
+      u.position?.toLowerCase().includes(search.toLowerCase()) ||
+      u.personnel_number?.toLowerCase().includes(search.toLowerCase());
+    const matchDivision = filterDivision === 'all' || u.division === filterDivision;
     const matchRole = filterRole === 'all' || (u.roles || []).includes(filterRole);
     const matchStatus = filterStatus === 'all' ||
       (filterStatus === 'active' ? u.is_active !== false : u.is_active === false);
-    return matchSearch && matchRole && matchStatus;
+    const matchGender = filterGender === 'all' || u.gender?.toLowerCase() === filterGender.toLowerCase();
+    return matchSearch && matchDivision && matchRole && matchStatus && matchGender;
   });
-
-  const handleCreate = async () => {
-    if (!createForm.email.trim()) { toast.error('Email is required'); return; }
-    if (!createForm.password || createForm.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
-    if (createForm.password !== createForm.confirmPassword) { toast.error('Passwords do not match'); return; }
-    setSaving(true);
-    try {
-      await usersAPI.create({ email: createForm.email, full_name: createForm.full_name, role: createForm.role, password: createForm.password });
-      toast.success(`User ${createForm.email} created successfully`);
-      setCreateDialog(false);
-      setCreateForm({ email: '', full_name: '', role: 'student', password: '', confirmPassword: '' });
-      fetchUsers();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to create user');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRoleChange = async (userId, newRoles) => {
-    try {
-      await usersAPI.changeRole(userId, newRoles);
-      toast.success('Role updated');
-      fetchUsers();
-      setRoleDialog(false);
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Failed to update role');
-    }
-  };
 
   const handleToggleStatus = async (userId, isActive) => {
     try {
@@ -153,11 +142,23 @@ const UsersPage = () => {
     }
   };
 
+  const clearFilters = () => {
+    setSearch('');
+    setFilterDivision('all');
+    setFilterRole('all');
+    setFilterStatus('all');
+    setFilterGender('all');
+  };
+
+  const hasActiveFilters = search || filterDivision !== 'all' || filterRole !== 'all' || filterStatus !== 'all' || filterGender !== 'all';
+
+  // Get unique values for stats
+  const uniqueDivisionsInUsers = [...new Set(users.map(u => u.division).filter(Boolean))];
   const stats = {
     total: users.length,
     active: users.filter(u => u.is_active !== false).length,
-    admins: users.filter(u => (u.roles || []).includes('admin')).length,
-    students: users.filter(u => (u.roles || []).includes('student')).length,
+    divisions: uniqueDivisionsInUsers.length,
+    needsSetup: users.filter(u => u.requires_password_setup).length,
   };
 
   return (
@@ -166,14 +167,8 @@ const UsersPage = () => {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Users</h2>
-          <p className="text-slate-600 mt-1">Manage system users and permissions</p>
+          <p className="text-slate-600 mt-1">Manage organization users and view employee details</p>
         </div>
-        {isAdmin && (
-          <Button className="gap-2" onClick={() => setCreateDialog(true)} data-testid="create-user-btn">
-            <Plus className="w-4 h-4" />
-            Create User
-          </Button>
-        )}
       </div>
 
       {/* Stats */}
@@ -181,8 +176,8 @@ const UsersPage = () => {
         {[
           { label: 'Total Users', value: stats.total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Active', value: stats.active, icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Admins', value: stats.admins, icon: Shield, color: 'text-red-600', bg: 'bg-red-50' },
-          { label: 'Students', value: stats.students, icon: UserCog, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Divisions', value: stats.divisions, icon: Building2, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Pending Setup', value: stats.needsSetup, icon: Shield, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <Card key={label} className="bg-white border-slate-200">
             <CardContent className="p-4 flex items-center gap-4">
@@ -201,36 +196,67 @@ const UsersPage = () => {
       {/* Filters */}
       <Card className="bg-white border-slate-200">
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Search by name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-                data-testid="users-search"
-              />
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col md:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search by name, email, department, position..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-10"
+                  data-testid="users-search"
+                />
+              </div>
+              <Select value={filterDivision} onValueChange={setFilterDivision}>
+                <SelectTrigger className="w-52" data-testid="filter-division">
+                  <Building2 className="w-4 h-4 mr-2 text-slate-400" />
+                  <SelectValue placeholder="All Divisions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Divisions</SelectItem>
+                  {divisions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterRole} onValueChange={setFilterRole}>
+                <SelectTrigger className="w-40" data-testid="filter-role">
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  {ROLES.map(r => <SelectItem key={r} value={r}>{r.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={filterGender} onValueChange={setFilterGender}>
+                <SelectTrigger className="w-32" data-testid="filter-gender">
+                  <SelectValue placeholder="Gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Gender</SelectItem>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-32" data-testid="filter-status">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={filterRole} onValueChange={setFilterRole}>
-              <SelectTrigger className="w-40" data-testid="filter-role">
-                <SelectValue placeholder="All Roles" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                {ROLES.map(r => <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-40" data-testid="filter-status">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500">Filters active:</span>
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-xs">
+                  <X className="w-3 h-3 mr-1" />
+                  Clear all
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -239,7 +265,7 @@ const UsersPage = () => {
       <Card className="bg-white border-slate-200">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">
-            {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''}
+            {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} found
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -254,228 +280,304 @@ const UsersPage = () => {
               <p className="text-sm mt-1">Try adjusting your search or filters</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
-              {filteredUsers.map(u => (
-                <div key={u.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors" data-testid={`user-row-${u.id}`}>
-                  {/* Avatar */}
-                  <div className={`w-10 h-10 ${getAvatarColor(u.email)} rounded-full flex items-center justify-center flex-shrink-0`}>
-                    <span className="text-white text-sm font-semibold">{getInitials(u.full_name || u.email)}</span>
-                  </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-y border-slate-100">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Employee</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Division / Department</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Position</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Role</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredUsers.map(u => (
+                    <tr key={u.id} className="hover:bg-slate-50 transition-colors" data-testid={`user-row-${u.id}`}>
+                      {/* Employee Info */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 ${getAvatarColor(u.email)} rounded-full flex items-center justify-center flex-shrink-0`}>
+                            <span className="text-white text-sm font-semibold">{getInitials(u.full_name || u.email)}</span>
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-slate-900 truncate">{u.full_name || 'Unnamed'}</span>
+                              {u.id === currentUser?.id && (
+                                <Badge variant="outline" className="text-xs">You</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-slate-500">
+                              <Mail className="w-3 h-3" />
+                              <span className="truncate">{u.email}</span>
+                            </div>
+                            {u.personnel_number && (
+                              <div className="flex items-center gap-1 text-xs text-slate-400">
+                                <Hash className="w-3 h-3" />
+                                <span>{u.personnel_number}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-900 truncate">{u.full_name || 'Unnamed'}</span>
-                      {u.id === currentUser?.id && (
-                        <Badge variant="outline" className="text-xs">You</Badge>
-                      )}
-                      {u.is_active === false && (
-                        <Badge className="bg-slate-100 text-slate-500 text-xs">Inactive</Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      <span className="text-sm text-slate-500 flex items-center gap-1">
-                        <Mail className="w-3 h-3" />{u.email}
-                      </span>
-                      {u.department && (
-                        <span className="text-sm text-slate-500 flex items-center gap-1">
-                          <Building2 className="w-3 h-3" />{u.department}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                      {/* Division / Department */}
+                      <td className="px-4 py-3">
+                        <div className="text-sm">
+                          <div className="font-medium text-slate-900">{u.division || '-'}</div>
+                          <div className="text-slate-500">{u.department || '-'}</div>
+                        </div>
+                      </td>
 
-                  {/* Roles */}
-                  <div className="flex flex-wrap gap-1 min-w-[120px]">
-                    {(u.roles || ['employee']).map(r => (
-                      <Badge key={r} className={`${getRoleColor(r)} text-xs`}>{r}</Badge>
-                    ))}
-                  </div>
+                      {/* Position */}
+                      <td className="px-4 py-3">
+                        <div className="text-sm text-slate-700">{u.position || '-'}</div>
+                        {u.level && (
+                          <div className="text-xs text-slate-400">Level: {u.level}</div>
+                        )}
+                      </td>
 
-                  {/* Status */}
-                  <div className="flex items-center gap-1 w-24">
-                    {u.is_active !== false ? (
-                      <><CheckCircle className="w-4 h-4 text-emerald-500" /><span className="text-sm text-emerald-600">Active</span></>
-                    ) : (
-                      <><XCircle className="w-4 h-4 text-slate-400" /><span className="text-sm text-slate-500">Inactive</span></>
-                    )}
-                  </div>
+                      {/* Role */}
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {(u.roles || ['employee']).map(r => (
+                            <Badge key={r} className={`${getRoleColor(r)} text-xs`}>
+                              {r.replace('_', ' ')}
+                            </Badge>
+                          ))}
+                        </div>
+                      </td>
 
-                  {/* Joined */}
-                  <div className="text-xs text-slate-400 w-24 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {u.created_at ? new Date(u.created_at).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                  </div>
-
-                  {/* Actions */}
-                  {isAdmin && u.id !== currentUser?.id && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="w-8 h-8" data-testid={`user-actions-${u.id}`}>
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setSelectedUser(u); setRoleDialog(true); }}>
-                          <UserCog className="w-4 h-4 mr-2" />Change Role
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleToggleStatus(u.id, u.is_active !== false)}>
+                      {/* Status */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
                           {u.is_active !== false ? (
-                            <><ShieldOff className="w-4 h-4 mr-2" />Deactivate</>
+                            <><CheckCircle className="w-4 h-4 text-emerald-500" /><span className="text-sm text-emerald-600">Active</span></>
                           ) : (
-                            <><Shield className="w-4 h-4 mr-2" />Activate</>
+                            <><XCircle className="w-4 h-4 text-slate-400" /><span className="text-sm text-slate-500">Inactive</span></>
                           )}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() => setDeleteConfirm({ id: u.id, name: u.full_name || u.email })}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />Delete User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              ))}
+                        </div>
+                        {u.requires_password_setup && (
+                          <div className="text-xs text-amber-600 mt-1">Needs password setup</div>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`user-actions-${u.id}`}>
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => { setSelectedUser(u); setViewDialog(true); }}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            {isAdmin && u.id !== currentUser?.id && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleToggleStatus(u.id, u.is_active !== false)}>
+                                  {u.is_active !== false ? (
+                                    <><ShieldOff className="w-4 h-4 mr-2" />Deactivate</>
+                                  ) : (
+                                    <><Shield className="w-4 h-4 mr-2" />Activate</>
+                                  )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-red-600 focus:text-red-600"
+                                  onClick={() => setDeleteConfirm({ id: u.id, name: u.full_name || u.email })}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete User
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Create User Dialog */}
-      <Dialog open={createDialog} onOpenChange={setCreateDialog}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Create New User</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label>Full Name</Label>
-              <Input
-                className="mt-1"
-                placeholder="John Smith"
-                value={createForm.full_name}
-                onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })}
-                data-testid="create-name"
-              />
-            </div>
-            <div>
-              <Label>Email Address *</Label>
-              <Input
-                className="mt-1"
-                type="email"
-                placeholder="user@example.com"
-                value={createForm.email}
-                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                data-testid="create-email"
-              />
-            </div>
-            <div>
-              <Label>Role *</Label>
-              <Select value={createForm.role} onValueChange={(v) => setCreateForm({ ...createForm, role: v })}>
-                <SelectTrigger className="mt-1" data-testid="create-role-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLES.map(r => (
-                    <SelectItem key={r} value={r}>
-                      <div className="flex flex-col">
-                        <span className="capitalize font-medium">{r}</span>
-                        <span className="text-xs text-slate-500">{ROLE_DESCRIPTIONS[r]}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Password *</Label>
-              <div className="relative mt-1">
-                <Input
-                  type={showPwd ? 'text' : 'password'}
-                  placeholder="Min. 6 characters"
-                  value={createForm.password}
-                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                  data-testid="create-password"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
-                  onClick={() => setShowPwd(v => !v)}
-                >
-                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+      {/* View User Dialog */}
+      <Dialog open={viewDialog} onOpenChange={setViewDialog}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className={`w-12 h-12 ${getAvatarColor(selectedUser?.email)} rounded-full flex items-center justify-center`}>
+                <span className="text-white text-lg font-semibold">{getInitials(selectedUser?.full_name)}</span>
+              </div>
+              <div>
+                <div className="text-xl">{selectedUser?.full_name}</div>
+                <div className="text-sm text-slate-500 font-normal">{selectedUser?.email}</div>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <div className="space-y-6 mt-4">
+              {/* Personal Information */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Personal Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-lg p-4">
+                  <div>
+                    <p className="text-xs text-slate-500">Full Name</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.full_name || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Surname</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.surname || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">ID Number</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.id_number || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Gender</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.gender || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Race</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.race || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Age</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.age || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Employment Information */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Briefcase className="w-4 h-4" />
+                  Employment Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-lg p-4">
+                  <div>
+                    <p className="text-xs text-slate-500">Personnel Number</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.personnel_number || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Division</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.division || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Department</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.department || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Position</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.position || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Level</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.level || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Start Date</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.start_date || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Years of Service</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.years_of_service ? `${selectedUser.years_of_service} years` : '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* OFO Classification */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Hash className="w-4 h-4" />
+                  OFO Classification
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-lg p-4">
+                  <div>
+                    <p className="text-xs text-slate-500">OFO Major Group</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.ofo_major_group || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">OFO Sub Major Group</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.ofo_sub_major_group || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">OFO Occupation</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.ofo_occupation || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">OFO Code</p>
+                    <p className="text-sm font-medium text-slate-900">{selectedUser.ofo_code || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* System Information */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  System Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-lg p-4">
+                  <div>
+                    <p className="text-xs text-slate-500">Role(s)</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {(selectedUser.roles || ['employee']).map(r => (
+                        <Badge key={r} className={`${getRoleColor(r)} text-xs`}>
+                          {r.replace('_', ' ')}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Status</p>
+                    <div className="flex items-center gap-1 mt-1">
+                      {selectedUser.is_active !== false ? (
+                        <Badge className="bg-emerald-100 text-emerald-700">Active</Badge>
+                      ) : (
+                        <Badge className="bg-slate-100 text-slate-600">Inactive</Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Password Setup</p>
+                    <p className="text-sm font-medium text-slate-900">
+                      {selectedUser.requires_password_setup ? 'Pending' : 'Complete'}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-            <div>
-              <Label>Confirm Password *</Label>
-              <Input
-                className="mt-1"
-                type="password"
-                placeholder="Repeat password"
-                value={createForm.confirmPassword}
-                onChange={(e) => setCreateForm({ ...createForm, confirmPassword: e.target.value })}
-                data-testid="create-confirm-password"
-              />
-            </div>
-          </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialog(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={saving} data-testid="confirm-create-btn">
-              {saving ? 'Creating...' : 'Create User'}
-            </Button>
+            <Button variant="outline" onClick={() => setViewDialog(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Role Change Dialog */}
-      <Dialog open={roleDialog} onOpenChange={setRoleDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Change Role — {selectedUser?.full_name || selectedUser?.email}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            {ROLES.map(r => (
-              <button
-                key={r}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
-                  (selectedUser?.roles || []).includes(r)
-                    ? 'border-primary bg-primary/5'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-                onClick={() => handleRoleChange(selectedUser?.id, [r])}
-                data-testid={`role-option-${r}`}
-              >
-                <div className="flex items-center gap-3">
-                  <Badge className={`${getRoleColor(r)} text-xs capitalize`}>{r}</Badge>
-                  <p className="text-sm text-slate-600 text-left">{ROLE_DESCRIPTIONS[r]}</p>
-                </div>
-                {(selectedUser?.roles || []).includes(r) && <CheckCircle className="w-5 h-5 text-primary flex-shrink-0" />}
-              </button>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRoleDialog(false)}>Close</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirm Dialog */}
+      {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
           </DialogHeader>
-          <p className="text-slate-600 text-sm">
-            Are you sure you want to permanently delete <strong>{deleteConfirm?.name}</strong>? This action cannot be undone.
+          <p className="text-slate-600">
+            Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>? This action cannot be undone.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
-            <Button
-              variant="destructive"
-              disabled={saving}
-              onClick={() => handleDelete(deleteConfirm.id, deleteConfirm.name)}
-              data-testid="confirm-delete-btn"
-            >
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={saving}>Cancel</Button>
+            <Button variant="destructive" onClick={() => handleDelete(deleteConfirm.id, deleteConfirm.name)} disabled={saving}>
               {saving ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
