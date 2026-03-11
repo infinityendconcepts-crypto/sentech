@@ -145,17 +145,19 @@ const Layout = () => {
           <div className="flex flex-col h-full">
             {/* Logo */}
             <div className={`flex items-center h-16 border-b border-slate-200 ${
-              sidebarCollapsed && !isMobile ? 'justify-center px-3' : 'justify-between px-6'
+              sidebarCollapsed && !isMobile ? 'justify-center px-2' : 'justify-between px-4'
             }`}>
-              <div className="flex items-center gap-2">
-                <img 
-                  src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/576jxjw8_HeCFT4bk_400x400.jpg" 
-                  alt="Sentech Logo" 
-                  className={`rounded-md object-contain ${sidebarCollapsed && !isMobile ? 'w-9 h-9' : 'w-9 h-9'}`}
-                />
-                {(!sidebarCollapsed || isMobile) && (
-                  <span className="font-heading font-bold text-lg text-slate-900">Sentech</span>
-                )}
+              <div className="flex items-center">
+                <div className={`bg-white rounded-md flex items-center justify-center ${
+                  sidebarCollapsed && !isMobile ? 'p-1' : 'p-1.5'
+                }`}>
+                  <img 
+                    src="/sentech-logo.png" 
+                    alt="Sentech Logo" 
+                    className={`object-contain ${sidebarCollapsed && !isMobile ? 'w-10 h-8' : 'w-36 h-10'}`}
+                    style={{ filter: 'invert(0)' }}
+                  />
+                </div>
               </div>
               {/* Mobile close button */}
               <button

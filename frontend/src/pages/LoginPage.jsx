@@ -48,16 +48,15 @@ const LoginPage = () => {
       <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8 items-center">
         <div className="hidden md:flex flex-col justify-center space-y-6">
           <div className="flex items-center gap-4">
-            <img 
-              src="https://customer-assets.emergentagent.com/job_877694de-c9d9-4133-bcb4-cd4bf6e19551/artifacts/576jxjw8_HeCFT4bk_400x400.jpg" 
-              alt="Sentech Logo" 
-              className="w-20 h-20 rounded-xl object-contain"
-            />
-            <div>
-              <h1 className="text-4xl font-heading font-bold text-slate-900">Sentech</h1>
-              <p className="text-lg text-slate-600">Bursary Management System</p>
+            <div className="bg-white rounded-xl p-2 shadow-sm">
+              <img 
+                src="/sentech-logo.png" 
+                alt="Sentech Logo" 
+                className="w-44 h-14 object-contain"
+              />
             </div>
           </div>
+          <p className="text-lg text-slate-600">Bursary Management System</p>
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
