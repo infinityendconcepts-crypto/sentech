@@ -15,11 +15,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '../contexts/AuthContext';
-import { usersAPI, divisionsAPI } from '../services/api';
+import { usersAPI, divisionsAPI, departmentsAPI } from '../services/api';
 import {
   Users, Search, MoreVertical, Shield, ShieldOff,
   Trash2, Mail, Building2, CheckCircle, XCircle, UserCheck,
-  Briefcase, Calendar, Hash, Filter, X, ChevronDown, Eye,
+  Briefcase, Calendar, Hash, X, Eye, Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -56,6 +56,8 @@ const UsersPage = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [divisions, setDivisions] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [allDepartments, setAllDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterDivision, setFilterDivision] = useState('all');
@@ -64,7 +66,9 @@ const UsersPage = () => {
   const [filterGender, setFilterGender] = useState('all');
 
   const [viewDialog, setViewDialog] = useState(false);
+  const [editDialog, setEditDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [editForm, setEditForm] = useState({ division: '', department: '', position: '', role: '' });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -73,6 +77,7 @@ const UsersPage = () => {
   useEffect(() => { 
     fetchUsers();
     fetchDivisions();
+    fetchAllDepartments();
   }, []);
 
   const fetchUsers = async () => {
@@ -90,11 +95,68 @@ const UsersPage = () => {
   const fetchDivisions = async () => {
     try {
       const res = await divisionsAPI.getAll();
-      // Get unique division names
       const uniqueDivisions = [...new Set(res.data.map(d => d.name))].sort();
       setDivisions(uniqueDivisions);
     } catch {
       console.error('Failed to load divisions');
+    }
+  };
+
+  const fetchAllDepartments = async () => {
+    try {
+      const res = await departmentsAPI.getAll();
+      setAllDepartments(res.data);
+    } catch {
+      console.error('Failed to load departments');
+    }
+  };
+
+  const fetchDepartmentsForDivision = (divisionName) => {
+    // Get unique department names for the selected division from users
+    const deptNames = [...new Set(
+      users
+        .filter(u => u.division === divisionName && u.department)
+        .map(u => u.department)
+    )].sort();
+    setDepartments(deptNames);
+  };
+
+  const openEditDialog = (user) => {
+    setSelectedUser(user);
+    setEditForm({
+      division: user.division || '',
+      department: user.department || '',
+      position: user.position || '',
+      role: user.roles?.[0] || 'employee',
+    });
+    if (user.division) {
+      fetchDepartmentsForDivision(user.division);
+    }
+    setEditDialog(true);
+  };
+
+  const handleDivisionChange = (value) => {
+    setEditForm({ ...editForm, division: value, department: '' });
+    fetchDepartmentsForDivision(value);
+  };
+
+  const handleSaveUser = async () => {
+    if (!selectedUser) return;
+    setSaving(true);
+    try {
+      await usersAPI.update(selectedUser.id, {
+        division: editForm.division,
+        department: editForm.department,
+        position: editForm.position,
+        roles: [editForm.role],
+      });
+      toast.success('User updated successfully');
+      setEditDialog(false);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update user');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -376,6 +438,12 @@ const UsersPage = () => {
                               <Eye className="w-4 h-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
+                            {isAdmin && (
+                              <DropdownMenuItem onClick={() => openEditDialog(u)}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit User
+                              </DropdownMenuItem>
+                            )}
                             {isAdmin && u.id !== currentUser?.id && (
                               <>
                                 <DropdownMenuSeparator />
@@ -579,6 +647,116 @@ const UsersPage = () => {
             <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={saving}>Cancel</Button>
             <Button variant="destructive" onClick={() => handleDelete(deleteConfirm.id, deleteConfirm.name)} disabled={saving}>
               {saving ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editDialog} onOpenChange={setEditDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <Pencil className="w-5 h-5 text-primary" />
+              Edit User
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedUser && (
+            <div className="space-y-6">
+              {/* User Info Header */}
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                <div className={`w-10 h-10 ${getAvatarColor(selectedUser.email)} rounded-full flex items-center justify-center`}>
+                  <span className="text-white text-sm font-semibold">{getInitials(selectedUser.full_name)}</span>
+                </div>
+                <div>
+                  <div className="font-medium text-slate-900">{selectedUser.full_name}</div>
+                  <div className="text-sm text-slate-500">{selectedUser.email}</div>
+                </div>
+              </div>
+
+              {/* Division Field */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-division">Division</Label>
+                <Select value={editForm.division || 'none'} onValueChange={(v) => handleDivisionChange(v === 'none' ? '' : v)}>
+                  <SelectTrigger id="edit-division" data-testid="edit-division">
+                    <SelectValue placeholder="Select Division" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- No Division --</SelectItem>
+                    {divisions.map(d => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Department Field */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-department">Department</Label>
+                <Select 
+                  value={editForm.department || 'none'} 
+                  onValueChange={(v) => setEditForm({ ...editForm, department: v === 'none' ? '' : v })}
+                >
+                  <SelectTrigger id="edit-department" data-testid="edit-department">
+                    <SelectValue placeholder="Select Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- No Department --</SelectItem>
+                    {departments.map(d => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {editForm.division && departments.length === 0 && (
+                  <p className="text-xs text-slate-500">No departments found for this division. You can type a new one below.</p>
+                )}
+                <Input
+                  placeholder="Or enter new department name"
+                  value={editForm.department}
+                  onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                  className="mt-2"
+                  data-testid="edit-department-input"
+                />
+              </div>
+
+              {/* Position Field */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-position">Position</Label>
+                <Input
+                  id="edit-position"
+                  placeholder="Enter position/job title"
+                  value={editForm.position}
+                  onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
+                  data-testid="edit-position"
+                />
+              </div>
+
+              {/* Role Field */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-role">Role</Label>
+                <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+                  <SelectTrigger id="edit-role" data-testid="edit-role">
+                    <SelectValue placeholder="Select Role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLES.map(r => (
+                      <SelectItem key={r} value={r}>
+                        {r.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="mt-6">
+            <Button variant="outline" onClick={() => setEditDialog(false)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveUser} disabled={saving} data-testid="save-user-btn">
+              {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
