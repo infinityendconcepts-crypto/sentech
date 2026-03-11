@@ -148,16 +148,11 @@ const Layout = () => {
               sidebarCollapsed && !isMobile ? 'justify-center px-2' : 'justify-between px-4'
             }`}>
               <div className="flex items-center">
-                <div className={`bg-white rounded-md flex items-center justify-center ${
-                  sidebarCollapsed && !isMobile ? 'p-1' : 'p-1.5'
-                }`}>
-                  <img 
-                    src="/sentech-logo.png" 
-                    alt="Sentech Logo" 
-                    className={`object-contain ${sidebarCollapsed && !isMobile ? 'w-10 h-8' : 'w-36 h-10'}`}
-                    style={{ filter: 'invert(0)' }}
-                  />
-                </div>
+                <img 
+                  src="/sentech-logo.png" 
+                  alt="Sentech Logo" 
+                  className={`object-contain ${sidebarCollapsed && !isMobile ? 'w-10 h-8' : 'w-40 h-12'}`}
+                />
               </div>
               {/* Mobile close button */}
               <button

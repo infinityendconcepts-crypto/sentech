@@ -47,14 +47,12 @@ const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8 items-center">
         <div className="hidden md:flex flex-col justify-center space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="bg-white rounded-xl p-2 shadow-sm">
-              <img 
-                src="/sentech-logo.png" 
-                alt="Sentech Logo" 
-                className="w-44 h-14 object-contain"
-              />
-            </div>
+          <div className="flex items-center">
+            <img 
+              src="/sentech-logo.png" 
+              alt="Sentech Logo" 
+              className="w-64 h-20 object-contain"
+            />
           </div>
           <p className="text-lg text-slate-600">Bursary Management System</p>
           <div className="space-y-4">
