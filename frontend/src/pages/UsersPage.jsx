@@ -60,7 +60,7 @@ const UsersPage = () => {
   const [allDepartments, setAllDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filterDivision, setFilterDivision] = useState('all');
+  const [filterDepartment, setFilterDepartment] = useState('all');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterGender, setFilterGender] = useState('all');
@@ -167,12 +167,12 @@ const UsersPage = () => {
       u.department?.toLowerCase().includes(search.toLowerCase()) ||
       u.position?.toLowerCase().includes(search.toLowerCase()) ||
       u.personnel_number?.toLowerCase().includes(search.toLowerCase());
-    const matchDivision = filterDivision === 'all' || u.division === filterDivision;
+    const matchDepartment = filterDepartment === 'all' || u.department === filterDepartment;
     const matchRole = filterRole === 'all' || (u.roles || []).includes(filterRole);
     const matchStatus = filterStatus === 'all' ||
       (filterStatus === 'active' ? u.is_active !== false : u.is_active === false);
     const matchGender = filterGender === 'all' || u.gender?.toLowerCase() === filterGender.toLowerCase();
-    return matchSearch && matchDivision && matchRole && matchStatus && matchGender;
+    return matchSearch && matchDepartment && matchRole && matchStatus && matchGender;
   });
 
   const handleToggleStatus = async (userId, isActive) => {
@@ -206,20 +206,20 @@ const UsersPage = () => {
 
   const clearFilters = () => {
     setSearch('');
-    setFilterDivision('all');
+    setFilterDepartment('all');
     setFilterRole('all');
     setFilterStatus('all');
     setFilterGender('all');
   };
 
-  const hasActiveFilters = search || filterDivision !== 'all' || filterRole !== 'all' || filterStatus !== 'all' || filterGender !== 'all';
+  const hasActiveFilters = search || filterDepartment !== 'all' || filterRole !== 'all' || filterStatus !== 'all' || filterGender !== 'all';
 
   // Get unique values for stats
-  const uniqueDivisionsInUsers = [...new Set(users.map(u => u.division).filter(Boolean))];
+  const uniqueDepartmentsInUsers = [...new Set(users.map(u => u.department).filter(Boolean))].sort();
   const stats = {
     total: users.length,
     active: users.filter(u => u.is_active !== false).length,
-    divisions: uniqueDivisionsInUsers.length,
+    departments: uniqueDepartmentsInUsers.length,
     needsSetup: users.filter(u => u.requires_password_setup).length,
   };
 
@@ -238,7 +238,7 @@ const UsersPage = () => {
         {[
           { label: 'Total Users', value: stats.total, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Active', value: stats.active, icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Divisions', value: stats.divisions, icon: Building2, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Departments', value: stats.departments, icon: Building2, color: 'text-purple-600', bg: 'bg-purple-50' },
           { label: 'Pending Setup', value: stats.needsSetup, icon: Shield, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <Card key={label} className="bg-white border-slate-200">
@@ -270,14 +270,14 @@ const UsersPage = () => {
                   data-testid="users-search"
                 />
               </div>
-              <Select value={filterDivision} onValueChange={setFilterDivision}>
-                <SelectTrigger className="w-52" data-testid="filter-division">
+              <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+                <SelectTrigger className="w-52" data-testid="filter-department">
                   <Building2 className="w-4 h-4 mr-2 text-slate-400" />
-                  <SelectValue placeholder="All Divisions" />
+                  <SelectValue placeholder="All Departments" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Divisions</SelectItem>
-                  {divisions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {uniqueDepartmentsInUsers.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Select value={filterRole} onValueChange={setFilterRole}>
