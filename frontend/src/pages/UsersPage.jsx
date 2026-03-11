@@ -347,7 +347,8 @@ const UsersPage = () => {
                 <thead className="bg-slate-50 border-y border-slate-100">
                   <tr>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Employee</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Division / Department</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Division</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Department</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Position</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Role</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
@@ -384,12 +385,14 @@ const UsersPage = () => {
                         </div>
                       </td>
 
-                      {/* Division / Department */}
+                      {/* Division */}
                       <td className="px-4 py-3">
-                        <div className="text-sm">
-                          <div className="font-medium text-slate-900">{u.division || '-'}</div>
-                          <div className="text-slate-500">{u.department || '-'}</div>
-                        </div>
+                        <div className="text-sm font-medium text-slate-900">{u.division || '-'}</div>
+                      </td>
+
+                      {/* Department */}
+                      <td className="px-4 py-3">
+                        <div className="text-sm text-slate-700">{u.department || '-'}</div>
                       </td>
 
                       {/* Position */}
