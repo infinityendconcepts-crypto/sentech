@@ -6,12 +6,12 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 ## Core Requirements
 - **Technology Stack:** React, FastAPI, MongoDB
 - **Branding:** "Sentech" with blue (#0056B3) and gray color scheme
-- **Authentication:** Microsoft Entra ID SSO, standard email/password
+- **Authentication:** Microsoft Entra ID SSO, standard email/password, First-time Password Setup
 
 ## Core Modules (Pages)
 - Dashboard
 - Bursary Applications
-- Training Applications (NEW - Feb 2026)
+- Training Applications
 - Sponsors
 - BBBEE
 - Projects
@@ -35,11 +35,41 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Notes (hidden from navigation)
 - Prospects (hidden from navigation)
 
-## User Personas
+## User Personas & Roles
+- **Super Admin:** Highest access level
 - **Admin:** Full access to all modules, can manage users, edit training modules, assign PDP goals
-- **Student:** Can view and manage their own applications, view training modules, manage personal PDP
+- **Manager:** OFO Major Group: Managers
+- **Professional:** OFO Major Group: Professionals
+- **Technician:** OFO Major Group: Technicians
+- **Clerical:** OFO Major Group: Clerical Support Workers
+- **Employee:** Default role
 
-## What's Been Implemented (February 2026)
+## Organizational Structure (Imported March 2026)
+
+### Divisions (10 total)
+1. Chief Executive Officer (Exec_and_Head)
+2. Finance
+3. Internal Audit
+4. Satellite Business Unit
+5. Research and Innovation
+6. Supply Chain Management
+7. Human Resources
+8. Company Secretariat
+9. Legal
+10. Enterprise Risk and Compliance
+
+### User Fields (from spreadsheet import)
+- Personal: Full Name, Surname, Email, ID Number, Race, Gender, Age
+- Employment: Division, Department, Position, Personnel Number, Start Date, Years of Service, Level
+- OFO Classification: Major Group, Sub Major Group, Occupation, OFO Code
+
+### First-Time Password Setup
+- Imported users have `requires_password_setup: true`
+- On first login attempt, they're redirected to password setup screen
+- After setting password, they're automatically logged in
+- 120 users imported from organizational spreadsheet
+
+## What's Been Implemented (March 2026)
 
 ### Core Features
 - User authentication with JWT and Microsoft SSO

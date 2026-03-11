@@ -36,6 +36,8 @@ export const authAPI = {
   getMicrosoftAuthUrl: () => api.get('/auth/microsoft/login'),
   requestOtp: (email) => api.post('/auth/request-otp', { email }),
   verifyOtp: (email, otp) => api.post('/auth/verify-otp', { email, otp }),
+  checkPasswordSetup: (email) => api.post('/auth/check-password-setup', { email }),
+  setupPassword: (email, newPassword) => api.post('/auth/setup-password', { email, new_password: newPassword }),
 };
 
 export const usersAPI = {
@@ -48,9 +50,24 @@ export const usersAPI = {
   create: (data) => api.post('/users', data),
   invite: (data) => api.post('/users/invite', data),
   deactivate: (id) => api.put(`/users/${id}/status`, { is_active: false }),
+  bulkImport: (users) => api.post('/users/bulk-import', users),
   activate: (id) => api.put(`/users/${id}/status`, { is_active: true }),
   changeRole: (id, roles) => api.put(`/users/${id}/role`, { roles }),
   delete: (id) => api.delete(`/users/${id}`),
+};
+
+export const divisionsAPI = {
+  getAll: () => api.get('/divisions'),
+  create: (data) => api.post('/divisions', data),
+  update: (id, data) => api.put(`/divisions/${id}`, data),
+  delete: (id) => api.delete(`/divisions/${id}`),
+};
+
+export const departmentsAPI = {
+  getAll: (divisionId) => api.get('/departments', { params: { division_id: divisionId } }),
+  create: (data) => api.post('/departments', data),
+  update: (id, data) => api.put(`/departments/${id}`, data),
+  delete: (id) => api.delete(`/departments/${id}`),
 };
 
 export const teamsAPI = {

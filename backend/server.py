@@ -79,44 +79,121 @@ class User(BaseModel):
     id: str = Field(default_factory=generate_uuid)
     email: EmailStr
     full_name: str
+    surname: Optional[str] = None
     password_hash: Optional[str] = None
     roles: List[str] = ["student"]
     team_id: Optional[str] = None
     department: Optional[str] = None
+    division: Optional[str] = None
     position: Optional[str] = None
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
     is_active: bool = True
     is_verified: bool = False
+    requires_password_setup: bool = False  # For first-time login
     student_id: Optional[str] = None
     permissions: Dict[str, Any] = {}
+    # OFO Fields
+    ofo_major_group: Optional[str] = None
+    ofo_sub_major_group: Optional[str] = None
+    ofo_occupation: Optional[str] = None
+    ofo_code: Optional[str] = None
+    # Personal Details
+    personnel_number: Optional[str] = None
+    id_number: Optional[str] = None
+    race: Optional[str] = None
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    # Employment Details
+    start_date: Optional[str] = None
+    years_of_service: Optional[float] = None
+    level: Optional[str] = None
     created_at: datetime = Field(default_factory=current_time)
     updated_at: datetime = Field(default_factory=current_time)
 
 class UserCreate(BaseModel):
     email: EmailStr
     full_name: str
-    password: str
+    password: Optional[str] = None
+    surname: Optional[str] = None
     student_id: Optional[str] = None
     roles: List[str] = ["student"]
     team_id: Optional[str] = None
     department: Optional[str] = None
+    division: Optional[str] = None
     position: Optional[str] = None
     phone: Optional[str] = None
+    requires_password_setup: bool = False
+    # OFO Fields
+    ofo_major_group: Optional[str] = None
+    ofo_sub_major_group: Optional[str] = None
+    ofo_occupation: Optional[str] = None
+    ofo_code: Optional[str] = None
+    # Personal Details
+    personnel_number: Optional[str] = None
+    id_number: Optional[str] = None
+    race: Optional[str] = None
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    # Employment Details
+    start_date: Optional[str] = None
+    years_of_service: Optional[float] = None
+    level: Optional[str] = None
 
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
+    surname: Optional[str] = None
     roles: Optional[List[str]] = None
     team_id: Optional[str] = None
     department: Optional[str] = None
+    division: Optional[str] = None
     position: Optional[str] = None
     phone: Optional[str] = None
     avatar_url: Optional[str] = None
     is_active: Optional[bool] = None
+    requires_password_setup: Optional[bool] = None
+    # OFO Fields
+    ofo_major_group: Optional[str] = None
+    ofo_sub_major_group: Optional[str] = None
+    ofo_occupation: Optional[str] = None
+    ofo_code: Optional[str] = None
+    # Personal Details
+    personnel_number: Optional[str] = None
+    id_number: Optional[str] = None
+    race: Optional[str] = None
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    # Employment Details
+    start_date: Optional[str] = None
+    years_of_service: Optional[float] = None
+    level: Optional[str] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class PasswordSetup(BaseModel):
+    email: EmailStr
+    new_password: str
+
+class Division(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_uuid)
+    name: str
+    description: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=current_time)
+    updated_at: datetime = Field(default_factory=current_time)
+
+class Department(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=generate_uuid)
+    name: str
+    division_id: str
+    description: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=current_time)
+    updated_at: datetime = Field(default_factory=current_time)
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -1091,7 +1168,21 @@ async def register(user_data: UserCreate):
 @api_router.post("/auth/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):
     user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
-    if not user or not verify_password(credentials.password, user.get("password_hash", "")):
+    
+    # Check if user exists
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid email or password")
+    
+    # Check if user requires password setup (first-time login)
+    if user.get("requires_password_setup", False):
+        raise HTTPException(
+            status_code=403, 
+            detail="Password setup required",
+            headers={"X-Requires-Password-Setup": "true"}
+        )
+    
+    # Verify password
+    if not verify_password(credentials.password, user.get("password_hash", "")):
         raise HTTPException(status_code=400, detail="Invalid email or password")
     
     if not user.get("is_active"):
@@ -1099,6 +1190,54 @@ async def login(credentials: UserLogin):
     
     access_token = create_access_token(data={"sub": user["id"]})
     user_response = {k: v for k, v in user.items() if k != 'password_hash'}
+    
+    return TokenResponse(access_token=access_token, user=user_response)
+
+@api_router.post("/auth/check-password-setup")
+async def check_password_setup(email_data: dict):
+    """Check if a user requires password setup"""
+    email = email_data.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    if not user:
+        return {"requires_setup": False, "exists": False}
+    
+    return {
+        "requires_setup": user.get("requires_password_setup", False),
+        "exists": True,
+        "full_name": user.get("full_name", "")
+    }
+
+@api_router.post("/auth/setup-password")
+async def setup_password(setup_data: PasswordSetup):
+    """Set password for first-time login users"""
+    user = await db.users.find_one({"email": setup_data.email}, {"_id": 0})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if not user.get("requires_password_setup", False):
+        raise HTTPException(status_code=400, detail="Password setup not required for this user")
+    
+    # Hash the new password
+    password_hash = get_password_hash(setup_data.new_password)
+    
+    # Update user with new password and remove the setup requirement
+    await db.users.update_one(
+        {"email": setup_data.email},
+        {"$set": {
+            "password_hash": password_hash,
+            "requires_password_setup": False,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Get updated user and create token
+    updated_user = await db.users.find_one({"email": setup_data.email}, {"_id": 0})
+    access_token = create_access_token(data={"sub": updated_user["id"]})
+    user_response = {k: v for k, v in updated_user.items() if k != 'password_hash'}
     
     return TokenResponse(access_token=access_token, user=user_response)
 
@@ -3570,6 +3709,175 @@ async def delete_pdp_entry(entry_id: str, current_user: dict = Depends(get_curre
         raise HTTPException(status_code=403, detail="Access denied")
     await db.pdp.delete_one({"id": entry_id})
     return {"message": "PDP entry deleted successfully"}
+
+# ============== DIVISIONS ROUTES ==============
+
+@api_router.get("/divisions")
+async def get_divisions(current_user: dict = Depends(get_current_user)):
+    divisions = await db.divisions.find({}, {"_id": 0}).to_list(100)
+    return divisions
+
+@api_router.post("/divisions")
+async def create_division(division_data: dict, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can create divisions")
+    
+    division = {
+        "id": generate_uuid(),
+        "name": division_data.get("name"),
+        "description": division_data.get("description", ""),
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.divisions.insert_one({**division})
+    return division
+
+@api_router.put("/divisions/{division_id}")
+async def update_division(division_id: str, division_data: dict, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can update divisions")
+    
+    update_dict = {k: v for k, v in division_data.items() if v is not None}
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.divisions.update_one({"id": division_id}, {"$set": update_dict})
+    updated = await db.divisions.find_one({"id": division_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/divisions/{division_id}")
+async def delete_division(division_id: str, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can delete divisions")
+    
+    await db.divisions.delete_one({"id": division_id})
+    return {"message": "Division deleted successfully"}
+
+# ============== DEPARTMENTS ROUTES ==============
+
+@api_router.get("/departments")
+async def get_departments(division_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    query = {}
+    if division_id:
+        query["division_id"] = division_id
+    departments = await db.departments.find(query, {"_id": 0}).to_list(500)
+    return departments
+
+@api_router.post("/departments")
+async def create_department(dept_data: dict, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can create departments")
+    
+    department = {
+        "id": generate_uuid(),
+        "name": dept_data.get("name"),
+        "division_id": dept_data.get("division_id"),
+        "description": dept_data.get("description", ""),
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.departments.insert_one({**department})
+    return department
+
+@api_router.put("/departments/{dept_id}")
+async def update_department(dept_id: str, dept_data: dict, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can update departments")
+    
+    update_dict = {k: v for k, v in dept_data.items() if v is not None}
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.departments.update_one({"id": dept_id}, {"$set": update_dict})
+    updated = await db.departments.find_one({"id": dept_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/departments/{dept_id}")
+async def delete_department(dept_id: str, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can delete departments")
+    
+    await db.departments.delete_one({"id": dept_id})
+    return {"message": "Department deleted successfully"}
+
+# ============== USER IMPORT ROUTES ==============
+
+@api_router.post("/users/bulk-import")
+async def bulk_import_users(users_data: List[dict], current_user: dict = Depends(get_current_user)):
+    """Bulk import users from spreadsheet data"""
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can import users")
+    
+    imported = 0
+    skipped = 0
+    errors = []
+    
+    for user_data in users_data:
+        try:
+            email = user_data.get("email", "").strip().lower()
+            if not email:
+                skipped += 1
+                continue
+            
+            # Check if user already exists
+            existing = await db.users.find_one({"email": email})
+            if existing:
+                skipped += 1
+                continue
+            
+            # Determine role based on OFO Major Group
+            ofo_major = user_data.get("ofo_major_group", "")
+            role = "employee"
+            if "MANAGERS" in ofo_major.upper():
+                role = "manager"
+            elif "PROFESSIONALS" in ofo_major.upper():
+                role = "professional"
+            elif "TECHNICIANS" in ofo_major.upper():
+                role = "technician"
+            elif "CLERICAL" in ofo_major.upper():
+                role = "clerical"
+            
+            user = {
+                "id": generate_uuid(),
+                "email": email,
+                "full_name": user_data.get("full_name", ""),
+                "surname": user_data.get("surname", ""),
+                "password_hash": None,
+                "roles": [role],
+                "division": user_data.get("division", ""),
+                "department": user_data.get("department", ""),
+                "position": user_data.get("position", ""),
+                "is_active": True,
+                "is_verified": False,
+                "requires_password_setup": True,
+                "ofo_major_group": user_data.get("ofo_major_group", ""),
+                "ofo_sub_major_group": user_data.get("ofo_sub_major_group", ""),
+                "ofo_occupation": user_data.get("ofo_occupation", ""),
+                "ofo_code": user_data.get("ofo_code", ""),
+                "personnel_number": user_data.get("personnel_number", ""),
+                "id_number": user_data.get("id_number", ""),
+                "race": user_data.get("race", ""),
+                "gender": user_data.get("gender", ""),
+                "age": user_data.get("age"),
+                "start_date": user_data.get("start_date", ""),
+                "years_of_service": user_data.get("years_of_service"),
+                "level": user_data.get("level", ""),
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            
+            await db.users.insert_one({**user})
+            imported += 1
+            
+        except Exception as e:
+            errors.append({"email": user_data.get("email", "unknown"), "error": str(e)})
+    
+    return {
+        "imported": imported,
+        "skipped": skipped,
+        "errors": errors,
+        "message": f"Successfully imported {imported} users, skipped {skipped}"
+    }
 
 # ============== DASHBOARD STATS ==============
 
