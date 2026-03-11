@@ -5,18 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { authAPI } from '../services/api';
-import { Award, Mail, Lock, FileText, Users, KeyRound, CheckCircle } from 'lucide-react';
+import { Mail, Lock, KeyRound, CheckCircle, UserPlus, LogIn, FileText, Award, Users } from 'lucide-react';
 
 const LoginPage = () => {
-  const [activeTab, setActiveTab] = useState('email');
+  const [isFirstTime, setIsFirstTime] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showPasswordSetup, setShowPasswordSetup] = useState(false);
   const [setupSuccess, setSetupSuccess] = useState(false);
   const [userName, setUserName] = useState('');
+  const [emailVerified, setEmailVerified] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -45,21 +44,33 @@ const LoginPage = () => {
       const response = await authAPI.login(loginData);
       login(response.data.access_token, response.data.user);
     } catch (err) {
-      // Check if password setup is required
       if (err.response?.status === 403 && err.response?.data?.detail === 'Password setup required') {
-        setShowPasswordSetup(true);
-        setPasswordSetupData({ ...passwordSetupData, email: loginData.email });
-        // Get user name for display
-        try {
-          const checkResp = await authAPI.checkPasswordSetup(loginData.email);
-          if (checkResp.data.full_name) {
-            setUserName(checkResp.data.full_name);
-          }
-        } catch {}
-        setError('');
+        setError('This account requires first-time setup. Please select "First Time User" option.');
       } else {
         setError(err.response?.data?.detail || 'Login failed');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyEmail = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await authAPI.checkPasswordSetup(passwordSetupData.email);
+      if (!response.data.exists) {
+        setError('Email not found. Please contact your administrator.');
+      } else if (!response.data.requires_setup) {
+        setError('This account already has a password. Please use "Returning User" login.');
+      } else {
+        setUserName(response.data.full_name || '');
+        setEmailVerified(true);
+      }
+    } catch (err) {
+      setError('Failed to verify email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -86,7 +97,6 @@ const LoginPage = () => {
         passwordSetupData.newPassword
       );
       setSetupSuccess(true);
-      // Auto-login after successful setup
       setTimeout(() => {
         login(response.data.access_token, response.data.user);
       }, 2000);
@@ -97,17 +107,12 @@ const LoginPage = () => {
     }
   };
 
-  const handleCheckEmail = async () => {
-    if (!loginData.email) return;
-    
-    try {
-      const response = await authAPI.checkPasswordSetup(loginData.email);
-      if (response.data.requires_setup) {
-        setShowPasswordSetup(true);
-        setPasswordSetupData({ ...passwordSetupData, email: loginData.email });
-        setUserName(response.data.full_name || '');
-      }
-    } catch {}
+  const resetToLogin = () => {
+    setIsFirstTime(false);
+    setEmailVerified(false);
+    setPasswordSetupData({ email: '', newPassword: '', confirmPassword: '' });
+    setUserName('');
+    setError('');
   };
 
   return (
@@ -156,11 +161,17 @@ const LoginPage = () => {
         <Card className="w-full shadow-lg border-slate-200" data-testid="login-card">
           <CardHeader className="space-y-2">
             <CardTitle className="text-2xl font-heading font-bold text-center">
-              {showPasswordSetup ? 'Set Up Your Password' : 'Welcome'}
+              {isFirstTime 
+                ? (emailVerified ? 'Set Up Your Password' : 'First Time Login')
+                : 'Welcome Back'
+              }
             </CardTitle>
             <CardDescription className="text-center">
-              {showPasswordSetup 
-                ? `Welcome ${userName}! Please create a password to continue.`
+              {isFirstTime 
+                ? (emailVerified 
+                    ? `Welcome ${userName}! Please create a password to continue.`
+                    : 'Enter your email to set up your password'
+                  )
                 : 'Sign in to access your account'
               }
             </CardDescription>
@@ -181,31 +192,183 @@ const LoginPage = () => {
               </Alert>
             )}
 
-            {showPasswordSetup ? (
-              <form onSubmit={handlePasswordSetup} className="space-y-4">
+            {/* User Type Selection */}
+            {!isFirstTime && !emailVerified && (
+              <div className="space-y-4">
+                {/* Two option buttons */}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <button
+                    type="button"
+                    onClick={() => setIsFirstTime(false)}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      !isFirstTime 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                    data-testid="returning-user-btn"
+                  >
+                    <LogIn className={`w-6 h-6 mx-auto mb-2 ${!isFirstTime ? 'text-primary' : 'text-slate-400'}`} />
+                    <p className={`text-sm font-medium ${!isFirstTime ? 'text-primary' : 'text-slate-600'}`}>
+                      Returning User
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setIsFirstTime(true); setError(''); }}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      isFirstTime 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                    data-testid="first-time-user-btn"
+                  >
+                    <UserPlus className={`w-6 h-6 mx-auto mb-2 ${isFirstTime ? 'text-primary' : 'text-slate-400'}`} />
+                    <p className={`text-sm font-medium ${isFirstTime ? 'text-primary' : 'text-slate-600'}`}>
+                      First Time User
+                    </p>
+                  </button>
+                </div>
+
+                {/* Returning User Login Form */}
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="your.email@sentech.co.za"
+                        value={loginData.email}
+                        onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                        className="pl-10"
+                        required
+                        data-testid="login-email-input"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password">Password</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="login-password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={loginData.password}
+                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                        className="pl-10"
+                        required
+                        data-testid="login-password-input"
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading} data-testid="login-submit-btn">
+                    {loading ? 'Signing in...' : 'Sign In'}
+                  </Button>
+                </form>
+
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-slate-200" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-slate-500">Or continue with</span>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleMicrosoftLogin}
+                  variant="outline"
+                  className="w-full gap-2" 
+                  disabled={loading}
+                  data-testid="microsoft-login-btn"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <rect x="1" y="1" width="10" height="10" fill="#F25022" />
+                    <rect x="13" y="1" width="10" height="10" fill="#7FBA00" />
+                    <rect x="1" y="13" width="10" height="10" fill="#00A4EF" />
+                    <rect x="13" y="13" width="10" height="10" fill="#FFB900" />
+                  </svg>
+                  Sign in with Microsoft
+                </Button>
+              </div>
+            )}
+
+            {/* First Time User - Email Verification */}
+            {isFirstTime && !emailVerified && (
+              <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                   <div className="flex items-start gap-3">
                     <KeyRound className="w-5 h-5 mt-0.5 text-blue-600" />
                     <div>
-                      <h4 className="font-semibold text-blue-900">First Time Login</h4>
+                      <h4 className="font-semibold text-blue-900">First Time Setup</h4>
                       <p className="text-sm text-blue-800">
-                        This is your first time signing in. Please create a secure password to access your account.
+                        Enter your work email to set up your password for the first time.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleVerifyEmail} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="setup-email">Work Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="setup-email"
+                        type="email"
+                        placeholder="your.email@sentech.co.za"
+                        value={passwordSetupData.email}
+                        onChange={(e) => setPasswordSetupData({ ...passwordSetupData, email: e.target.value })}
+                        className="pl-10"
+                        required
+                        data-testid="setup-email-input"
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading} data-testid="verify-email-btn">
+                    {loading ? 'Verifying...' : 'Continue'}
+                  </Button>
+                </form>
+
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={resetToLogin}
+                  data-testid="back-to-login-btn"
+                >
+                  Back to Login
+                </Button>
+              </div>
+            )}
+
+            {/* First Time User - Password Setup */}
+            {isFirstTime && emailVerified && (
+              <form onSubmit={handlePasswordSetup} className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 mt-0.5 text-green-600" />
+                    <div>
+                      <h4 className="font-semibold text-green-900">Email Verified</h4>
+                      <p className="text-sm text-green-800">
+                        Create a secure password to complete your account setup.
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="setup-email">Email</Label>
+                  <Label htmlFor="verified-email">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                     <Input
-                      id="setup-email"
+                      id="verified-email"
                       type="email"
                       value={passwordSetupData.email}
                       disabled
                       className="pl-10 bg-slate-50"
-                      data-testid="setup-email-input"
                     />
                   </div>
                 </div>
@@ -254,103 +417,12 @@ const LoginPage = () => {
                   type="button" 
                   variant="outline" 
                   className="w-full" 
-                  onClick={() => {
-                    setShowPasswordSetup(false);
-                    setPasswordSetupData({ email: '', newPassword: '', confirmPassword: '' });
-                    setError('');
-                  }}
+                  onClick={resetToLogin}
                   data-testid="back-to-login-btn"
                 >
                   Back to Login
                 </Button>
               </form>
-            ) : (
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="email" data-testid="tab-email-password">
-                    Email/Password
-                  </TabsTrigger>
-                  <TabsTrigger value="microsoft" data-testid="tab-microsoft">
-                    Microsoft
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="email" className="space-y-4">
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="your.email@sentech.co.za"
-                          value={loginData.email}
-                          onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                          onBlur={handleCheckEmail}
-                          className="pl-10"
-                          required
-                          data-testid="login-email-input"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">Password</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                        <Input
-                          id="login-password"
-                          type="password"
-                          placeholder="••••••••"
-                          value={loginData.password}
-                          onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                          className="pl-10"
-                          required
-                          data-testid="login-password-input"
-                        />
-                      </div>
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading} data-testid="login-submit-btn">
-                      {loading ? 'Signing in...' : 'Sign In'}
-                    </Button>
-                  </form>
-                </TabsContent>
-
-                <TabsContent value="microsoft" className="space-y-4">
-                  <div className="text-center py-8 space-y-4">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
-                      <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none">
-                        <rect x="1" y="1" width="10" height="10" fill="#F25022" />
-                        <rect x="13" y="1" width="10" height="10" fill="#7FBA00" />
-                        <rect x="1" y="13" width="10" height="10" fill="#00A4EF" />
-                        <rect x="13" y="13" width="10" height="10" fill="#FFB900" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="font-heading font-semibold text-lg text-slate-900">
-                        Microsoft Entra ID Authentication
-                      </h3>
-                      <p className="text-sm text-slate-600 mt-1">
-                        Sign in with your Microsoft organizational account
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={handleMicrosoftLogin}
-                      className="w-full gap-2 bg-[#2F2F2F] hover:bg-[#1F1F1F]" 
-                      disabled={loading}
-                      data-testid="microsoft-login-btn"
-                    >
-                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                        <rect x="1" y="1" width="10" height="10" fill="#F25022" />
-                        <rect x="13" y="1" width="10" height="10" fill="#7FBA00" />
-                        <rect x="1" y="13" width="10" height="10" fill="#00A4EF" />
-                        <rect x="13" y="13" width="10" height="10" fill="#FFB900" />
-                      </svg>
-                      {loading ? 'Connecting...' : 'Sign in with Microsoft'}
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
             )}
 
             <div className="mt-6 text-center text-xs text-slate-500">
