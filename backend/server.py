@@ -3925,25 +3925,28 @@ async def get_division_group(division_name: str, current_user: dict = Depends(ge
     if not division:
         raise HTTPException(status_code=404, detail="Division not found")
     
-    members = await db.users.find({"division": division_name}, {"_id": 0, "password_hash": 0}).to_list(200)
+    all_div_members = await db.users.find({"division": division_name}, {"_id": 0, "password_hash": 0}).to_list(200)
     config = await db.division_groups.find_one({"division_name": division_name}, {"_id": 0})
     leader_id = config.get("leader_id") if config else None
-    user_map = {u["id"]: u for u in members}
     all_users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     all_user_map = {u["id"]: u for u in all_users}
     subgroups = await db.subgroups.find({"division_name": division_name}, {"_id": 0}).to_list(100)
+    subgroup_member_ids = set()
     for sg in subgroups:
         sg["members"] = [all_user_map[uid] for uid in sg.get("member_user_ids", []) if uid in all_user_map]
         sg["leader"] = all_user_map.get(sg.get("leader_id"))
+        for uid in sg.get("member_user_ids", []):
+            subgroup_member_ids.add(uid)
+    main_members = [u for u in all_div_members if u["id"] not in subgroup_member_ids]
     
     return {
         "division_id": division["id"],
         "division_name": division_name,
         "description": division.get("description", ""),
         "leader_id": leader_id,
-        "leader": next((u for u in members if u.get("id") == leader_id), None),
-        "members": members,
-        "member_count": len(members),
+        "leader": next((u for u in all_div_members if u.get("id") == leader_id), None),
+        "members": main_members,
+        "member_count": len(all_div_members),
         "subgroups": subgroups,
     }
 
