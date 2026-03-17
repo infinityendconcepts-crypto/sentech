@@ -87,6 +87,15 @@ export const divisionGroupsAPI = {
   setLeader: (name, leaderId) => api.put(`/division-groups/${encodeURIComponent(name)}/leader`, { leader_id: leaderId }),
   addMember: (name, userId) => api.post(`/division-groups/${encodeURIComponent(name)}/members/${userId}`),
   removeMember: (name, userId) => api.delete(`/division-groups/${encodeURIComponent(name)}/members/${userId}`),
+  getSubgroups: (name) => api.get(`/division-groups/${encodeURIComponent(name)}/subgroups`),
+  createSubgroup: (name, data) => api.post(`/division-groups/${encodeURIComponent(name)}/subgroups`, data),
+};
+
+export const subgroupsAPI = {
+  update: (id, data) => api.put(`/subgroups/${id}`, data),
+  delete: (id) => api.delete(`/subgroups/${id}`),
+  addMember: (id, userId) => api.post(`/subgroups/${id}/members/${userId}`),
+  removeMember: (id, userId) => api.delete(`/subgroups/${id}/members/${userId}`),
 };
 
 export const meetingsAPI = {

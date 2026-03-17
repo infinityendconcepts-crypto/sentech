@@ -3887,12 +3887,18 @@ async def get_division_groups(current_user: dict = Depends(get_current_user)):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     group_configs = await db.division_groups.find({}, {"_id": 0}).to_list(100)
     config_map = {gc["division_name"]: gc for gc in group_configs}
+    all_subgroups = await db.subgroups.find({}, {"_id": 0}).to_list(500)
+    user_map = {u["id"]: u for u in users}
     
     groups = []
     for div in divisions:
         div_name = div["name"]
         members = [u for u in users if u.get("division") == div_name]
         config = config_map.get(div_name, {})
+        div_subgroups = [sg for sg in all_subgroups if sg.get("division_name") == div_name]
+        for sg in div_subgroups:
+            sg["members"] = [user_map[uid] for uid in sg.get("member_user_ids", []) if uid in user_map]
+            sg["leader"] = user_map.get(sg.get("leader_id"))
         groups.append({
             "division_id": div["id"],
             "division_name": div_name,
@@ -3901,6 +3907,7 @@ async def get_division_groups(current_user: dict = Depends(get_current_user)):
             "leader": next((u for u in members if u.get("id") == config.get("leader_id")), None),
             "members": members,
             "member_count": len(members),
+            "subgroups": div_subgroups,
         })
     
     groups.sort(key=lambda g: g["division_name"])
@@ -3915,6 +3922,13 @@ async def get_division_group(division_name: str, current_user: dict = Depends(ge
     members = await db.users.find({"division": division_name}, {"_id": 0, "password_hash": 0}).to_list(200)
     config = await db.division_groups.find_one({"division_name": division_name}, {"_id": 0})
     leader_id = config.get("leader_id") if config else None
+    user_map = {u["id"]: u for u in members}
+    all_users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    all_user_map = {u["id"]: u for u in all_users}
+    subgroups = await db.subgroups.find({"division_name": division_name}, {"_id": 0}).to_list(100)
+    for sg in subgroups:
+        sg["members"] = [all_user_map[uid] for uid in sg.get("member_user_ids", []) if uid in all_user_map]
+        sg["leader"] = all_user_map.get(sg.get("leader_id"))
     
     return {
         "division_id": division["id"],
@@ -3924,6 +3938,7 @@ async def get_division_group(division_name: str, current_user: dict = Depends(ge
         "leader": next((u for u in members if u.get("id") == leader_id), None),
         "members": members,
         "member_count": len(members),
+        "subgroups": subgroups,
     }
 
 @api_router.put("/division-groups/{division_name}/leader")
@@ -3989,6 +4004,111 @@ async def remove_member_from_division_group(division_name: str, user_id: str, cu
         )
     
     return {"message": f"User removed from {division_name}"}
+
+# ============== SUBGROUPS ROUTES ==============
+
+def _check_admin_or_tech_support(current_user: dict):
+    roles = current_user.get("roles", [])
+    division = current_user.get("division", "")
+    if "admin" in roles or "super_admin" in roles or division == "Technical Support":
+        return True
+    return False
+
+@api_router.get("/division-groups/{division_name}/subgroups")
+async def get_subgroups(division_name: str, current_user: dict = Depends(get_current_user)):
+    subgroups = await db.subgroups.find({"division_name": division_name}, {"_id": 0}).to_list(100)
+    all_users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    user_map = {u["id"]: u for u in all_users}
+    for sg in subgroups:
+        sg["members"] = [user_map[uid] for uid in sg.get("member_user_ids", []) if uid in user_map]
+        sg["leader"] = user_map.get(sg.get("leader_id"))
+    return subgroups
+
+@api_router.post("/division-groups/{division_name}/subgroups")
+async def create_subgroup(division_name: str, body: dict, current_user: dict = Depends(get_current_user)):
+    if not _check_admin_or_tech_support(current_user):
+        raise HTTPException(status_code=403, detail="Only admins or Technical Support can manage subgroups")
+    
+    division = await db.divisions.find_one({"name": division_name}, {"_id": 0})
+    if not division:
+        raise HTTPException(status_code=404, detail="Division not found")
+    
+    subgroup = {
+        "id": generate_uuid(),
+        "name": body.get("name", "New Subgroup"),
+        "division_name": division_name,
+        "leader_id": body.get("leader_id"),
+        "member_user_ids": body.get("member_user_ids", []),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.subgroups.insert_one({**subgroup})
+    return subgroup
+
+@api_router.put("/subgroups/{subgroup_id}")
+async def update_subgroup(subgroup_id: str, body: dict, current_user: dict = Depends(get_current_user)):
+    if not _check_admin_or_tech_support(current_user):
+        raise HTTPException(status_code=403, detail="Only admins or Technical Support can manage subgroups")
+    
+    sg = await db.subgroups.find_one({"id": subgroup_id}, {"_id": 0})
+    if not sg:
+        raise HTTPException(status_code=404, detail="Subgroup not found")
+    
+    update_dict = {}
+    if "name" in body:
+        update_dict["name"] = body["name"]
+    if "leader_id" in body:
+        update_dict["leader_id"] = body["leader_id"]
+    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.subgroups.update_one({"id": subgroup_id}, {"$set": update_dict})
+    updated = await db.subgroups.find_one({"id": subgroup_id}, {"_id": 0})
+    return updated
+
+@api_router.post("/subgroups/{subgroup_id}/members/{user_id}")
+async def add_subgroup_member(subgroup_id: str, user_id: str, current_user: dict = Depends(get_current_user)):
+    if not _check_admin_or_tech_support(current_user):
+        raise HTTPException(status_code=403, detail="Only admins or Technical Support can manage subgroups")
+    
+    sg = await db.subgroups.find_one({"id": subgroup_id}, {"_id": 0})
+    if not sg:
+        raise HTTPException(status_code=404, detail="Subgroup not found")
+    
+    member_ids = sg.get("member_user_ids", [])
+    if user_id not in member_ids:
+        member_ids.append(user_id)
+        await db.subgroups.update_one({"id": subgroup_id}, {"$set": {"member_user_ids": member_ids, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    
+    return {"message": "Member added to subgroup"}
+
+@api_router.delete("/subgroups/{subgroup_id}/members/{user_id}")
+async def remove_subgroup_member(subgroup_id: str, user_id: str, current_user: dict = Depends(get_current_user)):
+    if not _check_admin_or_tech_support(current_user):
+        raise HTTPException(status_code=403, detail="Only admins or Technical Support can manage subgroups")
+    
+    sg = await db.subgroups.find_one({"id": subgroup_id}, {"_id": 0})
+    if not sg:
+        raise HTTPException(status_code=404, detail="Subgroup not found")
+    
+    member_ids = sg.get("member_user_ids", [])
+    if user_id in member_ids:
+        member_ids.remove(user_id)
+        await db.subgroups.update_one({"id": subgroup_id}, {"$set": {"member_user_ids": member_ids, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    
+    if sg.get("leader_id") == user_id:
+        await db.subgroups.update_one({"id": subgroup_id}, {"$set": {"leader_id": None}})
+    
+    return {"message": "Member removed from subgroup"}
+
+@api_router.delete("/subgroups/{subgroup_id}")
+async def delete_subgroup(subgroup_id: str, current_user: dict = Depends(get_current_user)):
+    if not _check_admin_or_tech_support(current_user):
+        raise HTTPException(status_code=403, detail="Only admins or Technical Support can manage subgroups")
+    
+    result = await db.subgroups.delete_one({"id": subgroup_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Subgroup not found")
+    return {"message": "Subgroup deleted"}
 
 # ============== DASHBOARD STATS ==============
 
