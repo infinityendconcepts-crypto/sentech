@@ -202,6 +202,16 @@ Both Bursary and Training Applications use this specific list:
 - Backend endpoints: POST create, PUT rename/update leader, POST/DELETE members, DELETE subgroup
 - Uses subgroups MongoDB collection
 
+### JIT Temporary Leader Feature (NEW - Feb 2026)
+- Leaders, admins, super_admins, and Technical Support can assign a temporary leader to any subgroup
+- Duration options: 1 hour to 2 weeks
+- Orange "Acting" badge with countdown timer on subgroup header
+- Orange banner inside expanded subgroup shows temp leader name and remaining time
+- Auto-expiry: original leader resumes when duration ends
+- Early revocation available via "Revoke" button
+- Backend validates: min 1hr, must be subgroup member, cannot be current leader
+- Endpoints: POST /api/subgroups/{id}/temp-leader, DELETE /api/subgroups/{id}/temp-leader
+
 ## Pending/Future Tasks
 
 ### P1 - Backend Implementation
