@@ -3893,20 +3893,26 @@ async def get_division_groups(current_user: dict = Depends(get_current_user)):
     groups = []
     for div in divisions:
         div_name = div["name"]
-        members = [u for u in users if u.get("division") == div_name]
+        all_div_members = [u for u in users if u.get("division") == div_name]
         config = config_map.get(div_name, {})
         div_subgroups = [sg for sg in all_subgroups if sg.get("division_name") == div_name]
+        # Collect all user IDs that are in any subgroup of this division
+        subgroup_member_ids = set()
         for sg in div_subgroups:
             sg["members"] = [user_map[uid] for uid in sg.get("member_user_ids", []) if uid in user_map]
             sg["leader"] = user_map.get(sg.get("leader_id"))
+            for uid in sg.get("member_user_ids", []):
+                subgroup_member_ids.add(uid)
+        # Exclude subgroup members from main member list
+        main_members = [u for u in all_div_members if u["id"] not in subgroup_member_ids]
         groups.append({
             "division_id": div["id"],
             "division_name": div_name,
             "description": div.get("description", ""),
             "leader_id": config.get("leader_id"),
-            "leader": next((u for u in members if u.get("id") == config.get("leader_id")), None),
-            "members": members,
-            "member_count": len(members),
+            "leader": next((u for u in all_div_members if u.get("id") == config.get("leader_id")), None),
+            "members": main_members,
+            "member_count": len(all_div_members),
             "subgroups": div_subgroups,
         })
     

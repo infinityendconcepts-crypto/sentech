@@ -192,6 +192,13 @@ Both Bursary and Training Applications use this specific list:
 - Admins, super_admins, and Technical Support division users can manage subgroups
 - Subgroups can be created, renamed, and deleted
 - Initial data: "Reporting to the CEO" subgroup under Exec_and_Head with 10 members, Leshope as leader
+- Additional subgroups created under Exec_and_Head:
+  - "Reporting to CFO": 5 members, Simpson as leader
+  - "Reporting to COO": 6 members, Mnisi as leader
+  - "Reporting to CHRO": 6 members, Motlhabi as leader
+  - "Reporting CSO: Strategy and Transformation": 4 members, Segaloe as leader
+  - "Reporting to CCO: MIB": 6 members, Finnis as leader
+- Members in subgroups are excluded from the main division member list
 - Backend endpoints: POST create, PUT rename/update leader, POST/DELETE members, DELETE subgroup
 - Uses subgroups MongoDB collection
 
