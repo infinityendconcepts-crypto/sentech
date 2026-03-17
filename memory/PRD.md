@@ -186,6 +186,15 @@ Both Bursary and Training Applications use this specific list:
 - Uses division_groups MongoDB collection for leader assignments
 - Users belong to groups via their 'division' field in users collection
 
+### Subgroups Feature (NEW - Feb 2026)
+- Divisions can have subgroups (expandable dropdown within each division card)
+- Subgroups have their own leader and members (members can be from any division)
+- Admins, super_admins, and Technical Support division users can manage subgroups
+- Subgroups can be created, renamed, and deleted
+- Initial data: "Reporting to the CEO" subgroup under Exec_and_Head with 10 members, Leshope as leader
+- Backend endpoints: POST create, PUT rename/update leader, POST/DELETE members, DELETE subgroup
+- Uses subgroups MongoDB collection
+
 ## Pending/Future Tasks
 
 ### P1 - Backend Implementation
