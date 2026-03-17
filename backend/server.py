@@ -3898,9 +3898,18 @@ async def get_division_groups(current_user: dict = Depends(get_current_user)):
         div_subgroups = [sg for sg in all_subgroups if sg.get("division_name") == div_name]
         # Collect all user IDs that are in any subgroup of this division
         subgroup_member_ids = set()
+        now_str = datetime.now(timezone.utc).isoformat()
         for sg in div_subgroups:
             sg["members"] = [user_map[uid] for uid in sg.get("member_user_ids", []) if uid in user_map]
             sg["leader"] = user_map.get(sg.get("leader_id"))
+            # Resolve temp leader
+            temp_end = sg.get("temp_leader_end")
+            if temp_end and temp_end > now_str and sg.get("temp_leader_id"):
+                sg["temp_leader"] = user_map.get(sg.get("temp_leader_id"))
+                sg["temp_leader_active"] = True
+            else:
+                sg["temp_leader"] = None
+                sg["temp_leader_active"] = False
             for uid in sg.get("member_user_ids", []):
                 subgroup_member_ids.add(uid)
         # Exclude subgroup members from main member list
@@ -3932,9 +3941,17 @@ async def get_division_group(division_name: str, current_user: dict = Depends(ge
     all_user_map = {u["id"]: u for u in all_users}
     subgroups = await db.subgroups.find({"division_name": division_name}, {"_id": 0}).to_list(100)
     subgroup_member_ids = set()
+    now_str = datetime.now(timezone.utc).isoformat()
     for sg in subgroups:
         sg["members"] = [all_user_map[uid] for uid in sg.get("member_user_ids", []) if uid in all_user_map]
         sg["leader"] = all_user_map.get(sg.get("leader_id"))
+        temp_end = sg.get("temp_leader_end")
+        if temp_end and temp_end > now_str and sg.get("temp_leader_id"):
+            sg["temp_leader"] = all_user_map.get(sg.get("temp_leader_id"))
+            sg["temp_leader_active"] = True
+        else:
+            sg["temp_leader"] = None
+            sg["temp_leader_active"] = False
         for uid in sg.get("member_user_ids", []):
             subgroup_member_ids.add(uid)
     main_members = [u for u in all_div_members if u["id"] not in subgroup_member_ids]
@@ -4028,9 +4045,17 @@ async def get_subgroups(division_name: str, current_user: dict = Depends(get_cur
     subgroups = await db.subgroups.find({"division_name": division_name}, {"_id": 0}).to_list(100)
     all_users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     user_map = {u["id"]: u for u in all_users}
+    now_str = datetime.now(timezone.utc).isoformat()
     for sg in subgroups:
         sg["members"] = [user_map[uid] for uid in sg.get("member_user_ids", []) if uid in user_map]
         sg["leader"] = user_map.get(sg.get("leader_id"))
+        temp_end = sg.get("temp_leader_end")
+        if temp_end and temp_end > now_str and sg.get("temp_leader_id"):
+            sg["temp_leader"] = user_map.get(sg.get("temp_leader_id"))
+            sg["temp_leader_active"] = True
+        else:
+            sg["temp_leader"] = None
+            sg["temp_leader_active"] = False
     return subgroups
 
 @api_router.post("/division-groups/{division_name}/subgroups")
@@ -4118,6 +4143,79 @@ async def delete_subgroup(subgroup_id: str, current_user: dict = Depends(get_cur
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Subgroup not found")
     return {"message": "Subgroup deleted"}
+
+# ============== JIT TEMPORARY LEADER ==============
+
+def _can_assign_temp_leader(current_user: dict, subgroup: dict) -> bool:
+    roles = current_user.get("roles", [])
+    if "admin" in roles or "super_admin" in roles:
+        return True
+    if current_user.get("division") == "Technical Support":
+        return True
+    if subgroup.get("leader_id") == current_user.get("id"):
+        return True
+    return False
+
+@api_router.post("/subgroups/{subgroup_id}/temp-leader")
+async def assign_temp_leader(subgroup_id: str, body: dict, current_user: dict = Depends(get_current_user)):
+    sg = await db.subgroups.find_one({"id": subgroup_id}, {"_id": 0})
+    if not sg:
+        raise HTTPException(status_code=404, detail="Subgroup not found")
+    
+    if not _can_assign_temp_leader(current_user, sg):
+        raise HTTPException(status_code=403, detail="Only the current leader, admins, or super admins can assign a temporary leader")
+    
+    temp_leader_id = body.get("temp_leader_id")
+    duration_hours = body.get("duration_hours")
+    if not temp_leader_id or not duration_hours:
+        raise HTTPException(status_code=400, detail="temp_leader_id and duration_hours are required")
+    
+    if duration_hours < 1:
+        raise HTTPException(status_code=400, detail="Duration must be at least 1 hour")
+    
+    if temp_leader_id not in sg.get("member_user_ids", []):
+        raise HTTPException(status_code=400, detail="Temporary leader must be a member of the subgroup")
+    
+    if temp_leader_id == sg.get("leader_id"):
+        raise HTTPException(status_code=400, detail="Cannot assign the current leader as temporary leader")
+    
+    now = datetime.now(timezone.utc)
+    end_time = now + timedelta(hours=duration_hours)
+    
+    await db.subgroups.update_one({"id": subgroup_id}, {"$set": {
+        "temp_leader_id": temp_leader_id,
+        "temp_leader_start": now.isoformat(),
+        "temp_leader_end": end_time.isoformat(),
+        "temp_leader_assigned_by": current_user.get("id"),
+        "updated_at": now.isoformat(),
+    }})
+    
+    return {
+        "message": "Temporary leader assigned",
+        "temp_leader_id": temp_leader_id,
+        "temp_leader_start": now.isoformat(),
+        "temp_leader_end": end_time.isoformat(),
+        "duration_hours": duration_hours,
+    }
+
+@api_router.delete("/subgroups/{subgroup_id}/temp-leader")
+async def revoke_temp_leader(subgroup_id: str, current_user: dict = Depends(get_current_user)):
+    sg = await db.subgroups.find_one({"id": subgroup_id}, {"_id": 0})
+    if not sg:
+        raise HTTPException(status_code=404, detail="Subgroup not found")
+    
+    if not _can_assign_temp_leader(current_user, sg):
+        raise HTTPException(status_code=403, detail="Only the current leader, admins, or super admins can revoke a temporary leader")
+    
+    await db.subgroups.update_one({"id": subgroup_id}, {"$set": {
+        "temp_leader_id": None,
+        "temp_leader_start": None,
+        "temp_leader_end": None,
+        "temp_leader_assigned_by": None,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }})
+    
+    return {"message": "Temporary leader revoked"}
 
 # ============== DASHBOARD STATS ==============
 

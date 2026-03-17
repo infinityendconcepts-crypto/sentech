@@ -96,6 +96,8 @@ export const subgroupsAPI = {
   delete: (id) => api.delete(`/subgroups/${id}`),
   addMember: (id, userId) => api.post(`/subgroups/${id}/members/${userId}`),
   removeMember: (id, userId) => api.delete(`/subgroups/${id}/members/${userId}`),
+  assignTempLeader: (id, data) => api.post(`/subgroups/${id}/temp-leader`, data),
+  revokeTempLeader: (id) => api.delete(`/subgroups/${id}/temp-leader`),
 };
 
 export const meetingsAPI = {

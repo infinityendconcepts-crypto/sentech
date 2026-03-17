@@ -5,18 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { divisionGroupsAPI, subgroupsAPI, usersAPI } from '../services/api';
@@ -25,8 +17,36 @@ import { toast } from 'sonner';
 import {
   Search, Users, UserPlus, UserMinus, Crown, Building2,
   ChevronDown, ChevronUp, Shield, Mail, Briefcase,
-  FolderPlus, Pencil, Trash2, Layers,
+  FolderPlus, Pencil, Trash2, Layers, Clock, X,
 } from 'lucide-react';
+
+const DURATION_OPTIONS = [
+  { label: '1 Hour', hours: 1 },
+  { label: '2 Hours', hours: 2 },
+  { label: '4 Hours', hours: 4 },
+  { label: '8 Hours', hours: 8 },
+  { label: '1 Day', hours: 24 },
+  { label: '2 Days', hours: 48 },
+  { label: '3 Days', hours: 72 },
+  { label: '1 Week', hours: 168 },
+  { label: '2 Weeks', hours: 336 },
+];
+
+function timeRemaining(endStr) {
+  if (!endStr) return null;
+  const end = new Date(endStr);
+  const now = new Date();
+  const diff = end - now;
+  if (diff <= 0) return null;
+  const hours = Math.floor(diff / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  if (hours >= 24) {
+    const days = Math.floor(hours / 24);
+    const rHours = hours % 24;
+    return `${days}d ${rHours}h`;
+  }
+  return `${hours}h ${mins}m`;
+}
 
 const DivisionGroupsPage = () => {
   const { user: currentUser, isAdmin } = useAuth();
@@ -40,15 +60,11 @@ const DivisionGroupsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedGroup, setExpandedGroup] = useState(null);
 
-  // Division leader dialog
   const [leaderDialog, setLeaderDialog] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [selectedLeaderId, setSelectedLeaderId] = useState('');
-
-  // Add division member dialog
   const [addMemberDialog, setAddMemberDialog] = useState(false);
 
-  // Subgroup dialogs
   const [createSubgroupDialog, setCreateSubgroupDialog] = useState(false);
   const [newSubgroupName, setNewSubgroupName] = useState('');
   const [renameSubgroupDialog, setRenameSubgroupDialog] = useState(false);
@@ -59,120 +75,112 @@ const DivisionGroupsPage = () => {
   const [addSubgroupMemberDialog, setAddSubgroupMemberDialog] = useState(false);
   const [expandedSubgroup, setExpandedSubgroup] = useState(null);
 
-  useEffect(() => {
-    fetchGroups();
-    fetchAllUsers();
-  }, []);
+  // JIT Temp Leader
+  const [tempLeaderDialog, setTempLeaderDialog] = useState(false);
+  const [tempLeaderId, setTempLeaderId] = useState('');
+  const [tempDuration, setTempDuration] = useState('');
+
+  useEffect(() => { fetchGroups(); fetchAllUsers(); }, []);
 
   const fetchGroups = async () => {
-    try {
-      const res = await divisionGroupsAPI.getAll();
-      setGroups(res.data);
-    } catch (err) {
-      toast.error('Failed to load division groups');
-    } finally {
-      setLoading(false);
-    }
+    try { const res = await divisionGroupsAPI.getAll(); setGroups(res.data); }
+    catch { toast.error('Failed to load division groups'); }
+    finally { setLoading(false); }
   };
 
   const fetchAllUsers = async () => {
-    try {
-      const res = await usersAPI.getAll();
-      setAllUsers(res.data);
-    } catch (err) {
-      console.error('Failed to fetch users:', err);
-    }
+    try { const res = await usersAPI.getAll(); setAllUsers(res.data); }
+    catch (err) { console.error(err); }
   };
 
-  // Division leader
   const handleSetLeader = async () => {
     if (!selectedGroup) return;
     try {
       await divisionGroupsAPI.setLeader(selectedGroup.division_name, selectedLeaderId === 'none' ? null : selectedLeaderId);
       toast.success(`Leader updated for ${selectedGroup.division_name}`);
-      setLeaderDialog(false);
-      fetchGroups();
-    } catch (err) { toast.error('Failed to set leader'); }
+      setLeaderDialog(false); fetchGroups();
+    } catch { toast.error('Failed to set leader'); }
   };
 
-  // Division member management
   const handleAddMember = async (userId) => {
     if (!selectedGroup) return;
     try {
       await divisionGroupsAPI.addMember(selectedGroup.division_name, userId);
-      toast.success('Member added to group');
-      setAddMemberDialog(false);
-      fetchGroups(); fetchAllUsers();
-    } catch (err) { toast.error('Failed to add member'); }
+      toast.success('Member added'); setAddMemberDialog(false); fetchGroups(); fetchAllUsers();
+    } catch { toast.error('Failed to add member'); }
   };
 
   const handleRemoveMember = async (divisionName, userId) => {
     if (!window.confirm('Remove this member from the group?')) return;
-    try {
-      await divisionGroupsAPI.removeMember(divisionName, userId);
-      toast.success('Member removed');
-      fetchGroups(); fetchAllUsers();
-    } catch (err) { toast.error('Failed to remove member'); }
+    try { await divisionGroupsAPI.removeMember(divisionName, userId); toast.success('Member removed'); fetchGroups(); fetchAllUsers(); }
+    catch { toast.error('Failed to remove member'); }
   };
 
-  // Subgroup CRUD
   const handleCreateSubgroup = async () => {
     if (!selectedGroup || !newSubgroupName.trim()) return;
     try {
       await divisionGroupsAPI.createSubgroup(selectedGroup.division_name, { name: newSubgroupName.trim() });
-      toast.success('Subgroup created');
-      setCreateSubgroupDialog(false);
-      setNewSubgroupName('');
-      fetchGroups();
-    } catch (err) { toast.error('Failed to create subgroup'); }
+      toast.success('Subgroup created'); setCreateSubgroupDialog(false); setNewSubgroupName(''); fetchGroups();
+    } catch { toast.error('Failed to create subgroup'); }
   };
 
   const handleRenameSubgroup = async () => {
     if (!selectedSubgroup || !renameValue.trim()) return;
-    try {
-      await subgroupsAPI.update(selectedSubgroup.id, { name: renameValue.trim() });
-      toast.success('Subgroup renamed');
-      setRenameSubgroupDialog(false);
-      fetchGroups();
-    } catch (err) { toast.error('Failed to rename subgroup'); }
+    try { await subgroupsAPI.update(selectedSubgroup.id, { name: renameValue.trim() }); toast.success('Subgroup renamed'); setRenameSubgroupDialog(false); fetchGroups(); }
+    catch { toast.error('Failed to rename'); }
   };
 
   const handleDeleteSubgroup = async (sgId) => {
     if (!window.confirm('Delete this subgroup?')) return;
-    try {
-      await subgroupsAPI.delete(sgId);
-      toast.success('Subgroup deleted');
-      fetchGroups();
-    } catch (err) { toast.error('Failed to delete subgroup'); }
+    try { await subgroupsAPI.delete(sgId); toast.success('Subgroup deleted'); fetchGroups(); }
+    catch { toast.error('Failed to delete'); }
   };
 
   const handleSetSubgroupLeader = async () => {
     if (!selectedSubgroup) return;
     try {
       await subgroupsAPI.update(selectedSubgroup.id, { leader_id: subgroupLeaderId === 'none' ? null : subgroupLeaderId });
-      toast.success('Subgroup leader updated');
-      setSubgroupLeaderDialog(false);
-      fetchGroups();
-    } catch (err) { toast.error('Failed to set subgroup leader'); }
+      toast.success('Subgroup leader updated'); setSubgroupLeaderDialog(false); fetchGroups();
+    } catch { toast.error('Failed to set leader'); }
   };
 
   const handleAddSubgroupMember = async (userId) => {
     if (!selectedSubgroup) return;
-    try {
-      await subgroupsAPI.addMember(selectedSubgroup.id, userId);
-      toast.success('Member added to subgroup');
-      setAddSubgroupMemberDialog(false);
-      fetchGroups(); fetchAllUsers();
-    } catch (err) { toast.error('Failed to add member to subgroup'); }
+    try { await subgroupsAPI.addMember(selectedSubgroup.id, userId); toast.success('Member added to subgroup'); setAddSubgroupMemberDialog(false); fetchGroups(); fetchAllUsers(); }
+    catch { toast.error('Failed to add member'); }
   };
 
   const handleRemoveSubgroupMember = async (sgId, userId) => {
     if (!window.confirm('Remove this member from the subgroup?')) return;
+    try { await subgroupsAPI.removeMember(sgId, userId); toast.success('Member removed'); fetchGroups(); }
+    catch { toast.error('Failed to remove'); }
+  };
+
+  // JIT Temp Leader handlers
+  const handleAssignTempLeader = async () => {
+    if (!selectedSubgroup || !tempLeaderId || !tempDuration) return;
     try {
-      await subgroupsAPI.removeMember(sgId, userId);
-      toast.success('Member removed from subgroup');
-      fetchGroups();
-    } catch (err) { toast.error('Failed to remove member'); }
+      await subgroupsAPI.assignTempLeader(selectedSubgroup.id, {
+        temp_leader_id: tempLeaderId,
+        duration_hours: parseFloat(tempDuration),
+      });
+      toast.success('Temporary leader assigned');
+      setTempLeaderDialog(false); setTempLeaderId(''); setTempDuration(''); fetchGroups();
+    } catch (err) {
+      const msg = err.response?.data?.detail || 'Failed to assign temporary leader';
+      toast.error(msg);
+    }
+  };
+
+  const handleRevokeTempLeader = async (sgId) => {
+    if (!window.confirm('Revoke the temporary leader assignment?')) return;
+    try { await subgroupsAPI.revokeTempLeader(sgId); toast.success('Temporary leader revoked'); fetchGroups(); }
+    catch { toast.error('Failed to revoke'); }
+  };
+
+  const canAssignTemp = (sg) => {
+    if (canManage) return true;
+    return sg?.leader_id === currentUser?.id;
   };
 
   const filteredGroups = useMemo(() => {
@@ -211,7 +219,6 @@ const DivisionGroupsPage = () => {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <StatCard icon={Building2} color="bg-[#0056B3]/10" iconColor="text-[#0056B3]" value={groups.length} label="Divisions" testId="stat-total-divisions" />
         <StatCard icon={Users} color="bg-emerald-50" iconColor="text-emerald-600" value={totalMembers} label="Total Members" testId="stat-total-members" />
@@ -219,7 +226,6 @@ const DivisionGroupsPage = () => {
         <StatCard icon={Layers} color="bg-violet-50" iconColor="text-violet-600" value={totalSubgroups} label="Subgroups" testId="stat-total-subgroups" />
       </div>
 
-      {/* Search */}
       <Card className="bg-white border-slate-200">
         <CardContent className="p-4">
           <div className="relative">
@@ -229,7 +235,6 @@ const DivisionGroupsPage = () => {
         </CardContent>
       </Card>
 
-      {/* Groups list */}
       <div className="space-y-4">
         {filteredGroups.length === 0 ? (
           <Card className="bg-white border-slate-200">
@@ -248,6 +253,7 @@ const DivisionGroupsPage = () => {
               onToggle={() => setExpandedGroup(expandedGroup === group.division_name ? null : group.division_name)}
               onToggleSubgroup={(sgId) => setExpandedSubgroup(expandedSubgroup === sgId ? null : sgId)}
               canManage={canManage}
+              canAssignTemp={canAssignTemp}
               onSetLeader={() => { setSelectedGroup(group); setSelectedLeaderId(group.leader_id || ''); setLeaderDialog(true); }}
               onAddMember={() => { setSelectedGroup(group); setAddMemberDialog(true); }}
               onRemoveMember={(userId) => handleRemoveMember(group.division_name, userId)}
@@ -257,6 +263,8 @@ const DivisionGroupsPage = () => {
               onSetSubgroupLeader={(sg) => { setSelectedSubgroup(sg); setSubgroupLeaderId(sg.leader_id || ''); setSubgroupLeaderDialog(true); }}
               onAddSubgroupMember={(sg) => { setSelectedSubgroup(sg); setAddSubgroupMemberDialog(true); }}
               onRemoveSubgroupMember={(sgId, userId) => handleRemoveSubgroupMember(sgId, userId)}
+              onAssignTempLeader={(sg) => { setSelectedSubgroup(sg); setTempLeaderId(''); setTempDuration(''); setTempLeaderDialog(true); }}
+              onRevokeTempLeader={(sgId) => handleRevokeTempLeader(sgId)}
             />
           ))
         )}
@@ -347,19 +355,66 @@ const DivisionGroupsPage = () => {
       <Dialog open={addSubgroupMemberDialog} onOpenChange={setAddSubgroupMemberDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Add Member — {selectedSubgroup?.name}</DialogTitle></DialogHeader>
-          <UserSearchList
-            users={allUsers.filter(u => !selectedSubgroup?.member_user_ids?.includes(u.id))}
-            onSelect={handleAddSubgroupMember}
-          />
+          <UserSearchList users={allUsers.filter(u => !selectedSubgroup?.member_user_ids?.includes(u.id))} onSelect={handleAddSubgroupMember} />
           <DialogFooter><Button variant="outline" onClick={() => setAddSubgroupMemberDialog(false)}>Close</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* JIT Temporary Leader Dialog */}
+      <Dialog open={tempLeaderDialog} onOpenChange={setTempLeaderDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-orange-500" />
+              Assign Temporary Leader — {selectedSubgroup?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Temporary Leader</Label>
+              <Select value={tempLeaderId} onValueChange={setTempLeaderId}>
+                <SelectTrigger data-testid="select-temp-leader-trigger"><SelectValue placeholder="Choose a member" /></SelectTrigger>
+                <SelectContent>
+                  {selectedSubgroup?.members?.filter(m => m.id !== selectedSubgroup?.leader_id).map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.full_name} — {m.position || m.email}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Duration</Label>
+              <Select value={tempDuration} onValueChange={setTempDuration}>
+                <SelectTrigger data-testid="select-temp-duration"><SelectValue placeholder="Select duration" /></SelectTrigger>
+                <SelectContent>
+                  {DURATION_OPTIONS.map(d => (
+                    <SelectItem key={d.hours} value={String(d.hours)}>{d.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="rounded-lg bg-orange-50 border border-orange-200 p-3 text-sm text-orange-800">
+              <Clock className="w-4 h-4 inline mr-1" />
+              The temporary leader will have leadership access for the selected duration. After expiry, the original leader resumes automatically.
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTempLeaderDialog(false)}>Cancel</Button>
+            <Button
+              onClick={handleAssignTempLeader}
+              disabled={!tempLeaderId || !tempDuration}
+              className="bg-orange-500 hover:bg-orange-600"
+              data-testid="confirm-assign-temp-leader-btn"
+            >
+              <Clock className="w-4 h-4 mr-1" /> Assign Temp Leader
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
 };
 
-/* ---------- small helper components ---------- */
-
+/* ---------- StatCard ---------- */
 const StatCard = ({ icon: Icon, color, iconColor, value, label, testId }) => (
   <Card className="bg-white border-slate-200">
     <CardContent className="p-4 flex items-center gap-3">
@@ -372,20 +427,18 @@ const StatCard = ({ icon: Icon, color, iconColor, value, label, testId }) => (
   </Card>
 );
 
+/* ---------- UserSearchList ---------- */
 const UserSearchList = ({ users, onSelect }) => {
   const [q, setQ] = useState('');
   const filtered = useMemo(() => {
     const list = !q ? users : users.filter(u => u.full_name?.toLowerCase().includes(q.toLowerCase()) || u.email?.toLowerCase().includes(q.toLowerCase()));
     return list.slice(0, 20);
   }, [users, q]);
-
   return (
     <div className="space-y-3">
       <Input placeholder="Search users..." value={q} onChange={e => setQ(e.target.value)} data-testid="search-add-member" />
       <div className="max-h-64 overflow-y-auto space-y-2">
-        {filtered.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-4">No users found</p>
-        ) : filtered.map(u => (
+        {filtered.length === 0 ? <p className="text-sm text-slate-500 text-center py-4">No users found</p> : filtered.map(u => (
           <div key={u.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
             <div className="flex items-center gap-3">
               <Avatar className="w-8 h-8"><AvatarFallback className="text-xs bg-[#0056B3]/10 text-[#0056B3]">{u.full_name?.charAt(0)}</AvatarFallback></Avatar>
@@ -403,20 +456,18 @@ const UserSearchList = ({ users, onSelect }) => {
 };
 
 /* ---------- GroupCard ---------- */
-
 const GroupCard = ({
-  group, expanded, expandedSubgroup, onToggle, onToggleSubgroup, canManage,
+  group, expanded, expandedSubgroup, onToggle, onToggleSubgroup, canManage, canAssignTemp,
   onSetLeader, onAddMember, onRemoveMember,
   onCreateSubgroup, onRenameSubgroup, onDeleteSubgroup,
   onSetSubgroupLeader, onAddSubgroupMember, onRemoveSubgroupMember,
+  onAssignTempLeader, onRevokeTempLeader,
 }) => {
   const leader = group.leader;
   const members = group.members || [];
   const subgroups = group.subgroups || [];
-
   return (
     <Card className="bg-white border-slate-200 overflow-hidden" data-testid={`group-card-${group.division_name}`}>
-      {/* Header */}
       <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors" onClick={onToggle} data-testid={`group-toggle-${group.division_name}`}>
         <div className="flex items-center gap-4">
           <div className="w-11 h-11 rounded-lg bg-[#0056B3] flex items-center justify-center text-white font-bold text-lg">{group.division_name.charAt(0)}</div>
@@ -440,45 +491,24 @@ const GroupCard = ({
           {expanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
         </div>
       </div>
-
-      {/* Expanded content */}
       {expanded && (
         <div className="border-t border-slate-100">
-          {/* Subgroups section */}
           {subgroups.length > 0 && (
             <div className="bg-violet-50/40 border-b border-slate-100">
-              <div className="px-4 py-2">
-                <p className="text-xs font-semibold text-violet-700 uppercase tracking-wide flex items-center gap-1"><Layers className="w-3 h-3" /> Subgroups</p>
-              </div>
+              <div className="px-4 py-2"><p className="text-xs font-semibold text-violet-700 uppercase tracking-wide flex items-center gap-1"><Layers className="w-3 h-3" /> Subgroups</p></div>
               {subgroups.map(sg => (
-                <SubgroupSection
-                  key={sg.id}
-                  sg={sg}
-                  expanded={expandedSubgroup === sg.id}
-                  onToggle={() => onToggleSubgroup(sg.id)}
-                  canManage={canManage}
-                  onRename={() => onRenameSubgroup(sg)}
-                  onDelete={() => onDeleteSubgroup(sg.id)}
-                  onSetLeader={() => onSetSubgroupLeader(sg)}
-                  onAddMember={() => onAddSubgroupMember(sg)}
-                  onRemoveMember={(userId) => onRemoveSubgroupMember(sg.id, userId)}
+                <SubgroupSection key={sg.id} sg={sg} expanded={expandedSubgroup === sg.id} onToggle={() => onToggleSubgroup(sg.id)} canManage={canManage} canAssignTemp={canAssignTemp(sg)}
+                  onRename={() => onRenameSubgroup(sg)} onDelete={() => onDeleteSubgroup(sg.id)} onSetLeader={() => onSetSubgroupLeader(sg)} onAddMember={() => onAddSubgroupMember(sg)} onRemoveMember={(userId) => onRemoveSubgroupMember(sg.id, userId)}
+                  onAssignTempLeader={() => onAssignTempLeader(sg)} onRevokeTempLeader={() => onRevokeTempLeader(sg.id)}
                 />
               ))}
             </div>
           )}
-
-          {/* Division members */}
           <div className="bg-slate-50/50">
-            <div className="px-4 py-2 border-b border-slate-100">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Division Members ({members.length})</p>
-            </div>
-            {members.length === 0 ? (
-              <div className="p-6 text-center text-sm text-slate-500">No members in this division</div>
-            ) : (
+            <div className="px-4 py-2 border-b border-slate-100"><p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Division Members ({members.length})</p></div>
+            {members.length === 0 ? <div className="p-6 text-center text-sm text-slate-500">No members in this division</div> : (
               <div className="divide-y divide-slate-100">
-                {members.map(member => (
-                  <MemberRow key={member.id} member={member} isLeader={group.leader_id === member.id} canManage={canManage} onRemove={() => onRemoveMember(member.id)} />
-                ))}
+                {members.map(member => <MemberRow key={member.id} member={member} isLeader={group.leader_id === member.id} canManage={canManage} onRemove={() => onRemoveMember(member.id)} />)}
               </div>
             )}
           </div>
@@ -489,9 +519,11 @@ const GroupCard = ({
 };
 
 /* ---------- SubgroupSection ---------- */
-
-const SubgroupSection = ({ sg, expanded, onToggle, canManage, onRename, onDelete, onSetLeader, onAddMember, onRemoveMember }) => {
+const SubgroupSection = ({ sg, expanded, onToggle, canManage, canAssignTemp, onRename, onDelete, onSetLeader, onAddMember, onRemoveMember, onAssignTempLeader, onRevokeTempLeader }) => {
   const members = sg.members || [];
+  const hasTempLeader = sg.temp_leader_active && sg.temp_leader;
+  const remaining = timeRemaining(sg.temp_leader_end);
+
   return (
     <div className="border-t border-violet-100/60" data-testid={`subgroup-${sg.id}`}>
       <div className="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-violet-50 transition-colors" onClick={onToggle}>
@@ -499,9 +531,14 @@ const SubgroupSection = ({ sg, expanded, onToggle, canManage, onRename, onDelete
           <div className="w-8 h-8 rounded-md bg-violet-100 flex items-center justify-center text-violet-700 font-semibold text-sm">{sg.name?.charAt(0)}</div>
           <div>
             <span className="text-sm font-medium text-slate-900">{sg.name}</span>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <span className="text-xs text-slate-500">{members.length} members</span>
               {sg.leader && <span className="text-xs text-amber-600 flex items-center gap-1"><Crown className="w-3 h-3" /> {sg.leader.full_name}</span>}
+              {hasTempLeader && remaining && (
+                <Badge className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0 gap-1" data-testid={`temp-leader-badge-${sg.id}`}>
+                  <Clock className="w-3 h-3" /> Acting: {sg.temp_leader.full_name} ({remaining})
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -514,17 +551,37 @@ const SubgroupSection = ({ sg, expanded, onToggle, canManage, onRename, onDelete
               <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-rose-500" onClick={e => { e.stopPropagation(); onDelete(); }} title="Delete" data-testid={`delete-subgroup-${sg.id}`}><Trash2 className="w-3.5 h-3.5" /></Button>
             </>
           )}
+          {canAssignTemp && (
+            hasTempLeader ? (
+              <Button size="sm" variant="ghost" className="h-7 px-1.5 text-orange-600 hover:bg-orange-50 text-[10px] gap-0.5" onClick={e => { e.stopPropagation(); onRevokeTempLeader(); }} title="Revoke Temp Leader" data-testid={`revoke-temp-${sg.id}`}>
+                <X className="w-3 h-3" /> Revoke
+              </Button>
+            ) : (
+              <Button size="sm" variant="ghost" className="h-7 px-1.5 text-orange-500 hover:bg-orange-50 text-[10px] gap-0.5" onClick={e => { e.stopPropagation(); onAssignTempLeader(); }} title="Assign Temp Leader" data-testid={`assign-temp-${sg.id}`}>
+                <Clock className="w-3 h-3" /> JIT
+              </Button>
+            )
+          )}
           {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
         </div>
       </div>
       {expanded && (
         <div className="bg-white/60">
-          {members.length === 0 ? (
-            <div className="px-4 py-4 text-center text-sm text-slate-500">No members in this subgroup</div>
-          ) : (
+          {hasTempLeader && remaining && (
+            <div className="mx-4 my-2 rounded-lg bg-orange-50 border border-orange-200 px-3 py-2 flex items-center justify-between" data-testid={`temp-leader-banner-${sg.id}`}>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-orange-500" />
+                <span className="text-sm text-orange-800">
+                  <strong>{sg.temp_leader.full_name}</strong> is acting as temporary leader
+                </span>
+              </div>
+              <Badge className="bg-orange-200 text-orange-800 text-xs">{remaining} remaining</Badge>
+            </div>
+          )}
+          {members.length === 0 ? <div className="px-4 py-4 text-center text-sm text-slate-500">No members in this subgroup</div> : (
             <div className="divide-y divide-slate-100">
               {members.map(m => (
-                <MemberRow key={m.id} member={m} isLeader={sg.leader_id === m.id} canManage={canManage} onRemove={() => onRemoveMember(m.id)} indent />
+                <MemberRow key={m.id} member={m} isLeader={sg.leader_id === m.id} isTempLeader={hasTempLeader && sg.temp_leader_id === m.id} canManage={canManage} onRemove={() => onRemoveMember(m.id)} indent />
               ))}
             </div>
           )}
@@ -535,15 +592,15 @@ const SubgroupSection = ({ sg, expanded, onToggle, canManage, onRename, onDelete
 };
 
 /* ---------- MemberRow ---------- */
-
-const MemberRow = ({ member, isLeader, canManage, onRemove, indent }) => (
+const MemberRow = ({ member, isLeader, isTempLeader, canManage, onRemove, indent }) => (
   <div className={`flex items-center justify-between px-4 py-3 hover:bg-white transition-colors ${indent ? 'pl-8' : ''}`} data-testid={`member-row-${member.id}`}>
     <div className="flex items-center gap-3">
       <Avatar className="w-9 h-9"><AvatarFallback className="text-xs bg-[#0056B3]/10 text-[#0056B3]">{member.full_name?.charAt(0)}</AvatarFallback></Avatar>
       <div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-slate-900">{member.full_name}</span>
           {isLeader && <Badge className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0"><Crown className="w-3 h-3 mr-0.5" /> Leader</Badge>}
+          {isTempLeader && <Badge className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0"><Clock className="w-3 h-3 mr-0.5" /> Acting Leader</Badge>}
         </div>
         <div className="flex items-center gap-3 mt-0.5">
           <span className="text-xs text-slate-500 flex items-center gap-1"><Mail className="w-3 h-3" /> {member.email}</span>
