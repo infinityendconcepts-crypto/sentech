@@ -104,11 +104,13 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
   - Service Provider (renamed from Institution)
   - Training Type (renamed from Course of Study)
   - Total Amount (R) for cost
-  - Supplier Type: Preferred Supplier or RFQ Required
+  - Supplier Type: Preferred Supplier, South African Supplier (SCM) Route, International Supplier (SCM) Route
 - Step 4: Documents with conditional logic
-  - **If training < R15,000:** Signed Performance Contract, Quotation, SBD 4 Form, Consent Form, CSD Report, BBBEE Certificate
+  - **If training < R15,000:** Signed Performance Contract, Quotation, SBD 4 Form (or SBD 1 for International), Consent Form, CSD Report, BBBEE Certificate
   - **If training > R15,000:** Same + Motivation document
-  - **If RFQ route selected:** Only Scope of Work upload (all other documents disabled)
+  - **If SCM route selected (SA or International):** Only Scope of Work upload (all other documents disabled)
+  - **If International Supplier:** SBD 1 replaces SBD 4
+- **Additional Training Expenses** (Step 4, optional): Flights, Accommodation, Car Hire/Shuttle, Catering — each with R amount and notes
 - Full CRUD backend endpoints
 - List view with search, status management, and view modal
 - Admin status change functionality

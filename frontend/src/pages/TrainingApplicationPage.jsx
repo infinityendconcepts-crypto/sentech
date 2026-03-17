@@ -75,18 +75,29 @@ const TrainingApplicationPage = () => {
       service_provider: '',
       training_type: '',
       total_amount: '',
-      supplier_type: '', // 'preferred_supplier' or 'rfq_required'
+      supplier_type: '', // 'sa_supplier' or 'international_supplier'
     },
     documents: {
       signed_performance_contract: '',
       quotation: '',
       sbd4_form: '',
+      sbd1_form: '',
       consent_form: '',
       csd_report: '',
       bbbee_certificate: '',
       motivation: '',
       scope_of_work: '',
       other_documents: '',
+    },
+    additional_expenses: {
+      flights: '',
+      accommodation: '',
+      car_hire_or_shuttle: '',
+      catering: '',
+      flights_notes: '',
+      accommodation_notes: '',
+      car_hire_or_shuttle_notes: '',
+      catering_notes: '',
     },
   });
 
@@ -116,7 +127,10 @@ const TrainingApplicationPage = () => {
               training_status: '', service_provider: '', training_type: '', total_amount: '', supplier_type: ''
             },
             documents: app.documents || {
-              signed_performance_contract: '', quotation: '', sbd4_form: '', consent_form: '', csd_report: '', bbbee_certificate: '', motivation: '', scope_of_work: '', other_documents: ''
+              signed_performance_contract: '', quotation: '', sbd4_form: '', sbd1_form: '', consent_form: '', csd_report: '', bbbee_certificate: '', motivation: '', scope_of_work: '', other_documents: ''
+            },
+            additional_expenses: app.additional_expenses || {
+              flights: '', accommodation: '', car_hire_or_shuttle: '', catering: '', flights_notes: '', accommodation_notes: '', car_hire_or_shuttle_notes: '', catering_notes: ''
             },
           });
           if (app.current_step) {
@@ -204,7 +218,8 @@ const TrainingApplicationPage = () => {
   // Calculate if training is over R15,000
   const totalAmount = parseFloat(formData.training_info.total_amount) || 0;
   const isOverThreshold = totalAmount > 15000;
-  const isRFQRequired = formData.training_info.supplier_type === 'rfq_required';
+  const isRFQRequired = formData.training_info.supplier_type === 'sa_supplier' || formData.training_info.supplier_type === 'international_supplier';
+  const isInternational = formData.training_info.supplier_type === 'international_supplier';
 
   if (loadingApplication) {
     return (
@@ -525,7 +540,8 @@ const TrainingApplicationPage = () => {
                 >
                   <option value="">Select supplier type</option>
                   <option value="preferred_supplier">Preferred Supplier</option>
-                  <option value="rfq_required">RFQ Required (SCM Route)</option>
+                  <option value="sa_supplier">South African Supplier (SCM) Route</option>
+                  <option value="international_supplier">International Supplier (SCM) Route</option>
                 </select>
               </div>
 
@@ -535,10 +551,12 @@ const TrainingApplicationPage = () => {
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 mt-0.5 text-purple-600" />
                     <div>
-                      <h4 className="font-semibold text-purple-900">RFQ Route Selected</h4>
+                      <h4 className="font-semibold text-purple-900">
+                        {isInternational ? 'International Supplier (SCM) Route Selected' : 'South African Supplier (SCM) Route Selected'}
+                      </h4>
                       <p className="text-sm mt-1 text-purple-800">
-                        Since you selected the RFQ route, you only need to upload the Scope of Work document in Step 4.
-                        All other fields and documents will be handled through the SCM RFQ process.
+                        Since you selected the SCM route, you only need to upload the Scope of Work document in Step 4.
+                        All other fields and documents will be handled through the SCM process.
                       </p>
                     </div>
                   </div>
@@ -634,7 +652,7 @@ const TrainingApplicationPage = () => {
                       <ul className={`text-sm mt-2 space-y-1 ml-4 list-disc ${isOverThreshold ? 'text-amber-700' : 'text-blue-700'}`}>
                         <li>Signed Performance Contract</li>
                         <li>Quotation</li>
-                        <li>SBD 4 Form</li>
+                        <li>{isInternational ? 'SBD 1 Form' : 'SBD 4 Form'}</li>
                         <li>Consent Form</li>
                         <li>CSD Report</li>
                         <li>BBBEE Certificate</li>
@@ -657,10 +675,12 @@ const TrainingApplicationPage = () => {
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="w-5 h-5 mt-0.5 text-purple-600" />
                       <div>
-                        <h4 className="font-semibold text-purple-900">RFQ Route Selected</h4>
+                        <h4 className="font-semibold text-purple-900">
+                          {isInternational ? 'International Supplier (SCM) Route Selected' : 'South African Supplier (SCM) Route Selected'}
+                        </h4>
                         <p className="text-sm mt-1 text-purple-800">
-                          Since you require SCM to go the RFQ route, please upload only the Scope of Work document.
-                          All other documents will be handled through the RFQ process.
+                          Since you selected the SCM route, please upload only the Scope of Work document.
+                          All other documents will be handled through the SCM process.
                         </p>
                       </div>
                     </div>
@@ -669,7 +689,7 @@ const TrainingApplicationPage = () => {
                   <div className="space-y-2">
                     <Label htmlFor="scope_of_work">
                       Scope of Work *
-                      <Badge className="ml-2 bg-purple-100 text-purple-700">Required for RFQ Route</Badge>
+                      <Badge className="ml-2 bg-purple-100 text-purple-700">Required for SCM Route</Badge>
                     </Label>
                     <Input
                       id="scope_of_work"
@@ -679,7 +699,7 @@ const TrainingApplicationPage = () => {
                       data-testid="input-scope-of-work"
                       required
                     />
-                    <p className="text-xs text-slate-600">Upload the scope of work document for the RFQ process</p>
+                    <p className="text-xs text-slate-600">Upload the scope of work document for the SCM process</p>
                   </div>
                 </div>
               ) : (
@@ -711,18 +731,33 @@ const TrainingApplicationPage = () => {
                     <p className="text-xs text-slate-600">Upload the quotation from the service provider</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="sbd4_form">SBD 4 Form *</Label>
-                    <Input
-                      id="sbd4_form"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => updateField('documents', 'sbd4_form', e.target.files[0]?.name || '')}
-                      data-testid="input-sbd4-form"
-                      required
-                    />
-                    <p className="text-xs text-slate-600">Upload the completed SBD 4 declaration form</p>
-                  </div>
+                  {isInternational ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="sbd1_form">SBD 1 Form *</Label>
+                      <Input
+                        id="sbd1_form"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => updateField('documents', 'sbd1_form', e.target.files[0]?.name || '')}
+                        data-testid="input-sbd1-form"
+                        required
+                      />
+                      <p className="text-xs text-slate-600">Upload the completed SBD 1 form (required for international suppliers)</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="sbd4_form">SBD 4 Form *</Label>
+                      <Input
+                        id="sbd4_form"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => updateField('documents', 'sbd4_form', e.target.files[0]?.name || '')}
+                        data-testid="input-sbd4-form"
+                        required
+                      />
+                      <p className="text-xs text-slate-600">Upload the completed SBD 4 declaration form</p>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="consent_form">Consent Form *</Label>
@@ -797,6 +832,121 @@ const TrainingApplicationPage = () => {
                 </div>
               )}
               
+              {/* Additional Training Expenses */}
+              <div className="space-y-4 mt-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-lg font-semibold text-slate-900">Additional Training Expenses</h3>
+                  <Badge className="bg-blue-100 text-blue-700">Optional</Badge>
+                </div>
+                <p className="text-sm text-slate-600 -mt-2">Other costs associated with this training. Leave blank if not applicable.</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2 p-4 rounded-lg bg-slate-50 border border-slate-200">
+                    <Label htmlFor="expense_flights">Flights</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-500">R</span>
+                      <Input
+                        id="expense_flights"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.additional_expenses.flights}
+                        onChange={(e) => updateField('additional_expenses', 'flights', e.target.value)}
+                        data-testid="input-expense-flights"
+                      />
+                    </div>
+                    <Input
+                      placeholder="Notes (e.g., return trip JHB-CPT)"
+                      value={formData.additional_expenses.flights_notes}
+                      onChange={(e) => updateField('additional_expenses', 'flights_notes', e.target.value)}
+                      data-testid="input-expense-flights-notes"
+                    />
+                  </div>
+
+                  <div className="space-y-2 p-4 rounded-lg bg-slate-50 border border-slate-200">
+                    <Label htmlFor="expense_accommodation">Accommodation</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-500">R</span>
+                      <Input
+                        id="expense_accommodation"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.additional_expenses.accommodation}
+                        onChange={(e) => updateField('additional_expenses', 'accommodation', e.target.value)}
+                        data-testid="input-expense-accommodation"
+                      />
+                    </div>
+                    <Input
+                      placeholder="Notes (e.g., 3 nights hotel)"
+                      value={formData.additional_expenses.accommodation_notes}
+                      onChange={(e) => updateField('additional_expenses', 'accommodation_notes', e.target.value)}
+                      data-testid="input-expense-accommodation-notes"
+                    />
+                  </div>
+
+                  <div className="space-y-2 p-4 rounded-lg bg-slate-50 border border-slate-200">
+                    <Label htmlFor="expense_car_hire">Car Hire or Shuttle</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-500">R</span>
+                      <Input
+                        id="expense_car_hire"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.additional_expenses.car_hire_or_shuttle}
+                        onChange={(e) => updateField('additional_expenses', 'car_hire_or_shuttle', e.target.value)}
+                        data-testid="input-expense-car-hire"
+                      />
+                    </div>
+                    <Input
+                      placeholder="Notes (e.g., airport shuttle service)"
+                      value={formData.additional_expenses.car_hire_or_shuttle_notes}
+                      onChange={(e) => updateField('additional_expenses', 'car_hire_or_shuttle_notes', e.target.value)}
+                      data-testid="input-expense-car-hire-notes"
+                    />
+                  </div>
+
+                  <div className="space-y-2 p-4 rounded-lg bg-slate-50 border border-slate-200">
+                    <Label htmlFor="expense_catering">Catering</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-500">R</span>
+                      <Input
+                        id="expense_catering"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={formData.additional_expenses.catering}
+                        onChange={(e) => updateField('additional_expenses', 'catering', e.target.value)}
+                        data-testid="input-expense-catering"
+                      />
+                    </div>
+                    <Input
+                      placeholder="Notes (e.g., lunch for 5 days)"
+                      value={formData.additional_expenses.catering_notes}
+                      onChange={(e) => updateField('additional_expenses', 'catering_notes', e.target.value)}
+                      data-testid="input-expense-catering-notes"
+                    />
+                  </div>
+                </div>
+
+                {/* Total Additional Expenses */}
+                {(parseFloat(formData.additional_expenses.flights || 0) + parseFloat(formData.additional_expenses.accommodation || 0) + parseFloat(formData.additional_expenses.car_hire_or_shuttle || 0) + parseFloat(formData.additional_expenses.catering || 0)) > 0 && (
+                  <div className="flex justify-end">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-right">
+                      <span className="text-sm text-blue-700">Total Additional Expenses: </span>
+                      <span className="text-lg font-bold text-blue-900" data-testid="total-additional-expenses">
+                        R {(parseFloat(formData.additional_expenses.flights || 0) + parseFloat(formData.additional_expenses.accommodation || 0) + parseFloat(formData.additional_expenses.car_hire_or_shuttle || 0) + parseFloat(formData.additional_expenses.catering || 0)).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="bg-accent/50 p-4 rounded-lg">
                 <h4 className="font-semibold text-slate-900 mb-2">Declaration</h4>
                 <p className="text-sm text-slate-700 mb-3">
@@ -881,9 +1031,25 @@ const TrainingApplicationPage = () => {
                 <div><span className="text-slate-500">Service Provider:</span> {formData.training_info.service_provider}</div>
                 <div><span className="text-slate-500">Training Type:</span> {formData.training_info.training_type}</div>
                 <div><span className="text-slate-500">Amount:</span> R{formData.training_info.total_amount}</div>
-                <div><span className="text-slate-500">Supplier Type:</span> {formData.training_info.supplier_type}</div>
+                <div><span className="text-slate-500">Supplier Type:</span> {
+                  formData.training_info.supplier_type === 'sa_supplier' ? 'South African Supplier (SCM) Route' :
+                  formData.training_info.supplier_type === 'international_supplier' ? 'International Supplier (SCM) Route' :
+                  formData.training_info.supplier_type === 'preferred_supplier' ? 'Preferred Supplier' :
+                  formData.training_info.supplier_type
+                }</div>
               </div>
             </div>
+            {(parseFloat(formData.additional_expenses?.flights || 0) + parseFloat(formData.additional_expenses?.accommodation || 0) + parseFloat(formData.additional_expenses?.car_hire_or_shuttle || 0) + parseFloat(formData.additional_expenses?.catering || 0)) > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold text-slate-900">Additional Training Expenses</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {parseFloat(formData.additional_expenses?.flights || 0) > 0 && <div><span className="text-slate-500">Flights:</span> R{parseFloat(formData.additional_expenses.flights).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}{formData.additional_expenses.flights_notes ? ` — ${formData.additional_expenses.flights_notes}` : ''}</div>}
+                  {parseFloat(formData.additional_expenses?.accommodation || 0) > 0 && <div><span className="text-slate-500">Accommodation:</span> R{parseFloat(formData.additional_expenses.accommodation).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}{formData.additional_expenses.accommodation_notes ? ` — ${formData.additional_expenses.accommodation_notes}` : ''}</div>}
+                  {parseFloat(formData.additional_expenses?.car_hire_or_shuttle || 0) > 0 && <div><span className="text-slate-500">Car Hire/Shuttle:</span> R{parseFloat(formData.additional_expenses.car_hire_or_shuttle).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}{formData.additional_expenses.car_hire_or_shuttle_notes ? ` — ${formData.additional_expenses.car_hire_or_shuttle_notes}` : ''}</div>}
+                  {parseFloat(formData.additional_expenses?.catering || 0) > 0 && <div><span className="text-slate-500">Catering:</span> R{parseFloat(formData.additional_expenses.catering).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}{formData.additional_expenses.catering_notes ? ` — ${formData.additional_expenses.catering_notes}` : ''}</div>}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSummary(false)}>Close</Button>
