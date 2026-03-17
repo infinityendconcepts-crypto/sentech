@@ -42,7 +42,7 @@ const navigation = [
   { name: 'Messages',      href: '/messages',     icon: MessageSquare },
   { name: 'MICTSETA Docs', href: '/files',        icon: FolderOpen },
   { name: 'Tickets',       href: '/tickets',      icon: Ticket },
-  { name: 'Teams',          href: '/team',         icon: UsersRound },
+  { name: 'Division Groups', href: '/division-groups',  icon: UsersRound },
   { name: 'Help & Support',href: '/help',         icon: HelpCircle },
   // ── Admin only ──
   { name: 'Sponsors',   href: '/sponsors',   icon: Users,        adminOnly: true },

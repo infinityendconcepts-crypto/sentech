@@ -24,7 +24,7 @@ import ProspectsPage from './pages/ProspectsPage';
 import MeetingsPage from './pages/MeetingsPage';
 import NotesPage from './pages/NotesPage';
 import MessagesPage from './pages/MessagesPage';
-import TeamPage from './pages/TeamPage';
+import DivisionGroupsPage from './pages/DivisionGroupsPage';
 import TicketsPage from './pages/TicketsPage';
 import ExpensesPage from './pages/ExpensesPage';
 import ReportsPage from './pages/ReportsPage';
@@ -66,7 +66,7 @@ function App() {
               <Route path="/tasks" element={<TrainingTrackPage />} />
               <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/meetings" element={<MeetingsPage />} />
-              <Route path="/team" element={<TeamPage />} />
+              <Route path="/division-groups" element={<DivisionGroupsPage />} />
 
               {/* ── Admin-only routes ── */}
               <Route element={<RoleProtectedRoute requiredRole="admin" />}>

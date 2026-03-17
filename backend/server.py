@@ -3879,6 +3879,117 @@ async def bulk_import_users(users_data: List[dict], current_user: dict = Depends
         "message": f"Successfully imported {imported} users, skipped {skipped}"
     }
 
+# ============== DIVISION GROUPS ROUTES ==============
+
+@api_router.get("/division-groups")
+async def get_division_groups(current_user: dict = Depends(get_current_user)):
+    divisions = await db.divisions.find({}, {"_id": 0}).to_list(100)
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    group_configs = await db.division_groups.find({}, {"_id": 0}).to_list(100)
+    config_map = {gc["division_name"]: gc for gc in group_configs}
+    
+    groups = []
+    for div in divisions:
+        div_name = div["name"]
+        members = [u for u in users if u.get("division") == div_name]
+        config = config_map.get(div_name, {})
+        groups.append({
+            "division_id": div["id"],
+            "division_name": div_name,
+            "description": div.get("description", ""),
+            "leader_id": config.get("leader_id"),
+            "leader": next((u for u in members if u.get("id") == config.get("leader_id")), None),
+            "members": members,
+            "member_count": len(members),
+        })
+    
+    groups.sort(key=lambda g: g["division_name"])
+    return groups
+
+@api_router.get("/division-groups/{division_name}")
+async def get_division_group(division_name: str, current_user: dict = Depends(get_current_user)):
+    division = await db.divisions.find_one({"name": division_name}, {"_id": 0})
+    if not division:
+        raise HTTPException(status_code=404, detail="Division not found")
+    
+    members = await db.users.find({"division": division_name}, {"_id": 0, "password_hash": 0}).to_list(200)
+    config = await db.division_groups.find_one({"division_name": division_name}, {"_id": 0})
+    leader_id = config.get("leader_id") if config else None
+    
+    return {
+        "division_id": division["id"],
+        "division_name": division_name,
+        "description": division.get("description", ""),
+        "leader_id": leader_id,
+        "leader": next((u for u in members if u.get("id") == leader_id), None),
+        "members": members,
+        "member_count": len(members),
+    }
+
+@api_router.put("/division-groups/{division_name}/leader")
+async def set_division_group_leader(division_name: str, body: dict, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can set group leaders")
+    
+    division = await db.divisions.find_one({"name": division_name}, {"_id": 0})
+    if not division:
+        raise HTTPException(status_code=404, detail="Division not found")
+    
+    leader_id = body.get("leader_id")
+    if leader_id:
+        user = await db.users.find_one({"id": leader_id}, {"_id": 0})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+    
+    existing = await db.division_groups.find_one({"division_name": division_name})
+    if existing:
+        await db.division_groups.update_one(
+            {"division_name": division_name},
+            {"$set": {"leader_id": leader_id, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    else:
+        await db.division_groups.insert_one({
+            "id": generate_uuid(),
+            "division_name": division_name,
+            "leader_id": leader_id,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        })
+    
+    return {"message": f"Leader set for {division_name}", "leader_id": leader_id}
+
+@api_router.post("/division-groups/{division_name}/members/{user_id}")
+async def add_member_to_division_group(division_name: str, user_id: str, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can manage group members")
+    
+    division = await db.divisions.find_one({"name": division_name}, {"_id": 0})
+    if not division:
+        raise HTTPException(status_code=404, detail="Division not found")
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await db.users.update_one({"id": user_id}, {"$set": {"division": division_name, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    return {"message": f"User added to {division_name}"}
+
+@api_router.delete("/division-groups/{division_name}/members/{user_id}")
+async def remove_member_from_division_group(division_name: str, user_id: str, current_user: dict = Depends(get_current_user)):
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can manage group members")
+    
+    await db.users.update_one({"id": user_id}, {"$set": {"division": None, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    
+    config = await db.division_groups.find_one({"division_name": division_name})
+    if config and config.get("leader_id") == user_id:
+        await db.division_groups.update_one(
+            {"division_name": division_name},
+            {"$set": {"leader_id": None, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    
+    return {"message": f"User removed from {division_name}"}
+
 # ============== DASHBOARD STATS ==============
 
 @api_router.get("/dashboard/stats")

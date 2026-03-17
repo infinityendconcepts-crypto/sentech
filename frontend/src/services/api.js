@@ -81,6 +81,14 @@ export const teamsAPI = {
   removeMember: (teamId, userId) => api.delete(`/teams/${teamId}/members/${userId}`),
 };
 
+export const divisionGroupsAPI = {
+  getAll: () => api.get('/division-groups'),
+  getOne: (name) => api.get(`/division-groups/${encodeURIComponent(name)}`),
+  setLeader: (name, leaderId) => api.put(`/division-groups/${encodeURIComponent(name)}/leader`, { leader_id: leaderId }),
+  addMember: (name, userId) => api.post(`/division-groups/${encodeURIComponent(name)}/members/${userId}`),
+  removeMember: (name, userId) => api.delete(`/division-groups/${encodeURIComponent(name)}/members/${userId}`),
+};
+
 export const meetingsAPI = {
   getAll: (params) => api.get('/meetings', { params }),
   getOne: (id) => api.get(`/meetings/${id}`),
