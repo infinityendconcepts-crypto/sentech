@@ -163,7 +163,7 @@ Both Bursary and Training Applications use this specific list:
 
 ### UI/UX Refinements
 - "Applications" renamed to "Bursary Applications"
-- "Team" renamed to "Teams"
+- **Team** renamed to **Division Groups**
 - Simplified login page (Email/Password and Microsoft SSO only - OTP removed)
 - "Tasks" renamed to "Training Track"
 - "Files" renamed to "MICTSETA Documents"
@@ -171,6 +171,20 @@ Both Bursary and Training Applications use this specific list:
 - Navigation hides Leads, Notes, Prospects pages
 - Collapsible sidebar
 - Responsive design
+
+### Division Groups Module (NEW - Feb 2026)
+- Replaced old "Teams" page with "Division Groups"
+- Each organizational division forms a group with its assigned users
+- Admin/super_admin can assign a leader to each division group
+- Admin/super_admin can add/remove members from groups
+- Stats overview: total divisions, total members, leaders assigned
+- Expandable group cards showing all members with role badges
+- Leader highlighted with crown badge
+- Search across divisions and members
+- Thompson Chisoko set as leader of Satellite Business division
+- Backend endpoints: GET /api/division-groups, PUT leader, POST/DELETE members
+- Uses division_groups MongoDB collection for leader assignments
+- Users belong to groups via their 'division' field in users collection
 
 ## Pending/Future Tasks
 
@@ -214,3 +228,8 @@ Both Bursary and Training Applications use this specific list:
 - `PUT /api/tasks/{task_id}` - Update training module (comments, images, due date)
 - `PUT /api/pdp/{pdp_id}` - Update PDP entry (assigned_to, skills gap)
 - `POST /api/users` - Create user (admin only)
+- `GET /api/division-groups` - List all division groups with members and leaders
+- `GET /api/division-groups/{name}` - Get specific division group
+- `PUT /api/division-groups/{name}/leader` - Set group leader (admin only)
+- `POST /api/division-groups/{name}/members/{user_id}` - Add member (admin only)
+- `DELETE /api/division-groups/{name}/members/{user_id}` - Remove member (admin only)
