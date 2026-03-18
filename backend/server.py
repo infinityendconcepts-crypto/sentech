@@ -2296,6 +2296,22 @@ async def update_ticket(ticket_id: str, update_data: TicketUpdate, current_user:
         update_dict["closed_at"] = datetime.now(timezone.utc).isoformat()
     
     await db.tickets.update_one({"id": ticket_id}, {"$set": update_dict})
+    
+    # Notify ticket creator about status change
+    if update_data.status and update_data.status != ticket.get("status") and ticket["created_by"] != current_user["id"]:
+        notif = {
+            "id": generate_uuid(),
+            "user_id": ticket["created_by"],
+            "type": "ticket_response",
+            "title": f"Ticket Status Updated",
+            "message": f"Your ticket '{ticket.get('title', '')}' has been updated to: {update_data.status}",
+            "reference_id": ticket_id,
+            "reference_type": "ticket",
+            "is_read": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.notifications.insert_one({**notif})
+    
     return {"message": "Ticket updated successfully"}
 
 @api_router.delete("/tickets/{ticket_id}")
@@ -2355,6 +2371,21 @@ async def add_ticket_comment(ticket_id: str, comment_data: TicketCommentCreate, 
         {"id": ticket_id},
         {"$set": {"updated_at": comment_dict['created_at']}}
     )
+    
+    # Notify ticket creator about new comment (if commenter is not the creator and not internal)
+    if not comment_data.is_internal and ticket["created_by"] != current_user["id"]:
+        notif = {
+            "id": generate_uuid(),
+            "user_id": ticket["created_by"],
+            "type": "ticket_response",
+            "title": "New Response on Your Ticket",
+            "message": f"New comment on '{ticket.get('title', '')}': {comment_data.content[:80]}",
+            "reference_id": ticket_id,
+            "reference_type": "ticket",
+            "is_read": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.notifications.insert_one({**notif})
     
     return comment
 
@@ -2947,6 +2978,22 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
     
     await db.applications.update_one({"id": application_id}, {"$set": update_dict})
     updated_app = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    
+    # Notify applicant about status change
+    if update_data.status and update_data.status != application.get("status") and application["user_id"] != current_user["id"]:
+        notif = {
+            "id": generate_uuid(),
+            "user_id": application["user_id"],
+            "type": "status_change",
+            "title": "Application Status Updated",
+            "message": f"Your bursary application status changed to: {update_data.status}",
+            "reference_id": application_id,
+            "reference_type": "application",
+            "is_read": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.notifications.insert_one({**notif})
+    
     return updated_app
 
 # ============== TRAINING APPLICATIONS ROUTES ==============
@@ -3052,6 +3099,23 @@ async def update_training_application_status(application_id: str, status_data: d
     
     await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
     updated_app = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    
+    # Notify applicant about status change (only admin status changes)
+    new_status = status_data.get("status")
+    if new_status and new_status != application.get("status") and application["user_id"] != current_user["id"]:
+        notif = {
+            "id": generate_uuid(),
+            "user_id": application["user_id"],
+            "type": "status_change",
+            "title": "Training Application Status Updated",
+            "message": f"Your training application status changed to: {new_status}",
+            "reference_id": application_id,
+            "reference_type": "application",
+            "is_read": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.notifications.insert_one({**notif})
+    
     return updated_app
 
 @api_router.delete("/training-applications/{application_id}")

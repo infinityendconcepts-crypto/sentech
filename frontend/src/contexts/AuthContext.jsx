@@ -49,8 +49,8 @@ export const AuthProvider = ({ children }) => {
     token,
     loading,
     isAuthenticated: !!token,
-    isAdmin: user?.roles?.includes('admin') ?? false,
-    isStudent: !user?.roles?.includes('admin'),
+    isAdmin: (user?.roles?.includes('admin') || user?.roles?.includes('super_admin')) ?? false,
+    isStudent: !(user?.roles?.includes('admin') || user?.roles?.includes('super_admin')),
     login,
     logout,
   };
