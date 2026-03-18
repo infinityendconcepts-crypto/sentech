@@ -76,6 +76,15 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Events page shows meetings as "meeting" type with purple color
 - Calendar and list views for events
 
+### Application Re-edit System (NEW - Feb 2026) ✅
+- User Profile page "My Applications" tab shows all bursary and training applications with status badges
+- 24-hour edit window: applications can be edited within 24hrs of submission
+- After 24hrs, "Edit" button is replaced with "Request Re-edit" button
+- Request Re-edit dialog with reason field, sends notification to all admins
+- Admin approval/denial via API endpoints, notifies the applicant
+- Once re-edit is approved, user can edit again (flags auto-cleared after edit)
+- Backend enforcement: PUT application endpoints return 403 if edit window expired and no re-edit approval
+
 ## Pending/Future Tasks
 
 ### P1 - Upcoming
