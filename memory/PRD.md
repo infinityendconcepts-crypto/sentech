@@ -9,13 +9,14 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - **Authentication:** Microsoft Entra ID SSO, standard email/password, First-time Password Setup
 
 ## Core Modules (Pages)
-- Dashboard, Bursary Applications, Training Applications, Sponsors, BBBEE, Projects
+- Dashboard, Bursary Applications, Training Applications, BBBEE
 - Training Track (formerly Tasks), Meetings, Events, Messages, Division Groups
 - Tickets, Expenses, Reports, MICTSETA Documents, Help and Support
 - Settings, Users, User Profile, Personal Development Plan (PDP), Notifications, Notes
 
 ## Hidden Pages (Per User Request)
 - Leads, Notes, Prospects (hidden from navigation)
+- Projects (removed from sidebar per user request)
 
 ## User Personas & Roles
 - **Super Admin:** Highest access level
@@ -36,116 +37,84 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Division Groups with subgroups and leaders
 - JIT Temporary Leader feature
 
-### Notification System (NEW - Feb 2026) ✅
+### Notification System
 - NotificationsPage with filter tabs (All, Unread, Messages, Meetings, Status, Tickets)
 - Bell icon in header with unread count badge and sound
 - Polling every 15 seconds for new notifications
-- Notifications triggered by: new messages, meeting invites, ticket status changes, ticket comments, application status changes (bursary + training)
 - Mark read/unread, mark all read, delete notifications
-- Click notification to navigate to relevant page
 
-### Enhanced Messaging System (NEW - Feb 2026) ✅
+### Enhanced Messaging System
 - New Chat dialog with 3 tabs: Individual, Division, Subgroup
-- Individual: search users and start direct conversations
-- Division: select a division to message all members
-- Subgroup: select a subgroup to message its members
 - Real-time message display with read receipts
-- Unread count tracking per conversation
 
-### Notes Page (Complete - Feb 2026) ✅
-- Full CRUD: create, read, update, delete notes
-- Folders with color coding
-- Tags support
-- Color-coded notes
-- Pin/unpin notes
-- Shared notes tab
-- Search across notes and tags
+### Notes Page (Complete)
+- Full CRUD with folders, tags, color coding, pin/unpin, shared notes
 
-### Users Page (Complete - Feb 2026) ✅
-- Table view with: Employee, Division, Department, Position, Role, Status
-- View Details dialog with 4 sections:
-  - Personal Info (Full Name, Surname, ID Number, Gender, Race, Age)
-  - Employment Info (Personnel Number, Division, Department, Position, Level, Start Date, Years of Service)
-  - OFO Classification (Major Group, Sub Major Group, Occupation, OFO Code)
-  - System Info (Roles, Status, Password Setup)
-- Edit user (Division, Department, Position, Role)
-- Activate/deactivate, delete users
+### Application Re-edit System
+- 24-hour edit window, Request Re-edit flow, admin approval/denial
 
-### Meeting → Event Sync (Complete - Feb 2026) ✅
-- Creating a meeting auto-creates an event on the Events calendar
-- Events page shows meetings as "meeting" type with purple color
-- Calendar and list views for events
+### User Management Enhancements
+- Admin Edit User dialog with 20 editable fields
+- All imported HR dataset fields displayed
 
-### Application Re-edit System (NEW - Feb 2026) ✅
-- User Profile page "My Applications" tab shows all bursary and training applications with status badges
-- 24-hour edit window: applications can be edited within 24hrs of submission
-- After 24hrs, "Edit" button is replaced with "Request Re-edit" button
-- Request Re-edit dialog with reason field, sends notification to all admins
-- Admin approval/denial via API endpoints, notifies the applicant
-- Once re-edit is approved, user can edit again (flags auto-cleared after edit)
-- Backend enforcement: PUT application endpoints return 403 if edit window expired and no re-edit approval
+### Application Expenses System
+- Post-submission expenses (Flights, Accommodation, Car Hire, Catering)
+- Expenses Page with 3 tabs for expense types
 
-### User Management Enhancements (Feb 2026) ✅
-- Removed Student ID from user model and all pages
-- User Profile shows all HR dataset fields: Personal Details (surname, ID number, gender, race, age), Employment Info (personnel number, division, department, position, level, start date, years of service), OFO Classification
-- Admin Edit User dialog expanded to 20 editable fields across 3 sections: Personal Info, Employment Info, OFO Classification
-- Backend UserUpdate model supports all fields including email, bio
+### Settings & RBAC Overhaul
+- Vertical tab navigation, RBAC permission matrix
+- 13 modules x 4 permissions (CRUD)
 
-### Application Expenses System (NEW - Feb 2026) ✅
-- Post-submission expense adding: Flights, Accommodation, Car Hire/Shuttle, Catering
-- "Add Expenses" / "Edit Expenses" button on each non-draft bursary and training application card
-- Right-click context menu also provides Add/Edit Expenses option
-- Expense dialog with amount + notes fields per category, running total
-- Expenses Page has 3 tabs: "Additional Expenses" (standalone), "Bursary Application", "Training Application"
-- Bursary/Training tabs show: applicant, status, per-category amounts, totals, grand total row
-- Backend: POST /api/applications/{id}/expenses, POST /api/training-applications/{id}/expenses, GET /api/expenses/application-expenses
+### Dashboard Overhaul (Feb 2026) - NEW
+- 6 stat cards: Total Applications, Pending, Approved, Training Applications, Open Tickets, Unread Notifications
+- Real "Recent Activity" feed from backend (notifications, applications, tickets)
+- "Notifications" summary widget with unread badge
+- "Report Summary" card for admins (Users, Bursary, Training, Tickets)
+- Quick Actions (New Application, Training Apps, BBBEE, Reports)
+- Removed Projects and Sponsors from dashboard
+- Backend: GET /api/dashboard/stats, GET /api/dashboard/recent-activity, GET /api/dashboard/report-summary
 
-### Settings Page Overhaul (Feb 2026) ✅
-- Vertical tab navigation: General, Branding, Integrations, Notifications, Dashboard, Roles & Permissions, Page Settings, Data & Storage
-- General: Company name, email, phone, timezone, currency, address
-- Branding: Primary color picker
-- Integrations: SMTP email config, Microsoft Teams config
-- Notifications: Toggle switches for email/sound/ticket/application/meeting notifications
-- Dashboard Customization: 8 widget toggles (applications, training, expenses, users, tickets, tasks, quick_actions, recent_activity) per user
-- Page Settings: Enable/disable toggle for each module
+### Training Track User Assignment (Feb 2026) - NEW
+- Admins/division heads can assign users to training modules
+- Assign Users dialog with searchable user list and checkbox selection
+- "Assign" button in list view and dropdown menu
+- Assigned users section with unassign capability
+- Notifications sent to assigned users
+- Backend: POST /api/tasks/{id}/assign, DELETE /api/tasks/{id}/assign/{user_id}
 
-### Advanced RBAC System (Feb 2026) ✅
-- Permission matrix: 13 modules x 4 permissions (Create/Read/Update/Delete)
-- Modules: Dashboard, Bursary Applications, Training Applications, Expenses, Tickets, Messages, Meetings, Events, Notes, Users, Division Groups, Reports, Settings
-- Create, edit, delete roles with full permission matrix
-- System roles (admin, manager, employee) protected from deletion
-- "Select All" checkbox per module row
-- Backend: CRUD at /api/settings/roles, /api/settings/roles/{id}
+### User Import Feature (Feb 2026) - NEW
+- Downloadable CSV template (18 columns)
+- Import Users dialog with file upload and results display
+- Template and Import buttons in UsersPage header for admins
+- Backend: GET /api/users/import-template, POST /api/users/bulk-import
 
-### Reports & Analytics Enhanced (Feb 2026) ✅
-- Summary cards: Total Users, Applications, Total Expenses, Open Tickets
-- Users by Division pie chart (17 divisions)
-- Active vs Inactive Users donut chart
-- Expenses by Type bar chart (Flights, Accommodation, Car Hire/Shuttle, Catering)
-- Expenses by Applicant list with grand total
-- Applications Overview bar chart
-- Export to Excel/JSON
+### Reports Chart Enhancement (Feb 2026) - NEW
+- Zoom/expand button on each chart card (appears on hover)
+- Full-screen modal dialog for enlarged chart viewing
+- All charts: Users by Division pie, Active/Inactive donut, Expenses by Type bar, Applications Overview bar
 
 ## Pending/Future Tasks
 
-### P1 - Upcoming
-- Backend CRUD for: Projects, Sponsors, Expenses (partial), Tickets (partial), Bursary
-- Connect frontend placeholder pages to backend APIs
-- Fix ProspectsPage drag-and-drop (migrate react-beautiful-dnd → @dnd-kit)
+### P2 - Upcoming
+- Dynamic Page Configuration: UI in Settings to configure fields/actions for PDP, Bursary, Training pages
+- Frontend RBAC Enforcement: Hide/disable UI elements based on role permissions
+- Fix ProspectsPage drag-and-drop (migrate react-beautiful-dnd to @dnd-kit)
 
 ### P2 - Future
-- Microsoft Teams API integration (Graph API) for meeting scheduling
-- Advanced RBAC management UI on Settings page
-- Refactor file uploads to chunked multipart
 - Refactor server.py monolith into separate routers
+- Refactor file uploads to chunked multipart
+- Microsoft Teams API integration for meeting scheduling
 - Real-time messaging (WebSocket)
 
 ## Key API Endpoints
-- Notifications: GET/PUT/DELETE /api/notifications, GET /api/notifications/unread/count
-- Messages: POST /api/messages/group-conversation (individual/division/subgroup)
-- Notes: Full CRUD at /api/notes, /api/notes/folders
-- Events: Auto-created from meetings, full CRUD at /api/events
-- All existing endpoints for applications, users, teams, division-groups, etc.
+- Dashboard: GET /api/dashboard/stats, /recent-activity, /report-summary
+- Notifications: GET/PUT/DELETE /api/notifications
+- Messages: POST /api/messages/group-conversation
+- Tasks: POST /api/tasks/{id}/assign, DELETE /api/tasks/{id}/assign/{user_id}
+- Users: GET /api/users/import-template, POST /api/users/bulk-import
+- Applications: Full CRUD + expenses + re-edit
+- Settings: GET/PUT /api/settings, roles CRUD, dashboard preferences
+- Reports: GET /api/reports/dashboard, export
 
 ## Key Credentials
 - Super Admin: jane.smith@uct.ac.za / securepass123
