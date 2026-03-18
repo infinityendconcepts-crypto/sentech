@@ -100,6 +100,32 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Bursary/Training tabs show: applicant, status, per-category amounts, totals, grand total row
 - Backend: POST /api/applications/{id}/expenses, POST /api/training-applications/{id}/expenses, GET /api/expenses/application-expenses
 
+### Settings Page Overhaul (Feb 2026) ✅
+- Vertical tab navigation: General, Branding, Integrations, Notifications, Dashboard, Roles & Permissions, Page Settings, Data & Storage
+- General: Company name, email, phone, timezone, currency, address
+- Branding: Primary color picker
+- Integrations: SMTP email config, Microsoft Teams config
+- Notifications: Toggle switches for email/sound/ticket/application/meeting notifications
+- Dashboard Customization: 8 widget toggles (applications, training, expenses, users, tickets, tasks, quick_actions, recent_activity) per user
+- Page Settings: Enable/disable toggle for each module
+
+### Advanced RBAC System (Feb 2026) ✅
+- Permission matrix: 13 modules x 4 permissions (Create/Read/Update/Delete)
+- Modules: Dashboard, Bursary Applications, Training Applications, Expenses, Tickets, Messages, Meetings, Events, Notes, Users, Division Groups, Reports, Settings
+- Create, edit, delete roles with full permission matrix
+- System roles (admin, manager, employee) protected from deletion
+- "Select All" checkbox per module row
+- Backend: CRUD at /api/settings/roles, /api/settings/roles/{id}
+
+### Reports & Analytics Enhanced (Feb 2026) ✅
+- Summary cards: Total Users, Applications, Total Expenses, Open Tickets
+- Users by Division pie chart (17 divisions)
+- Active vs Inactive Users donut chart
+- Expenses by Type bar chart (Flights, Accommodation, Car Hire/Shuttle, Catering)
+- Expenses by Applicant list with grand total
+- Applications Overview bar chart
+- Export to Excel/JSON
+
 ## Pending/Future Tasks
 
 ### P1 - Upcoming
