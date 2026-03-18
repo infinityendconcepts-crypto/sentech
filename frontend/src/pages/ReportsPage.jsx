@@ -3,15 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 import { reportsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   BarChart3, Download, FileText, FileSpreadsheet,
-  Users, Briefcase, CheckCircle, DollarSign,
-  TrendingUp, Calendar, Printer,
+  Users, Briefcase, DollarSign, Maximize2, X,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -23,11 +22,30 @@ import {
 
 const COLORS = ['#0056B3', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316', '#14B8A6', '#6366F1', '#D946EF', '#84CC16'];
 
+const ChartCard = ({ title, children, onZoom }) => (
+  <Card className="bg-white border-slate-200 group">
+    <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardTitle className="text-base">{title}</CardTitle>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
+        onClick={onZoom}
+        data-testid={`zoom-${title.toLowerCase().replace(/\s+/g, '-')}`}
+      >
+        <Maximize2 className="w-4 h-4 text-slate-500" />
+      </Button>
+    </CardHeader>
+    <CardContent>{children}</CardContent>
+  </Card>
+);
+
 const ReportsPage = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [zoomChart, setZoomChart] = useState(null);
 
   useEffect(() => { fetchStats(); }, []);
 
@@ -69,6 +87,75 @@ const ReportsPage = () => {
   ];
   const expenseTypeData = stats?.expense_breakdown?.by_type?.filter(e => e.value > 0) || [];
   const applicantExpenses = stats?.expense_breakdown?.by_applicant || [];
+  const appOverviewData = [
+    { name: 'Total', value: stats?.applications?.total || 0, fill: '#0056B3' },
+    { name: 'Pending', value: stats?.applications?.pending || 0, fill: '#F59E0B' },
+    { name: 'Approved', value: stats?.applications?.approved || 0, fill: '#10B981' },
+    { name: 'Tasks', value: stats?.tasks?.total || 0, fill: '#8B5CF6' },
+    { name: 'Completed', value: stats?.tasks?.completed || 0, fill: '#06B6D4' },
+  ];
+
+  const renderDivisionChart = (height = 320) => (
+    divisionData.length > 0 ? (
+      <ResponsiveContainer width="100%" height={height}>
+        <PieChart>
+          <Pie data={divisionData} cx="50%" cy="50%" labelLine={false}
+            label={({ name, value }) => `${name.length > 12 ? name.slice(0, 12) + '...' : name} (${value})`}
+            outerRadius={height > 400 ? 180 : 110} dataKey="value">
+            {divisionData.map((_, i) => (<Cell key={i} fill={COLORS[i % COLORS.length]} />))}
+          </Pie>
+          <RechartsTooltip formatter={(value, name) => [`${value} users`, name]} />
+          <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: '12px' }} />
+        </PieChart>
+      </ResponsiveContainer>
+    ) : <p className="text-center text-slate-400 py-12">No division data</p>
+  );
+
+  const renderActiveInactiveChart = (height = 320) => (
+    <ResponsiveContainer width="100%" height={height}>
+      <PieChart>
+        <Pie data={activeInactiveData} cx="50%" cy="50%" innerRadius={height > 400 ? 100 : 60}
+          outerRadius={height > 400 ? 180 : 110} label={({ name, value }) => `${name}: ${value}`} dataKey="value">
+          <Cell fill="#10B981" /><Cell fill="#EF4444" />
+        </Pie>
+        <RechartsTooltip /><Legend />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+
+  const renderExpenseTypeChart = (height = 300) => (
+    expenseTypeData.length > 0 ? (
+      <ResponsiveContainer width="100%" height={height}>
+        <BarChart data={expenseTypeData} layout="vertical">
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis type="number" tickFormatter={(v) => `R${(v/1000).toFixed(0)}k`} />
+          <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
+          <RechartsTooltip formatter={(value) => [formatCurrency(value), 'Amount']} />
+          <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+            {expenseTypeData.map((_, i) => (<Cell key={i} fill={['#0056B3', '#F59E0B', '#10B981', '#EC4899'][i % 4]} />))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    ) : <p className="text-center text-slate-400 py-12">No expense data</p>
+  );
+
+  const renderAppOverviewChart = (height = 250) => (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={appOverviewData}>
+        <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" /><YAxis /><RechartsTooltip />
+        <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+          {appOverviewData.map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+
+  const chartConfigs = {
+    division: { title: 'Users by Division', render: renderDivisionChart },
+    activeInactive: { title: 'Active vs Inactive Users', render: renderActiveInactiveChart },
+    expenseType: { title: 'Expenses by Type', render: renderExpenseTypeChart },
+    appOverview: { title: 'Applications Overview', render: renderAppOverviewChart },
+  };
 
   return (
     <div className="space-y-6" data-testid="reports-page">
@@ -120,88 +207,21 @@ const ReportsPage = () => {
         ))}
       </div>
 
-      {/* Charts Row 1: Division Pie + Active/Inactive */}
+      {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Users by Division */}
-        <Card className="bg-white border-slate-200">
-          <CardHeader><CardTitle className="text-base">Users by Division</CardTitle></CardHeader>
-          <CardContent>
-            {divisionData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={320}>
-                <PieChart>
-                  <Pie
-                    data={divisionData}
-                    cx="50%" cy="50%"
-                    labelLine={false}
-                    label={({ name, value, percent }) => `${name.length > 12 ? name.slice(0, 12) + '...' : name} (${value})`}
-                    outerRadius={110}
-                    dataKey="value"
-                  >
-                    {divisionData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip formatter={(value, name) => [`${value} users`, name]} />
-                  <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: '11px' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-center text-slate-400 py-12">No division data</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Active vs Inactive Users */}
-        <Card className="bg-white border-slate-200">
-          <CardHeader><CardTitle className="text-base">Active vs Inactive Users</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={320}>
-              <PieChart>
-                <Pie
-                  data={activeInactiveData}
-                  cx="50%" cy="50%"
-                  innerRadius={60} outerRadius={110}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  dataKey="value"
-                >
-                  <Cell fill="#10B981" />
-                  <Cell fill="#EF4444" />
-                </Pie>
-                <RechartsTooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <ChartCard title="Users by Division" onZoom={() => setZoomChart('division')}>
+          {renderDivisionChart()}
+        </ChartCard>
+        <ChartCard title="Active vs Inactive Users" onZoom={() => setZoomChart('activeInactive')}>
+          {renderActiveInactiveChart()}
+        </ChartCard>
       </div>
 
-      {/* Charts Row 2: Expense Type Breakdown + Applicant Expenses */}
+      {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Expense Type Breakdown */}
-        <Card className="bg-white border-slate-200">
-          <CardHeader><CardTitle className="text-base">Expenses by Type</CardTitle></CardHeader>
-          <CardContent>
-            {expenseTypeData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={expenseTypeData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(v) => `R${(v/1000).toFixed(0)}k`} />
-                  <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
-                  <RechartsTooltip formatter={(value) => [formatCurrency(value), 'Amount']} />
-                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
-                    {expenseTypeData.map((_, i) => (
-                      <Cell key={i} fill={['#0056B3', '#F59E0B', '#10B981', '#EC4899'][i % 4]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-center text-slate-400 py-12">No expense data</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Expenses by Applicant */}
+        <ChartCard title="Expenses by Type" onZoom={() => setZoomChart('expenseType')}>
+          {renderExpenseTypeChart()}
+        </ChartCard>
         <Card className="bg-white border-slate-200">
           <CardHeader><CardTitle className="text-base">Expenses by Applicant</CardTitle></CardHeader>
           <CardContent>
@@ -233,31 +253,25 @@ const ReportsPage = () => {
         </Card>
       </div>
 
-      {/* Applications Overview Bar Chart */}
-      <Card className="bg-white border-slate-200">
-        <CardHeader><CardTitle className="text-base">Applications Overview</CardTitle></CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={[
-              { name: 'Total', value: stats?.applications?.total || 0, fill: '#0056B3' },
-              { name: 'Pending', value: stats?.applications?.pending || 0, fill: '#F59E0B' },
-              { name: 'Approved', value: stats?.applications?.approved || 0, fill: '#10B981' },
-              { name: 'Tasks', value: stats?.tasks?.total || 0, fill: '#8B5CF6' },
-              { name: 'Completed', value: stats?.tasks?.completed || 0, fill: '#06B6D4' },
-            ]}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <RechartsTooltip />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                {[
-                  { fill: '#0056B3' }, { fill: '#F59E0B' }, { fill: '#10B981' }, { fill: '#8B5CF6' }, { fill: '#06B6D4' },
-                ].map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Applications Overview */}
+      <ChartCard title="Applications Overview" onZoom={() => setZoomChart('appOverview')}>
+        {renderAppOverviewChart()}
+      </ChartCard>
+
+      {/* Zoom/Fullscreen Chart Dialog */}
+      <Dialog open={!!zoomChart} onOpenChange={() => setZoomChart(null)}>
+        <DialogContent className="max-w-4xl max-h-[85vh]" data-testid="chart-zoom-dialog">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              {zoomChart && chartConfigs[zoomChart]?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {zoomChart && chartConfigs[zoomChart]?.render(500)}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

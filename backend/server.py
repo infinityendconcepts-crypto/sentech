@@ -1550,6 +1550,37 @@ async def create_user(data: dict, current_user: dict = Depends(get_current_user)
     return_user = {k: v for k, v in user_dict.items() if k not in ["_id", "password_hash"]}
     return return_user
 
+@api_router.get("/users/import-template")
+async def download_import_template(current_user: dict = Depends(get_current_user)):
+    """Generate and return a CSV template for user import"""
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can download import template")
+
+    headers = [
+        "email", "full_name", "surname", "personnel_number", "id_number",
+        "gender", "race", "age", "division", "department", "position", "level",
+        "start_date", "years_of_service",
+        "ofo_major_group", "ofo_sub_major_group", "ofo_occupation", "ofo_code"
+    ]
+    sample_row = [
+        "john.doe@sentech.co.za", "John Doe", "Doe", "EMP001", "9001015800088",
+        "Male", "African", "34", "Engineering", "Software Dev", "Developer", "L5",
+        "2020-01-15", "6",
+        "PROFESSIONALS", "Science and Engineering", "Software Developer", "251201"
+    ]
+
+    output = io.StringIO()
+    output.write(",".join(headers) + "\n")
+    output.write(",".join(sample_row) + "\n")
+    content = output.getvalue()
+    output.close()
+
+    return StreamingResponse(
+        io.BytesIO(content.encode('utf-8')),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=user_import_template.csv"}
+    )
+
 @api_router.put("/users/{user_id}/status")
 async def update_user_status(user_id: str, data: dict, current_user: dict = Depends(get_current_user)):
     if "admin" not in current_user.get("roles", []) and "manager" not in current_user.get("roles", []):

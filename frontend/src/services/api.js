@@ -54,6 +54,7 @@ export const usersAPI = {
   activate: (id) => api.put(`/users/${id}/status`, { is_active: true }),
   changeRole: (id, roles) => api.put(`/users/${id}/role`, { roles }),
   delete: (id) => api.delete(`/users/${id}`),
+  downloadImportTemplate: () => api.get('/users/import-template', { responseType: 'blob' }),
 };
 
 export const divisionsAPI = {

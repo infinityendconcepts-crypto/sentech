@@ -20,6 +20,7 @@ import {
   Users, Search, MoreVertical, Shield, ShieldOff,
   Trash2, Mail, Building2, CheckCircle, XCircle, UserCheck,
   Briefcase, Calendar, Hash, X, Eye, Pencil,
+  Upload, Download, FileSpreadsheet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -78,6 +79,12 @@ const UsersPage = () => {
   });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [saving, setSaving] = useState(false);
+
+  // Import state
+  const [importDialog, setImportDialog] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   const isAdmin = currentUser?.roles?.includes('admin') || currentUser?.roles?.includes('super_admin');
 
@@ -246,6 +253,64 @@ const UsersPage = () => {
     }
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await usersAPI.downloadImportTemplate();
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'user_import_template.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Template downloaded');
+    } catch {
+      toast.error('Failed to download template');
+    }
+  };
+
+  const handleImportFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImportFile(file);
+    setImportResult(null);
+  };
+
+  const handleImportUsers = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const text = await importFile.text();
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length < 2) {
+        toast.error('CSV file must have a header row and at least one data row');
+        setImporting(false);
+        return;
+      }
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g, '_'));
+      const users = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        const row = {};
+        headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
+        if (row.email) users.push(row);
+      }
+      if (!users.length) {
+        toast.error('No valid user rows found in CSV');
+        setImporting(false);
+        return;
+      }
+      const res = await usersAPI.bulkImport(users);
+      setImportResult(res.data);
+      toast.success(res.data.message || 'Import completed');
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Import failed');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const clearFilters = () => {
     setSearch('');
     setFilterDepartment('all');
@@ -273,6 +338,18 @@ const UsersPage = () => {
           <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Users</h2>
           <p className="text-slate-600 mt-1">Manage organization users and view employee details</p>
         </div>
+        {isAdmin && (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" className="gap-2" onClick={handleDownloadTemplate} data-testid="download-template-btn">
+              <Download className="w-4 h-4" />
+              Template
+            </Button>
+            <Button className="gap-2" onClick={() => { setImportDialog(true); setImportFile(null); setImportResult(null); }} data-testid="import-users-btn">
+              <Upload className="w-4 h-4" />
+              Import Users
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Stats */}
@@ -867,6 +944,75 @@ const UsersPage = () => {
             </Button>
             <Button onClick={handleSaveUser} disabled={saving} data-testid="save-user-btn">
               {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Users Dialog */}
+      <Dialog open={importDialog} onOpenChange={setImportDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5 text-primary" />
+              Import Users from CSV
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                Upload a CSV file with user data. 
+                <button onClick={handleDownloadTemplate} className="underline font-medium ml-1" data-testid="download-template-dialog-btn">
+                  Download the template
+                </button> to see the required format.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="csv-upload" className="cursor-pointer">
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-primary transition-colors">
+                  <FileSpreadsheet className="w-10 h-10 mx-auto mb-3 text-slate-400" />
+                  {importFile ? (
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{importFile.name}</p>
+                      <p className="text-xs text-slate-500 mt-1">{(importFile.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-600">Click to select CSV file</p>
+                  )}
+                </div>
+                <input
+                  id="csv-upload"
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleImportFile}
+                  data-testid="csv-upload-input"
+                />
+              </Label>
+            </div>
+
+            {importResult && (
+              <div className="bg-slate-50 rounded-lg p-3 space-y-1">
+                <p className="text-sm font-medium text-slate-900">Import Results:</p>
+                <p className="text-sm text-emerald-600">Imported: {importResult.imported}</p>
+                <p className="text-sm text-amber-600">Skipped (duplicates): {importResult.skipped}</p>
+                {importResult.errors?.length > 0 && (
+                  <p className="text-sm text-red-600">Errors: {importResult.errors.length}</p>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportDialog(false)}>Close</Button>
+            <Button
+              onClick={handleImportUsers}
+              disabled={importing || !importFile}
+              className="gap-2"
+              data-testid="confirm-import-btn"
+            >
+              <Upload className="w-4 h-4" />
+              {importing ? 'Importing...' : 'Import Users'}
             </Button>
           </DialogFooter>
         </DialogContent>
