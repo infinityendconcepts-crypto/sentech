@@ -1,0 +1,110 @@
+{
+  "summary": "Iteration 15: Complete testing of Application Expenses feature. All 11 test cases PASSED. Backend APIs (7/7 pytest tests), Frontend UI (Bursary Add Expenses, Training Add Expenses, Expenses Page 3 tabs), and integration all verified working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_application_expenses.py",
+    "/app/test_reports/pytest/application_expenses_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_application_expenses.py"
+  ],
+  "success_rate": {
+    "backend": "100% (7/7 pytest tests passed)",
+    "frontend": "100% (all 11 test features verified via Playwright)"
+  },
+  "test_credentials": {
+    "super_admin": {
+      "email": "jane.smith@uct.ac.za",
+      "password": "securepass123"
+    }
+  },
+  "seed_data_creation": "Test expenses added to bursary application 41b3663d and training application e1d7545e during testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Application expenses feature fully implemented and working. Bursary apps at /applications show Add/Edit Expenses button on non-draft cards. Training apps at /training-applications have same feature. Expenses page at /expenses has 3 tabs (Additional Expenses, Bursary Application, Training Application). All expense categories (Flights, Accommodation, Car Hire/Shuttle, Catering) with notes fields working. Totals calculated correctly. Context menu on right-click also provides Add/Edit Expenses option.",
+  "features_tested": {
+    "1_Bursary_Add_Expenses_Button": {
+      "status": "PASS",
+      "details": "Add Expenses / Edit Expenses button appears on non-draft bursary application cards at /applications. 5 buttons found across 7 applications (2 were draft)."
+    },
+    "2_Bursary_Expenses_Dialog": {
+      "status": "PASS",
+      "details": "Dialog opens with 4 categories (Flights, Accommodation, Car Hire/Shuttle, Catering), each with amount and notes fields. Total calculated at bottom. data-testid attributes present for all fields."
+    },
+    "3_Bursary_Save_Expenses": {
+      "status": "PASS",
+      "details": "Entered Flights: 3000, Accommodation: 2000, Car: 500, Catering: 300. Total displayed: R 5,800.00. Save successful - 'Expenses saved successfully' toast appeared. 'Expenses Added' badge shown on card."
+    },
+    "4_Bursary_Right_Click_Context_Menu": {
+      "status": "PASS",
+      "details": "Right-click on application card shows context menu with 'Edit Expenses' option (since expenses already added). Menu items: View Details, Edit Expenses, Change Status."
+    },
+    "5_Training_Add_Expenses_Button": {
+      "status": "PASS",
+      "details": "Add Expenses button appears on non-draft training application at /training-applications."
+    },
+    "6_Training_Save_Expenses": {
+      "status": "PASS",
+      "details": "Entered expenses (Flights: 1500, Accommodation: 2500, Car: 300, Catering: 200). Total: R 4,500.00. Save successful with toast and badge."
+    },
+    "7_Expenses_Page_Three_Tabs": {
+      "status": "PASS",
+      "details": "Expenses page at /expenses has 3 tabs with data-testid: tab-additional-expenses, tab-bursary-expenses, tab-training-expenses."
+    },
+    "8_Expenses_Bursary_Tab": {
+      "status": "PASS",
+      "details": "Bursary Application tab shows: Total Bursary Expenses R 5,800.00, 1 application with expenses. Table with columns: Applicant, Status, Flights, Accommodation, Car Hire/Shuttle, Catering, Total. Grand Total row at bottom."
+    },
+    "9_Expenses_Training_Tab": {
+      "status": "PASS",
+      "details": "Training Application tab shows: Total Training Expenses R 4,500.00, 1 application. Table includes Training Type column. Data: Jane Smith, Project Management, pending status with all expense amounts."
+    },
+    "10_Backend_Add_Expenses_API": {
+      "status": "PASS",
+      "details": "POST /api/applications/{id}/expenses returns 200 with expenses data. POST /api/training-applications/{id}/expenses also working. Edit existing expenses works by calling same endpoint."
+    },
+    "11_Backend_Application_Expenses_Aggregation": {
+      "status": "PASS",
+      "details": "GET /api/expenses/application-expenses returns {bursary: [...], training: [...]} with each entry containing application_id, applicant_name, status, expenses object, and calculated total."
+    }
+  },
+  "backend_tests_summary": {
+    "test_file": "/app/backend/tests/test_application_expenses.py",
+    "tests_run": 7,
+    "passed": 7,
+    "failed": 0,
+    "test_cases": [
+      "test_01_get_bursary_applications - GET /api/applications",
+      "test_02_get_training_applications - GET /api/training-applications", 
+      "test_03_add_expenses_to_bursary_app - POST /api/applications/{id}/expenses",
+      "test_04_add_expenses_to_training_app - POST /api/training-applications/{id}/expenses",
+      "test_05_get_application_expenses_aggregation - GET /api/expenses/application-expenses",
+      "test_06_edit_existing_expenses - Update expenses via POST",
+      "test_07_expense_totals_calculation - Verify totals are calculated correctly"
+    ]
+  },
+  "screenshots": [
+    ".screenshots/bursary_applications_page.png",
+    ".screenshots/bursary_expenses_dialog.png",
+    ".screenshots/bursary_expenses_filled.png",
+    ".screenshots/bursary_after_save.png",
+    ".screenshots/bursary_context_menu.png",
+    ".screenshots/training_applications_page.png",
+    ".screenshots/training_expenses_dialog.png",
+    ".screenshots/training_after_save.png",
+    ".screenshots/expenses_page.png",
+    ".screenshots/expenses_bursary_tab.png",
+    ".screenshots/expenses_training_tab.png",
+    ".screenshots/expenses_additional_tab.png"
+  ]
+}

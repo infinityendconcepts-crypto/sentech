@@ -2126,6 +2126,55 @@ async def get_expense_stats(current_user: dict = Depends(get_current_user)):
         "count": len(expenses)
     }
 
+@api_router.get("/expenses/application-expenses")
+async def get_all_application_expenses(current_user: dict = Depends(get_current_user)):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    user_query = {} if is_admin else {"user_id": current_user["id"]}
+    
+    bursary_apps = await db.applications.find(
+        {**user_query, "additional_expenses": {"$exists": True}}, {"_id": 0}
+    ).to_list(1000)
+    
+    training_apps = await db.training_applications.find(
+        {**user_query, "additional_expenses": {"$exists": True}}, {"_id": 0}
+    ).to_list(1000)
+    
+    bursary_expenses = []
+    for app in bursary_apps:
+        exp = app.get("additional_expenses", {})
+        total = sum(float(exp.get(k, 0) or 0) for k in ["flights", "accommodation", "car_hire_or_shuttle", "catering"])
+        if total > 0:
+            user = await db.users.find_one({"id": app["user_id"]}, {"_id": 0, "full_name": 1})
+            bursary_expenses.append({
+                "application_id": app["id"],
+                "application_type": "bursary",
+                "applicant_name": user.get("full_name", "Unknown") if user else app.get("user_email", "Unknown"),
+                "status": app.get("status", "draft"),
+                "submitted_at": app.get("submitted_at"),
+                "expenses": exp,
+                "total": total,
+            })
+    
+    training_expenses = []
+    for app in training_apps:
+        exp = app.get("additional_expenses", {})
+        total = sum(float(exp.get(k, 0) or 0) for k in ["flights", "accommodation", "car_hire_or_shuttle", "catering"])
+        if total > 0:
+            user = await db.users.find_one({"id": app["user_id"]}, {"_id": 0, "full_name": 1})
+            training_expenses.append({
+                "application_id": app["id"],
+                "application_type": "training",
+                "applicant_name": user.get("full_name", "Unknown") if user else "Unknown",
+                "training_type": app.get("training_info", {}).get("training_type", ""),
+                "service_provider": app.get("training_info", {}).get("service_provider", ""),
+                "status": app.get("status", "draft"),
+                "submitted_at": app.get("submitted_at"),
+                "expenses": exp,
+                "total": total,
+            })
+    
+    return {"bursary": bursary_expenses, "training": training_expenses}
+
 @api_router.get("/expenses/{expense_id}")
 async def get_expense(expense_id: str, current_user: dict = Depends(get_current_user)):
     expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
@@ -3318,6 +3367,63 @@ async def allow_training_re_edit(application_id: str, body: dict = {}, current_u
     await db.notifications.insert_one({**notif})
     
     return {"message": f"Re-edit {'approved' if approved else 'denied'}"}
+
+# ============== APPLICATION EXPENSES ROUTES ==============
+
+@api_router.post("/applications/{application_id}/expenses")
+async def add_bursary_application_expenses(application_id: str, expenses_data: dict, current_user: dict = Depends(get_current_user)):
+    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if application["user_id"] != current_user["id"] and not is_admin:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    additional_expenses = {
+        "flights": expenses_data.get("flights", 0),
+        "flights_notes": expenses_data.get("flights_notes", ""),
+        "accommodation": expenses_data.get("accommodation", 0),
+        "accommodation_notes": expenses_data.get("accommodation_notes", ""),
+        "car_hire_or_shuttle": expenses_data.get("car_hire_or_shuttle", 0),
+        "car_hire_or_shuttle_notes": expenses_data.get("car_hire_or_shuttle_notes", ""),
+        "catering": expenses_data.get("catering", 0),
+        "catering_notes": expenses_data.get("catering_notes", ""),
+    }
+    
+    await db.applications.update_one(
+        {"id": application_id},
+        {"$set": {"additional_expenses": additional_expenses, "updated_at": now}}
+    )
+    return {"message": "Expenses added successfully", "additional_expenses": additional_expenses}
+
+@api_router.post("/training-applications/{application_id}/expenses")
+async def add_training_application_expenses(application_id: str, expenses_data: dict, current_user: dict = Depends(get_current_user)):
+    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Training application not found")
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if application["user_id"] != current_user["id"] and not is_admin:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    additional_expenses = {
+        "flights": expenses_data.get("flights", 0),
+        "flights_notes": expenses_data.get("flights_notes", ""),
+        "accommodation": expenses_data.get("accommodation", 0),
+        "accommodation_notes": expenses_data.get("accommodation_notes", ""),
+        "car_hire_or_shuttle": expenses_data.get("car_hire_or_shuttle", 0),
+        "car_hire_or_shuttle_notes": expenses_data.get("car_hire_or_shuttle_notes", ""),
+        "catering": expenses_data.get("catering", 0),
+        "catering_notes": expenses_data.get("catering_notes", ""),
+    }
+    
+    await db.training_applications.update_one(
+        {"id": application_id},
+        {"$set": {"additional_expenses": additional_expenses, "updated_at": now}}
+    )
+    return {"message": "Expenses added successfully", "additional_expenses": additional_expenses}
+
 
 # ============== BBBEE ROUTES ==============
 

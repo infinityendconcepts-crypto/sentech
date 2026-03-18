@@ -138,6 +138,7 @@ export const expensesAPI = {
   delete: (id) => api.delete(`/expenses/${id}`),
   approve: (id) => api.post(`/expenses/${id}/approve`),
   reject: (id, reason) => api.post(`/expenses/${id}/reject`, { reason }),
+  getApplicationExpenses: () => api.get('/expenses/application-expenses'),
 };
 
 export const ticketsAPI = {
@@ -218,6 +219,7 @@ export const applicationsAPI = {
   updateStatus: (id, data) => api.put(`/applications/${id}/status`, data),
   requestReEdit: (id, reason) => api.post(`/applications/${id}/request-re-edit`, { reason }),
   allowReEdit: (id, approved) => api.put(`/applications/${id}/allow-re-edit`, { approved }),
+  addExpenses: (id, data) => api.post(`/applications/${id}/expenses`, data),
 };
 
 export const trainingApplicationsAPI = {
@@ -228,6 +230,7 @@ export const trainingApplicationsAPI = {
   updateStatus: (id, data) => api.put(`/training-applications/${id}/status`, data),
   requestReEdit: (id, reason) => api.post(`/training-applications/${id}/request-re-edit`, { reason }),
   allowReEdit: (id, approved) => api.put(`/training-applications/${id}/allow-re-edit`, { approved }),
+  addExpenses: (id, data) => api.post(`/training-applications/${id}/expenses`, data),
 };
 
 export const bbbeeAPI = {

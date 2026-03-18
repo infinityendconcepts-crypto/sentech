@@ -58,6 +58,9 @@ const ExpensesPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [newExpenseDialog, setNewExpenseDialog] = useState(false);
+  // Application expenses
+  const [appExpenses, setAppExpenses] = useState({ bursary: [], training: [] });
+  const [appExpensesLoading, setAppExpensesLoading] = useState(false);
   const [newExpense, setNewExpense] = useState({
     title: '',
     description: '',
@@ -88,6 +91,7 @@ const ExpensesPage = () => {
     fetchStats();
     fetchProjects();
     fetchSponsors();
+    fetchApplicationExpenses();
   }, [statusFilter, categoryFilter]);
 
   const fetchExpenses = async () => {
@@ -128,6 +132,18 @@ const ExpensesPage = () => {
       setSponsors(response.data);
     } catch (error) {
       console.error('Failed to fetch sponsors:', error);
+    }
+  };
+
+  const fetchApplicationExpenses = async () => {
+    setAppExpensesLoading(true);
+    try {
+      const response = await expensesAPI.getApplicationExpenses();
+      setAppExpenses(response.data || { bursary: [], training: [] });
+    } catch (error) {
+      console.error('Failed to fetch application expenses:', error);
+    } finally {
+      setAppExpensesLoading(false);
     }
   };
 
@@ -431,6 +447,16 @@ const ExpensesPage = () => {
         </Card>
       </div>
 
+      {/* Tabs for expense types */}
+      <Tabs defaultValue="additional" className="space-y-4">
+        <TabsList className="bg-slate-100">
+          <TabsTrigger value="additional" data-testid="tab-additional-expenses">Additional Expenses</TabsTrigger>
+          <TabsTrigger value="bursary" onClick={fetchApplicationExpenses} data-testid="tab-bursary-expenses">Bursary Application</TabsTrigger>
+          <TabsTrigger value="training" onClick={fetchApplicationExpenses} data-testid="tab-training-expenses">Training Application</TabsTrigger>
+        </TabsList>
+
+        {/* Additional / Standalone Expenses Tab */}
+        <TabsContent value="additional">
       {/* Filters */}
       <Card className="bg-white border-slate-200">
         <CardContent className="p-4">
@@ -479,7 +505,7 @@ const ExpensesPage = () => {
       </Card>
 
       {/* Expenses Table */}
-      <Card className="bg-white border-slate-200">
+      <Card className="bg-white border-slate-200 mt-4">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -574,6 +600,159 @@ const ExpensesPage = () => {
                     </TableCell>
                   </TableRow>
                 ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+        </TabsContent>
+
+        {/* Bursary Application Expenses Tab */}
+        <TabsContent value="bursary">
+          <ApplicationExpensesTable
+            expenses={appExpenses.bursary}
+            loading={appExpensesLoading}
+            type="bursary"
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+          />
+        </TabsContent>
+
+        {/* Training Application Expenses Tab */}
+        <TabsContent value="training">
+          <ApplicationExpensesTable
+            expenses={appExpenses.training}
+            loading={appExpensesLoading}
+            type="training"
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+const ApplicationExpensesTable = ({ expenses, loading, type, formatCurrency, formatDate }) => {
+  if (loading) {
+    return (
+      <Card className="bg-white border-slate-200">
+        <CardContent className="p-8 text-center">
+          <p className="text-slate-500">Loading expenses...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const expenseCategories = [
+    { key: 'flights', label: 'Flights', icon: '✈️' },
+    { key: 'accommodation', label: 'Accommodation', icon: '🏨' },
+    { key: 'car_hire_or_shuttle', label: 'Car Hire / Shuttle', icon: '🚗' },
+    { key: 'catering', label: 'Catering', icon: '🍽️' },
+  ];
+
+  const grandTotal = expenses.reduce((sum, e) => sum + (e.total || 0), 0);
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="bg-white border-slate-200">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600">Total {type === 'bursary' ? 'Bursary' : 'Training'} Expenses</p>
+              <p className="text-2xl font-bold text-slate-900" data-testid={`${type}-expenses-total`}>{formatCurrency(grandTotal)}</p>
+            </div>
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Receipt className="w-6 h-6 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-slate-200">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600">Applications with Expenses</p>
+              <p className="text-2xl font-bold text-slate-900">{expenses.length}</p>
+            </div>
+            <div className="p-3 bg-blue-100 rounded-full">
+              <TrendingUp className="w-6 h-6 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Table */}
+      <Card className="bg-white border-slate-200">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Applicant</TableHead>
+                {type === 'training' && <TableHead>Training Type</TableHead>}
+                <TableHead>Status</TableHead>
+                <TableHead>Flights</TableHead>
+                <TableHead>Accommodation</TableHead>
+                <TableHead>Car Hire/Shuttle</TableHead>
+                <TableHead>Catering</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {expenses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={type === 'training' ? 8 : 7} className="text-center py-8">
+                    <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-600">No {type} application expenses found</p>
+                    <p className="text-xs text-slate-400 mt-1">Add expenses from the {type === 'bursary' ? 'Bursary' : 'Training'} Applications page</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                expenses.map((item) => (
+                  <TableRow key={item.application_id} data-testid={`app-expense-${item.application_id}`}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium text-sm">{item.applicant_name}</p>
+                        <p className="text-xs text-slate-500">#{item.application_id?.slice(0, 8)}</p>
+                      </div>
+                    </TableCell>
+                    {type === 'training' && (
+                      <TableCell>
+                        <p className="text-sm">{item.training_type || item.service_provider || '-'}</p>
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <Badge className={
+                        item.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                        item.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                        'bg-slate-100 text-slate-700'
+                      }>
+                        {item.status?.replace('_', ' ')}
+                      </Badge>
+                    </TableCell>
+                    {expenseCategories.map(({ key }) => (
+                      <TableCell key={key} className="text-sm">
+                        {item.expenses?.[key] ? formatCurrency(item.expenses[key]) : '-'}
+                        {item.expenses?.[`${key}_notes`] && (
+                          <p className="text-xs text-slate-400 truncate max-w-[120px]">{item.expenses[`${key}_notes`]}</p>
+                        )}
+                      </TableCell>
+                    ))}
+                    <TableCell className="text-right font-semibold">
+                      {formatCurrency(item.total)}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+              {expenses.length > 0 && (
+                <TableRow className="bg-slate-50 font-semibold">
+                  <TableCell colSpan={type === 'training' ? 3 : 2}>Grand Total</TableCell>
+                  {expenseCategories.map(({ key }) => (
+                    <TableCell key={key}>
+                      {formatCurrency(expenses.reduce((s, e) => s + (e.expenses?.[key] || 0), 0))}
+                    </TableCell>
+                  ))}
+                  <TableCell className="text-right">{formatCurrency(grandTotal)}</TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>

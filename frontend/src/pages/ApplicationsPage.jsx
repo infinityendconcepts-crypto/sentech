@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { applicationsAPI } from '../services/api';
-import { FileText, Plus, Search, Clock, CheckCircle2, XCircle, Edit, Eye, AlertCircle, Loader2, User, Briefcase, GraduationCap, Upload, Calendar, Building, X } from 'lucide-react';
+import { FileText, Plus, Search, Clock, CheckCircle2, XCircle, Edit, Eye, AlertCircle, Loader2, User, Briefcase, GraduationCap, Upload, Calendar, Building, X, Receipt, Plane, Hotel, Car, UtensilsCrossed } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -22,6 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -42,6 +48,17 @@ const ApplicationsPage = () => {
   const [approvedDocs, setApprovedDocs] = useState({ invoice: '', bursary_agreement: '' });
   const [uploadingApprovedDocs, setUploadingApprovedDocs] = useState(false);
 
+  // Expenses dialog
+  const [showExpensesDialog, setShowExpensesDialog] = useState(false);
+  const [expensesApp, setExpensesApp] = useState(null);
+  const [expensesForm, setExpensesForm] = useState({
+    flights: '', flights_notes: '',
+    accommodation: '', accommodation_notes: '',
+    car_hire_or_shuttle: '', car_hire_or_shuttle_notes: '',
+    catering: '', catering_notes: '',
+  });
+  const [savingExpenses, setSavingExpenses] = useState(false);
+
   useEffect(() => {
     fetchApplications();
   }, []);
@@ -54,6 +71,46 @@ const ApplicationsPage = () => {
       console.error('Failed to fetch applications:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openExpensesDialog = (app) => {
+    setExpensesApp(app);
+    const exp = app.additional_expenses || {};
+    setExpensesForm({
+      flights: exp.flights || '',
+      flights_notes: exp.flights_notes || '',
+      accommodation: exp.accommodation || '',
+      accommodation_notes: exp.accommodation_notes || '',
+      car_hire_or_shuttle: exp.car_hire_or_shuttle || '',
+      car_hire_or_shuttle_notes: exp.car_hire_or_shuttle_notes || '',
+      catering: exp.catering || '',
+      catering_notes: exp.catering_notes || '',
+    });
+    setShowExpensesDialog(true);
+  };
+
+  const handleSaveExpenses = async () => {
+    if (!expensesApp) return;
+    setSavingExpenses(true);
+    try {
+      await applicationsAPI.addExpenses(expensesApp.id, {
+        flights: parseFloat(expensesForm.flights) || 0,
+        flights_notes: expensesForm.flights_notes,
+        accommodation: parseFloat(expensesForm.accommodation) || 0,
+        accommodation_notes: expensesForm.accommodation_notes,
+        car_hire_or_shuttle: parseFloat(expensesForm.car_hire_or_shuttle) || 0,
+        car_hire_or_shuttle_notes: expensesForm.car_hire_or_shuttle_notes,
+        catering: parseFloat(expensesForm.catering) || 0,
+        catering_notes: expensesForm.catering_notes,
+      });
+      toast.success('Expenses saved successfully');
+      setShowExpensesDialog(false);
+      fetchApplications();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to save expenses');
+    } finally {
+      setSavingExpenses(false);
     }
   };
 
@@ -250,85 +307,120 @@ const ApplicationsPage = () => {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {filteredApplications.map((application) => (
-            <Card
-              key={application.id}
-              className="bg-white border-slate-200 hover:shadow-md transition-all duration-200"
-              data-testid={`application-card-${application.id}`}
-            >
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-5 h-5 text-primary" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-heading font-semibold text-slate-900">Application #{application.id.slice(0, 8)}</h3>
-                        <p className="text-sm text-slate-600 mt-1">{application.user_email}</p>
-                        <div className="flex items-center gap-4 mt-2 flex-wrap">
-                          <Badge className={`${getStatusColor(application.status)} gap-1 text-xs`}>
-                            {getStatusIcon(application.status)}
-                            {application.status?.replace('_', ' ')}
-                          </Badge>
-                          <span className="text-xs text-slate-500">Step {application.current_step} of 4</span>
-                          <span className="text-xs text-slate-500">
-                            {new Date(application.created_at).toLocaleDateString()}
-                          </span>
-                          {application.personal_info?.name && (
-                            <span className="text-xs text-slate-600">
-                              {application.personal_info.surname} {application.personal_info.name}
-                            </span>
-                          )}
+            <ContextMenu key={application.id}>
+              <ContextMenuTrigger>
+                <Card
+                  className="bg-white border-slate-200 hover:shadow-md transition-all duration-200"
+                  data-testid={`application-card-${application.id}`}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <FileText className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-heading font-semibold text-slate-900">Application #{application.id.slice(0, 8)}</h3>
+                            <p className="text-sm text-slate-600 mt-1">{application.user_email}</p>
+                            <div className="flex items-center gap-4 mt-2 flex-wrap">
+                              <Badge className={`${getStatusColor(application.status)} gap-1 text-xs`}>
+                                {getStatusIcon(application.status)}
+                                {application.status?.replace('_', ' ')}
+                              </Badge>
+                              <span className="text-xs text-slate-500">Step {application.current_step} of 4</span>
+                              <span className="text-xs text-slate-500">
+                                {new Date(application.created_at).toLocaleDateString()}
+                              </span>
+                              {application.personal_info?.name && (
+                                <span className="text-xs text-slate-600">
+                                  {application.personal_info.surname} {application.personal_info.name}
+                                </span>
+                              )}
+                              {application.additional_expenses && (
+                                <Badge className="bg-blue-50 text-blue-700 border-blue-200 gap-1 text-xs">
+                                  <Receipt className="w-3 h-3" /> Expenses Added
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="gap-1"
-                      onClick={() => openSummaryDialog(application)}
-                      data-testid={`view-application-${application.id}`}
-                    >
-                      <Eye className="w-4 h-4" />
-                      View
-                    </Button>
-                    {isAdmin && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="gap-1"
-                        onClick={() => openStatusDialog(application)}
-                        data-testid={`change-status-${application.id}`}
-                      >
-                        <Edit className="w-4 h-4" />
-                        Change Status
-                      </Button>
-                    )}
-                    {!isAdmin && (application.status === 'draft' || application.status === 'pending') && (
-                      <Link to={`/applications/${application.id}/edit`}>
-                        <Button size="sm" className="gap-2" data-testid={`edit-application-${application.id}`}>
-                          <Edit className="w-4 h-4" />
-                          Edit
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-1"
+                          onClick={() => openSummaryDialog(application)}
+                          data-testid={`view-application-${application.id}`}
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
                         </Button>
-                      </Link>
-                    )}
-                    {!isAdmin && application.status === 'approved' && (
-                      <Button 
-                        size="sm" 
-                        className="gap-2 bg-emerald-600 hover:bg-emerald-700"
-                        onClick={() => openApprovedDocsDialog(application)}
-                        data-testid={`upload-approved-docs-${application.id}`}
-                      >
-                        <Upload className="w-4 h-4" />
-                        Upload Required Docs
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                        {application.status !== 'draft' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1 border-blue-200 text-blue-700 hover:bg-blue-50"
+                            onClick={() => openExpensesDialog(application)}
+                            data-testid={`add-expenses-${application.id}`}
+                          >
+                            <Receipt className="w-4 h-4" />
+                            {application.additional_expenses ? 'Edit Expenses' : 'Add Expenses'}
+                          </Button>
+                        )}
+                        {isAdmin && (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="gap-1"
+                            onClick={() => openStatusDialog(application)}
+                            data-testid={`change-status-${application.id}`}
+                          >
+                            <Edit className="w-4 h-4" />
+                            Change Status
+                          </Button>
+                        )}
+                        {!isAdmin && (application.status === 'draft' || application.status === 'pending') && (
+                          <Link to={`/applications/${application.id}/edit`}>
+                            <Button size="sm" className="gap-2" data-testid={`edit-application-${application.id}`}>
+                              <Edit className="w-4 h-4" />
+                              Edit
+                            </Button>
+                          </Link>
+                        )}
+                        {!isAdmin && application.status === 'approved' && (
+                          <Button 
+                            size="sm" 
+                            className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                            onClick={() => openApprovedDocsDialog(application)}
+                            data-testid={`upload-approved-docs-${application.id}`}
+                          >
+                            <Upload className="w-4 h-4" />
+                            Upload Required Docs
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </ContextMenuTrigger>
+              <ContextMenuContent>
+                <ContextMenuItem onClick={() => openSummaryDialog(application)}>
+                  <Eye className="w-4 h-4 mr-2" /> View Details
+                </ContextMenuItem>
+                {application.status !== 'draft' && (
+                  <ContextMenuItem onClick={() => openExpensesDialog(application)} data-testid={`ctx-add-expenses-${application.id}`}>
+                    <Receipt className="w-4 h-4 mr-2" /> {application.additional_expenses ? 'Edit Expenses' : 'Add Expenses'}
+                  </ContextMenuItem>
+                )}
+                {isAdmin && (
+                  <ContextMenuItem onClick={() => openStatusDialog(application)}>
+                    <Edit className="w-4 h-4 mr-2" /> Change Status
+                  </ContextMenuItem>
+                )}
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
       )}
@@ -664,6 +756,73 @@ const ApplicationsPage = () => {
               data-testid="submit-approved-docs-btn"
             >
               {uploadingApprovedDocs ? 'Uploading...' : 'Submit Documents'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add/Edit Expenses Dialog */}
+      <Dialog open={showExpensesDialog} onOpenChange={setShowExpensesDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Receipt className="w-5 h-5 text-blue-600" />
+              Additional Expenses
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-500 -mt-2">
+            Application #{expensesApp?.id?.slice(0, 8)} — Add travel and logistics expenses
+          </p>
+          <div className="space-y-4 mt-2">
+            {[
+              { key: 'flights', label: 'Flights', icon: Plane, color: 'text-sky-600' },
+              { key: 'accommodation', label: 'Accommodation', icon: Hotel, color: 'text-amber-600' },
+              { key: 'car_hire_or_shuttle', label: 'Car Hire / Shuttle', icon: Car, color: 'text-emerald-600' },
+              { key: 'catering', label: 'Catering', icon: UtensilsCrossed, color: 'text-rose-600' },
+            ].map(({ key, label, icon: Icon, color }) => (
+              <div key={key} className="border border-slate-200 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Icon className={`w-4 h-4 ${color}`} />
+                  <Label className="font-medium text-sm">{label}</Label>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-1">
+                    <Input
+                      type="number"
+                      placeholder="R 0.00"
+                      value={expensesForm[key]}
+                      onChange={(e) => setExpensesForm({ ...expensesForm, [key]: e.target.value })}
+                      data-testid={`expense-${key}-amount`}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Input
+                      placeholder="Notes (optional)"
+                      value={expensesForm[`${key}_notes`]}
+                      onChange={(e) => setExpensesForm({ ...expensesForm, [`${key}_notes`]: e.target.value })}
+                      data-testid={`expense-${key}-notes`}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div className="bg-slate-50 rounded-lg p-3 flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-700">Total Expenses</span>
+              <span className="text-lg font-bold text-slate-900" data-testid="expenses-total">
+                R {(
+                  (parseFloat(expensesForm.flights) || 0) +
+                  (parseFloat(expensesForm.accommodation) || 0) +
+                  (parseFloat(expensesForm.car_hire_or_shuttle) || 0) +
+                  (parseFloat(expensesForm.catering) || 0)
+                ).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExpensesDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveExpenses} disabled={savingExpenses} className="gap-2" data-testid="save-expenses-btn">
+              {savingExpenses ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
+              {savingExpenses ? 'Saving...' : 'Save Expenses'}
             </Button>
           </DialogFooter>
         </DialogContent>
