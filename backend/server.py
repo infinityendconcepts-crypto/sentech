@@ -4873,29 +4873,220 @@ async def _create_message_notifications(conversation, sender_id, sender_name, co
 
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
-    if "admin" in current_user.get("roles", []):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if is_admin:
         total_applications = await db.applications.count_documents({})
         pending_applications = await db.applications.count_documents({"status": "pending"})
         approved_applications = await db.applications.count_documents({"status": "approved"})
-        total_sponsors = await db.sponsors.count_documents({})
-        active_projects = await db.projects.count_documents({"status": "active"})
+        training_applications = await db.training_applications.count_documents({})
         open_tickets = await db.tickets.count_documents({"status": "open"})
+        active_users = await db.users.count_documents({"is_active": True})
     else:
         total_applications = await db.applications.count_documents({"user_id": current_user["id"]})
         pending_applications = await db.applications.count_documents({"user_id": current_user["id"], "status": "pending"})
         approved_applications = await db.applications.count_documents({"user_id": current_user["id"], "status": "approved"})
-        total_sponsors = await db.sponsors.count_documents({})
-        active_projects = 0
+        training_applications = await db.training_applications.count_documents({"user_id": current_user["id"]})
         open_tickets = await db.tickets.count_documents({"created_by": current_user["id"], "status": "open"})
-    
+        active_users = 0
+
+    unread_notifications = await db.notifications.count_documents({"user_id": current_user["id"], "is_read": False})
+
     return {
         "total_applications": total_applications,
         "pending_applications": pending_applications,
         "approved_applications": approved_applications,
-        "total_sponsors": total_sponsors,
-        "active_projects": active_projects,
-        "open_tickets": open_tickets
+        "training_applications": training_applications,
+        "open_tickets": open_tickets,
+        "unread_notifications": unread_notifications,
+        "active_users": active_users,
     }
+
+@api_router.get("/dashboard/recent-activity")
+async def get_recent_activity(current_user: dict = Depends(get_current_user)):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    activities = []
+
+    # Fetch recent notifications for this user (last 20)
+    notifications = await db.notifications.find(
+        {"user_id": current_user["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    for n in notifications:
+        activities.append({
+            "id": n.get("id", ""),
+            "type": n.get("type", "notification"),
+            "title": n.get("title", "Notification"),
+            "description": n.get("message", ""),
+            "created_at": n.get("created_at", ""),
+            "icon": "bell",
+        })
+
+    # Fetch recent applications
+    app_query = {} if is_admin else {"user_id": current_user["id"]}
+    recent_apps = await db.applications.find(app_query, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
+    for a in recent_apps:
+        applicant = a.get("applicant_name") or a.get("full_name") or "Unknown"
+        activities.append({
+            "id": a.get("id", ""),
+            "type": "application",
+            "title": f"Bursary Application - {a.get('status', 'submitted').title()}",
+            "description": f"{applicant} - {a.get('institution', 'N/A')}",
+            "created_at": a.get("created_at", ""),
+            "icon": "file-text",
+        })
+
+    # Fetch recent training applications
+    ta_query = {} if is_admin else {"user_id": current_user["id"]}
+    recent_tas = await db.training_applications.find(ta_query, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
+    for t in recent_tas:
+        applicant = t.get("applicant_name") or t.get("full_name") or "Unknown"
+        activities.append({
+            "id": t.get("id", ""),
+            "type": "training_application",
+            "title": f"Training Application - {t.get('status', 'submitted').title()}",
+            "description": f"{applicant} - {t.get('training_title', 'N/A')}",
+            "created_at": t.get("created_at", ""),
+            "icon": "graduation-cap",
+        })
+
+    # Fetch recent tickets
+    tkt_query = {} if is_admin else {"created_by": current_user["id"]}
+    recent_tickets = await db.tickets.find(tkt_query, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
+    for tk in recent_tickets:
+        activities.append({
+            "id": tk.get("id", ""),
+            "type": "ticket",
+            "title": f"Ticket: {tk.get('title', 'Untitled')}",
+            "description": f"Status: {tk.get('status', 'open').title()} - Priority: {tk.get('priority', 'medium').title()}",
+            "created_at": tk.get("created_at", ""),
+            "icon": "ticket",
+        })
+
+    # Sort all activities by created_at desc, take top 15
+    activities.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return activities[:15]
+
+@api_router.get("/dashboard/report-summary")
+async def get_dashboard_report_summary(current_user: dict = Depends(get_current_user)):
+    total_users = await db.users.count_documents({})
+    active_users = await db.users.count_documents({"is_active": True})
+    total_bursary = await db.applications.count_documents({})
+    approved_bursary = await db.applications.count_documents({"status": "approved"})
+    total_training = await db.training_applications.count_documents({})
+    approved_training = await db.training_applications.count_documents({"status": "approved"})
+    total_expenses = 0
+    expenses_cursor = db.expenses.find({}, {"_id": 0, "amount": 1})
+    async for exp in expenses_cursor:
+        total_expenses += exp.get("amount", 0)
+    open_tickets = await db.tickets.count_documents({"status": "open"})
+    closed_tickets = await db.tickets.count_documents({"status": "closed"})
+
+    return {
+        "total_users": total_users,
+        "active_users": active_users,
+        "total_bursary_applications": total_bursary,
+        "approved_bursary_applications": approved_bursary,
+        "total_training_applications": total_training,
+        "approved_training_applications": approved_training,
+        "total_expenses": total_expenses,
+        "open_tickets": open_tickets,
+        "closed_tickets": closed_tickets,
+    }
+
+@api_router.post("/tasks/{task_id}/assign")
+async def assign_task_users(task_id: str, body: dict, current_user: dict = Depends(get_current_user)):
+    """Assign one or more users to a training track module. Only admins, division heads, sub-division heads."""
+    user_roles = current_user.get("roles", [])
+    is_admin = "admin" in user_roles or "super_admin" in user_roles
+    is_division_head = "division_head" in user_roles or "sub_division_head" in user_roles
+    if not is_admin and not is_division_head:
+        raise HTTPException(status_code=403, detail="Only admins and division heads can assign users")
+
+    task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Training module not found")
+
+    user_ids = body.get("user_ids", [])
+    if not user_ids:
+        raise HTTPException(status_code=400, detail="At least one user_id is required")
+
+    # Fetch user names for assignment records
+    assigned_users = []
+    for uid in user_ids:
+        u = await db.users.find_one({"id": uid}, {"_id": 0, "full_name": 1, "email": 1, "id": 1})
+        if u:
+            assigned_users.append({
+                "user_id": u["id"],
+                "full_name": u.get("full_name", u.get("email", "")),
+                "assigned_at": datetime.now(timezone.utc).isoformat(),
+                "assigned_by": current_user["id"],
+            })
+
+    # Store in a dedicated field
+    existing_assigned = task.get("assigned_users", [])
+    existing_ids = {a["user_id"] for a in existing_assigned}
+    new_users = [u for u in assigned_users if u["user_id"] not in existing_ids]
+    all_assigned = existing_assigned + new_users
+
+    # Also update assignee_name to show the first assigned user
+    first_name = all_assigned[0]["full_name"] if all_assigned else None
+    suffix = f" (+{len(all_assigned) - 1})" if len(all_assigned) > 1 else ""
+    display_name = f"{first_name}{suffix}" if first_name else None
+
+    await db.tasks.update_one(
+        {"id": task_id},
+        {"$set": {
+            "assigned_users": all_assigned,
+            "assignee_name": display_name,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }}
+    )
+
+    # Send notifications to assigned users
+    for au in new_users:
+        notif = {
+            "id": generate_uuid(),
+            "user_id": au["user_id"],
+            "type": "task_assignment",
+            "title": "Training Module Assigned",
+            "message": f'You have been assigned to "{task.get("title", "")}" by {current_user.get("full_name", "Admin")}',
+            "is_read": False,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.notifications.insert_one({**notif})
+
+    updated = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/tasks/{task_id}/assign/{user_id}")
+async def unassign_task_user(task_id: str, user_id: str, current_user: dict = Depends(get_current_user)):
+    """Remove a user from a training track module assignment."""
+    user_roles = current_user.get("roles", [])
+    is_admin = "admin" in user_roles or "super_admin" in user_roles
+    is_division_head = "division_head" in user_roles or "sub_division_head" in user_roles
+    if not is_admin and not is_division_head:
+        raise HTTPException(status_code=403, detail="Only admins and division heads can unassign users")
+
+    task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Training module not found")
+
+    existing = task.get("assigned_users", [])
+    updated_users = [u for u in existing if u["user_id"] != user_id]
+
+    first_name = updated_users[0]["full_name"] if updated_users else None
+    suffix = f" (+{len(updated_users) - 1})" if len(updated_users) > 1 else ""
+    display_name = f"{first_name}{suffix}" if first_name else None
+
+    await db.tasks.update_one(
+        {"id": task_id},
+        {"$set": {
+            "assigned_users": updated_users,
+            "assignee_name": display_name,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }}
+    )
+    return {"message": "User unassigned successfully"}
 
 # ============== APP SETUP ==============
 

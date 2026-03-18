@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { tasksAPI } from '../services/api';
+import { tasksAPI, usersAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Plus, 
@@ -51,6 +51,9 @@ import {
   Edit,
   Trash2,
   Upload,
+  UserPlus,
+  UserMinus,
+  Users as UsersIcon,
 } from 'lucide-react';
 import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, useDroppable, useDraggable } from '@dnd-kit/core';
 import { toast } from 'sonner';
@@ -211,6 +214,14 @@ const TrainingTrackPage = () => {
   // Images Dialog State
   const [imagesDialog, setImagesDialog] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Assign Users Dialog State
+  const [assignDialog, setAssignDialog] = useState(false);
+  const [assignModule, setAssignModule] = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
+  const [assignSearch, setAssignSearch] = useState('');
+  const [assigningUsers, setAssigningUsers] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -442,6 +453,56 @@ const TrainingTrackPage = () => {
       toast.error('Failed to delete image');
     }
   };
+
+  // Assignment functions
+  const openAssignDialog = async (module) => {
+    setAssignModule(module);
+    setSelectedUserIds([]);
+    setAssignSearch('');
+    setAssignDialog(true);
+    try {
+      const res = await usersAPI.getAll({ limit: 500 });
+      setAllUsers(res.data || []);
+    } catch {
+      toast.error('Failed to load users');
+    }
+  };
+
+  const handleAssignUsers = async () => {
+    if (!selectedUserIds.length) {
+      toast.error('Select at least one user');
+      return;
+    }
+    setAssigningUsers(true);
+    try {
+      await tasksAPI.assignUsers(assignModule.id, selectedUserIds);
+      toast.success('Users assigned successfully');
+      setAssignDialog(false);
+      fetchModules();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to assign users');
+    } finally {
+      setAssigningUsers(false);
+    }
+  };
+
+  const handleUnassignUser = async (moduleId, userId) => {
+    try {
+      await tasksAPI.unassignUser(moduleId, userId);
+      toast.success('User unassigned');
+      fetchModules();
+    } catch {
+      toast.error('Failed to unassign user');
+    }
+  };
+
+  const toggleUserSelection = (userId) => {
+    setSelectedUserIds(prev =>
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const canAssignUsers = isAdmin;
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -749,6 +810,18 @@ const TrainingTrackPage = () => {
                           <Image className="w-3 h-3" />
                           Images ({module.images?.length || 0})
                         </Button>
+                        {canAssignUsers && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="gap-1 text-xs"
+                            onClick={() => openAssignDialog(module)}
+                            data-testid={`assign-btn-${module.id}`}
+                          >
+                            <UserPlus className="w-3 h-3" />
+                            Assign ({module.assigned_users?.length || 0})
+                          </Button>
+                        )}
                       </div>
 
                       {module.status === 'in_progress' && (
@@ -777,6 +850,12 @@ const TrainingTrackPage = () => {
                           <DropdownMenuItem onClick={() => openEditDialog(module)}>
                             <Edit className="w-4 h-4 mr-2" />
                             Edit Module
+                          </DropdownMenuItem>
+                        )}
+                        {canAssignUsers && (
+                          <DropdownMenuItem onClick={() => openAssignDialog(module)}>
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Assign Users
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem onClick={() => openCommentsDialog(module)}>
@@ -1233,6 +1312,120 @@ const TrainingTrackPage = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Users Dialog */}
+      <Dialog open={assignDialog} onOpenChange={setAssignDialog}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Assign Users to Module
+            </DialogTitle>
+          </DialogHeader>
+          {assignModule && (
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <div className="bg-slate-50 p-3 rounded-lg mb-4">
+                <p className="text-sm text-slate-600">Training Module:</p>
+                <p className="font-semibold text-slate-900">{assignModule.title}</p>
+              </div>
+
+              {/* Currently assigned users */}
+              {(assignModule.assigned_users || []).length > 0 && (
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-slate-700 mb-2">Currently Assigned:</p>
+                  <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                    {(assignModule.assigned_users || []).map(au => (
+                      <div key={au.user_id} className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-semibold text-primary">{(au.full_name || '?')[0]}</span>
+                          </div>
+                          <span className="text-sm text-slate-900">{au.full_name}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 h-7 w-7 p-0"
+                          onClick={() => handleUnassignUser(assignModule.id, au.user_id)}
+                          data-testid={`unassign-${au.user_id}`}
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Search users */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search users..."
+                  value={assignSearch}
+                  onChange={(e) => setAssignSearch(e.target.value)}
+                  className="pl-10"
+                  data-testid="assign-search-input"
+                />
+              </div>
+
+              {/* User list */}
+              <div className="flex-1 overflow-y-auto space-y-1 max-h-[200px] border rounded-lg p-2">
+                {allUsers
+                  .filter(u => {
+                    const assignedIds = (assignModule.assigned_users || []).map(a => a.user_id);
+                    if (assignedIds.includes(u.id)) return false;
+                    if (!assignSearch) return true;
+                    const q = assignSearch.toLowerCase();
+                    return (u.full_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+                  })
+                  .map(u => (
+                    <div
+                      key={u.id}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
+                        selectedUserIds.includes(u.id) ? 'bg-primary/10 border border-primary/30' : 'hover:bg-slate-50'
+                      }`}
+                      onClick={() => toggleUserSelection(u.id)}
+                      data-testid={`user-option-${u.id}`}
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        selectedUserIds.includes(u.id) ? 'bg-primary border-primary' : 'border-slate-300'
+                      }`}>
+                        {selectedUserIds.includes(u.id) && (
+                          <CheckCircle className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">{u.full_name}</p>
+                        <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                      </div>
+                      {u.division && (
+                        <Badge variant="outline" className="text-xs">{u.division}</Badge>
+                      )}
+                    </div>
+                  ))
+                }
+              </div>
+
+              {selectedUserIds.length > 0 && (
+                <p className="text-xs text-slate-500 mt-2">{selectedUserIds.length} user(s) selected</p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignDialog(false)}>Cancel</Button>
+            <Button
+              onClick={handleAssignUsers}
+              disabled={assigningUsers || !selectedUserIds.length}
+              className="gap-2"
+              data-testid="confirm-assign-btn"
+            >
+              <UsersIcon className="w-4 h-4" />
+              {assigningUsers ? 'Assigning...' : `Assign ${selectedUserIds.length} User(s)`}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -171,6 +171,8 @@ export const tasksAPI = {
   delete: (id) => api.delete(`/tasks/${id}`),
   exportExcel: (params) => api.get('/tasks/export/excel', { params, responseType: 'blob' }),
   exportPdf: (params) => api.get('/tasks/export/pdf', { params, responseType: 'blob' }),
+  assignUsers: (id, userIds) => api.post(`/tasks/${id}/assign`, { user_ids: userIds }),
+  unassignUser: (id, userId) => api.delete(`/tasks/${id}/assign/${userId}`),
 };
 
 export const projectsAPI = {
@@ -264,6 +266,8 @@ export const reportsAPI = {
 
 export const dashboardAPI = {
   getStats: () => api.get('/dashboard/stats'),
+  getRecentActivity: () => api.get('/dashboard/recent-activity'),
+  getReportSummary: () => api.get('/dashboard/report-summary'),
 };
 
 export const notificationsAPI = {

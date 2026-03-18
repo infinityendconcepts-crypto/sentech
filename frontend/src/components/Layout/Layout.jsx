@@ -50,7 +50,6 @@ const navigation = [
   // ── Admin only ──
   { name: 'Sponsors',   href: '/sponsors',   icon: Users,        adminOnly: true },
   { name: 'BBBEE',      href: '/bbbee',      icon: Award,        adminOnly: true },
-  { name: 'Projects',   href: '/projects',   icon: FolderKanban, adminOnly: true },
   { name: 'Expenses',   href: '/expenses',   icon: Receipt,      adminOnly: true },
   { name: 'Reports',    href: '/reports',    icon: BarChart3,    adminOnly: true },
   { name: 'Users',      href: '/users',      icon: Users,        adminOnly: true },

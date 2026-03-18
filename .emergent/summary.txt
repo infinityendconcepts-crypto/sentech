@@ -1,90 +1,91 @@
 <analysis>**original_problem_statement:**
-The user wants to create a comprehensive bursary management system named Sentech.
+The user wants to build a comprehensive bursary management system named Sentech using React, FastAPI, and MongoDB. The system needs modules for managing applications, users, divisions, projects, meetings, and more, with a role-based access control (RBAC) system.
 
-**PRODUCT REQUIREMENTS (New & Existing):**
--   **Technology:** React, FastAPI, and MongoDB.
--   **Branding:** Sentech name with a blue (#0056B3) and gray color scheme. A new wide logo has been implemented.
--   **Core Modules:** Dashboard, Bursary Applications, Sponsors, BBBEE, Projects, Training Track, Meetings, Notes, Messages, Division Groups, Tickets, Expenses, Reports, MICTSETA Documents, Help and Support, Settings, Users, User Profile, Events, Personal Development Plan (PDP).
--   **Recently Implemented Features:**
-    -   **Training Application Module:** A complete, new module for handling training applications was built. It reuses the bursary application steps but features significant conditional logic for document uploads based on training cost (under/over R15,000) and supplier type (Preferred vs. RFQ).
-    -   **User Management & RBAC Overhaul:**
-        -   Imported 120 users from an Excel spreadsheet, populating new fields like Division, Department, Personnel Number, OFO codes, etc.
-        -   Implemented a first-time password setup flow for these imported users. The login page was updated to support both returning users and a separate flow for first-time users to verify their email and set a password.
-        -   The  page was completely redesigned to display all new user fields, with filters for department, role, gender, and status. It includes a detailed view modal and an edit modal for updating a user's Division, Department, Position, and Role.
-        -   Users were programmatically assigned to new, specific divisions (Exec\_and\_Head, Finance, HR, etc.) based on user-provided lists.
-        -   The concept of a  role was introduced and assigned to .
-    -   **UI Updates:**
-        -   The application logo was updated on the login page and in the sidebar layout.
-        -   The  table was updated to show Division and Department in separate columns.
-        -   The Teams page was renamed to Division Groups in the navigation.
+**Recent User Requests:**
+1.  **Settings Page:**
+    *   Display settings tabs vertically.
+    *   Manage page-specific settings (e.g., fields/actions for PDP, Bursary, Training pages).
+    *   Implement an advanced RBAC UI for super admins to manage permissions granularly.
+    *   Allow users to customize their dashboard layout.
+2.  **Reports Page:**
+    *   Display user counts by division, and active vs. inactive users in pie charts.
+    *   Show different expense types and link them to applicants.
+    *   Make charts zoomable or open in a pop-up for better visibility.
+3.  **Expenses & Applications:**
+    *   Post-submission expenses (Flights, Accommodation, etc.) should be addable via the applications pages.
+    *   All application-related expenses (initial amount + additional) should populate on the Expenses page, with a clear distinction between expense types.
+4.  **Dashboard Page:**
+    *   Show a recent activity feed.
+    *   Include a report summary.
+    *   Replace the Sponsors widget with a Notifications widget.
+5.  **User Management:**
+    *   Add a user import feature with a downloadable template.
+6.  **Training Track Page:**
+    *   Allow , , and  to assign users to training track items.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack React/FastAPI/MongoDB application for Sentech. The application has multiple functional modules, including Bursary Applications and the newly completed Training Applications. A comprehensive user management system is now in place, with 120 users imported from a spreadsheet, a first-time password setup workflow, and a feature-rich Users page for viewing, filtering, and editing user data. The backend has been expanded with new models and CRUD endpoints for Divisions, Departments, and enhanced User management. The UI has been updated with a new logo and a more detailed user administration interface.
+The Sentech application is a full-stack system with a React frontend, FastAPI backend, and MongoDB database. It features a sophisticated user and division management system, including hierarchical subgroups and temporary leader assignments. A site-wide notification system and enhanced group messaging are functional.
+
+Key completed features from this session include:
+-   A re-edit request system for applications with a 24-hour time lock.
+-   Expanded admin capabilities to edit all imported user data.
+-   A feature to add post-submission expenses to applications, which are then aggregated on a newly tabbed .
+-   A complete overhaul of the  with vertical tabs and a detailed RBAC management interface.
+-   A revamped  featuring multiple pie and donut charts for data visualization.
 
 **Last working item**:
--   **Last item agent was working:** The agent was actioning the user's request to transform the Teams module into Division Groups. The user wants a hierarchical structure where each division has a group, and a designated leader can manage and approve things for their group members. The agent has just renamed the navigation link in  and was about to start restructuring the  component and its corresponding backend logic.
--   **Status**: IN PROGRESS
--   **Agent Testing Done**: N
+-   **Last item agent was working:** The agent was processing a new, large, multi-part feature request from the user, which includes significant changes to the Dashboard, Reports, Settings, and Training Track pages, as well as a new user import feature.
+-   **Status**: NOT STARTED
+-   **Agent Testing Done**: N/A
 -   **Which testing method agent to use?**: both
--   **User Testing Done**: N
+-   **User Testing Done**: N/A
 
 **All Pending/In progress Issue list**:
 -   **Issue 1: Outdated Drag-and-Drop on Prospects Page (P1)**
     -   **Description**: The  uses the older  library, which is inconsistent with other Kanban boards (, ) that use . This causes UI inconsistency and potential console warnings.
+    -   **Attempted fixes**: None. This issue has been repeatedly deprioritized.
     -   **Next debug checklist**:
         1.  Edit .
-        2.  Replace  with , referencing the implementation in .
-        3.  Ensure the backend API call to update prospect status is correctly triggered on drop.
+        2.  Replace  with , referencing the implementation in  as a template.
     -   **Why fix this issue?**: To standardize the UI/UX, eliminate console warnings, and improve maintainability.
     -   **Status**: NOT STARTED
-    -   **Is recurring issue?**: N
+    -   **Is recurring issue?**: Y
     -   **Should Test frontend/backend/both after fix?**: frontend
     -   **Blocked on other issue**: None
 
 **In progress Task List**:
--   **Task 1: Implement Division Groups Module (P0)**
-    -   **Description**: The user wants to replace Teams with Division Groups. This involves creating groups based on the new Division structure. Each group will have a designated leader (e.g., Thompson for Satellite Business) who can manage their group.
-    -   **Where to resume**:
-        1.  **Frontend ():** The file needs to be completely rewritten. It should fetch divisions and users, display them in a group structure, and allow a  to assign leaders. The page should probably be renamed to .
-        2.  **Backend ():** New models and API endpoints are likely needed to store group information, leaders, and members. This might involve creating a  collection in MongoDB or extending the  model.
-        3.  **Frontend ():** Add new API service functions to interact with the new backend endpoints.
-        4.  **Frontend ():** Rename the route from  to .
-        5.  **Data Population:** Create the Satellite Business group with the members from the provided image and set the user highlighted in yellow as the leader.
-    -   **What will be achieved with this?**: A new module for managing teams based on the organizational structure, with designated leaders.
-    -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: both
-    -   **Blocked on something**: No
+None. The previous set of tasks was fully completed.
 
 **Upcoming and Future Tasks**
-**Upcoming Tasks:**
--   **Task 1: Implement Backend for Remaining Modules (P1):** Create CRUD API endpoints in  for: , , , , , , , and .
--   **Task 2: Implement Frontend for Remaining Modules (P1):** Connect the placeholder frontend pages to the backend endpoints for: , , , , , and .
+
+**Upcoming Tasks (from user's latest requests):**
+-   **Task 1: Dashboard Overhaul (P0)**
+    -   Implement a Recent Activity feed.
+    -   Add a Notifications summary widget.
+    -   Remove the Sponsors widget.
+-   **Task 2: Training Track User Assignment (P0)**
+    -   Implement logic allowing , , and  to assign users to training modules on the .
+-   **Task 3: User Import Feature (P1)**
+    -   Add UI elements to  for importing users and downloading a template.
+    -   Create a new backend endpoint to generate and serve the user import Excel/CSV template.
+-   **Task 4: Reports Page Chart Enhancement (P1)**
+    -   Integrate a zoom/modal feature for charts on the  to improve readability of complex data.
+-   **Task 5: Dynamic Page Configuration (P2)**
+    -   In , build a UI to dynamically configure fields and actions for the , , and  pages.
 
 **Future Tasks:**
--   **Task 3: Meetings Integration (P2):** Integrate Zoom or Microsoft Teams for scheduling meetings via the .
--   **Task 4: Advanced RBAC (P2):** Build a UI on the  page for the  to manage granular permissions.
--   **Task 5: Refactor File Uploads (P2):** Refactor the file upload functionality on  from base64 to chunked multipart uploads to handle larger files more efficiently.
+-   **Task 6: Frontend RBAC Enforcement (P2):** Hide/disable UI elements (sidebar links, buttons) based on the permissions defined in the new RBAC system.
+-   **Task 7: Refactor  (P2):** Decompose the monolithic  into feature-specific routers (e.g., , ) to improve maintainability.
+-   **Task 8: Refactor File Uploads (P2):** Convert base64 file uploads to chunked multipart uploads for better performance with large files.
 
 **Completed work in this session**
--   **Training Application Module (DONE):**
-    -   Created and implemented the full frontend (, ) and backend ( endpoints) for the new module.
-    -   Implemented complex conditional logic for document uploads based on training cost and supplier type (RFQ).
-    -   Implemented logic to disable form fields in Step 3 when the RFQ route is selected.
--   **User Management System Overhaul (DONE):**
-    -   Created backend models (, ) and extended the  model in .
-    -   Added CRUD endpoints for Divisions and Departments, and an endpoint to bulk-import users.
-    -   Imported 120 users from an Excel file () into the database.
-    -   Implemented a complete first-time password setup flow, modifying  and  to handle the logic.
-    -   Completely redesigned  with stats cards, advanced filters (department, role, etc.), a detailed view modal, and an edit modal.
-    -   Programmatically updated users to assign them to specific divisions based on user requests.
--   **UI & Branding (DONE):**
-    -   Replaced the old logo with a new one on  and .
-    -   Updated the  table to have separate columns for Division and Department.
-    -   Renamed Teams to Division Groups in the sidebar navigation ().
--   **Bursary/Training Application Updates (DONE):**
-    -   Updated the District Municipality dropdown list on both application forms.
+-   **Application Re-edit System (DONE):** Implemented a 24-hour edit window for applications, with a Request Re-edit flow on the .
+-   **User Management Enhancements (DONE):** Removed  system-wide. The admin user edit dialog on  now allows modification of all imported HR data fields, which are also displayed on the .
+-   **Application Expenses Feature (DONE):** Added functionality to attach post-submission expenses (flights, accommodation, etc.) to applications. The  was updated with tabs to show these costs aggregated by application type.
+-   **Settings & RBAC Overhaul (DONE):** Rewrote  with vertical tabs. Implemented a comprehensive UI for super admins to manage role permissions (Create/Read/Update/Delete) for every module.
+-   **Reports Page Revamp (DONE):** Rewrote  to include summary cards and  pie/donut charts for users by division, active/inactive status, and expense breakdowns.
 
 **Earlier issues found/mentioned but not fixed**
 -   The  drag-and-drop library has not been updated (listed in All Pending/In progress Issue list).
@@ -96,98 +97,84 @@ N/A
 
 
 **Key Technical Concepts**
--   **Backend:** FastAPI, Pydantic, MongoDB,  for Excel parsing.
--   **Frontend:** React.js, Vite, Tailwind CSS, Shadcn UI.
--   **State Management:** ,  for complex conditional forms and filters.
--   **Authentication:** JWT, Role-Based Access Control (RBAC), First-time password setup flow.
--   **Data Handling:** Bulk user import from spreadsheet, dynamic filtering on the frontend.
+-   **Backend:** FastAPI, Pydantic, MongoDB aggregation pipelines for complex reports.
+-   **Frontend:** React,  for pie/donut charts, Shadcn UI (, , ), complex state management for the RBAC permission matrix.
 
 **key DB schema**
--   **users:** 
--   **divisions:** 
--   **departments:** 
--   **training_applications:** (Schema created, similar to  but with different fields for step 3 and 4).
+-   **users:**  field removed. Added all imported HR dataset fields (e.g., , , , , ). Added .
+-   **applications/training_applications:** Added , , . The  field is now actively used.
+-   **roles:** Schema now contains a granular  (e.g., ).
+-   **settings:** Contains a single document with  to manage global configurations, including  and .
 
 **changes in tech stack**
--   **Added backend dependency:**  for parsing the user data spreadsheet.
+-   No new dependencies were added, but usage of  became more advanced.
 
 **All files of reference**
--   : Completely rewritten to manage the new user data structure.
--   : Overhauled to implement the first-time password setup flow.
--   : Heavily modified to add User, Division, and Department models and endpoints, plus the user import and password setup logic.
--   : New file containing Pydantic models for User, Division, and Department.
--   : Heavily modified to implement complex conditional logic for the RFQ route and document uploads.
--   : Updated with the new logo and navigation changes.
--   : The source file for the user import, located in public artifacts.
+-   
+-   
+-    (Primary example of new vertical tab layout and RBAC UI)
+-    (Primary example of new charting)
+-    (Example of tabbed data aggregation)
+-   
+-   
+-   
+-   
+-   
 
 **Areas that need refactoring**:
--   A reusable  component should be created to standardize the  logic across , , and .
--   The file uploads are still using base64. They should be refactored to use chunked multipart uploads for better performance with large files.
+-    is now over 4900 lines and is a significant liability. Refactoring it into separate routers is a high-priority technical debt item.
 
 **key api endpoints**
--   : Modified to handle first-time users who need to set a password.
--   : New endpoint to set a password for the first time.
--   : New endpoint for the first-time login flow.
--   : Modified to allow updating Division, Department, etc.
--   : New endpoint to trigger the bulk user import script.
--   : New endpoint to fetch all divisions.
--   : New endpoint to fetch all departments.
--   : New CRUD endpoints for the training module.
+-    & 
+-   
+-    & 
+-    & 
+-    (New enhanced endpoint)
+-    & 
+-   
+-    (Now manages page settings)
+-    (New endpoint for dashboard widgets)
 
 **Critical Info for New Agent**
--   The immediate task is to implement the Division Groups feature, which replaces the old Teams page. This requires both frontend and backend work to create a hierarchical group structure with leaders.
--   The User, Division, and Department data structure is now central to the application's RBAC. All 120 users from the Excel sheet have been imported. The  is the reference implementation for how to interact with this data.
--   Jane Smith () has the  role and is assigned to the Technical Support division. This user should be used for testing administrative features.
--   No automated tests were run in the last session. All features were verified manually with screenshots. It is highly recommended to run the  after completing the Division Groups task to catch any regressions.
+-   The user has provided a large set of new requirements. You must break these down into smaller, manageable tasks and present a clear plan.
+-   Prioritize the **Dashboard Overhaul** and **Training Track Assignment** features, as they appear to be the most impactful for daily user workflows.
+-   The  file is extremely monolithic and fragile. Be very careful when adding new logic. A full refactor is a future task, but keeping new code organized is essential.
+-   Refer to the newly implemented  and  as templates for complex UI and state management.
 
 **documents and test reports created in this job**
 -   
--   The user provided an Excel file () which was used to populate the user database.
+-   
+-   
+-   
+-   
+-    (Continuously updated)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **USER:** Update users to  division based on image. (COMPLETED)
-2.  **USER:** Update users to  division based on image. (COMPLETED)
-3.  **USER:** Update users to  division based on image. (COMPLETED)
-4.  **USER:** Update users to  division based on image. (COMPLETED)
-5.  **USER:** Update users to  division based on image. (COMPLETED)
-6.  **USER:** Update users to  division based on image. (COMPLETED)
-7.  **USER:** Update users to  division based on image. (COMPLETED)
-8.  **USER:** Set Jane Smith as super admin. (COMPLETED)
-9.  **USER:** Create  division, assign Jane Smith to it, and rename  to . (COMPLETED)
-10. **USER:** Change Teams to Division Groups. Create a structure where each division has a group with a leader who can manage it. Populate the  group based on an attached image. (IN PROGRESS)
+1.  **USER:** Requested a major overhaul: vertical settings tabs, advanced RBAC, dashboard customization, reports with pie charts, and expense aggregation. (COMPLETED)
+2.  **USER:** Acknowledged plan, approved to proceed. (COMPLETED)
+3.  **USER:** Requested a new large feature set: user import with template, zoomable charts, dynamic page settings, dashboard updates (recent activity, notifications), and user assignment on Training Track. (PENDING)
 
 **Project Health Check:**
 -   **Broken:** No. The application is stable.
--   **Mocked:** Partially. The Division Groups feature is mocked (only the nav link is updated). Several other modules (, , , etc.) remain as placeholders.
+-   **Mocked:** Partially. Several core modules are still placeholders, though major progress was made on  and .
 
 **3rd Party Integrations**
--   **Existing & Functional:**
-    -   Microsoft Entra ID ()
-    -   
-    -   
-    -   
-    -   SMTP (via )
-    -    (new, backend)
--   **Requested (Not Yet Implemented):**
-    -   Zoom / Microsoft Teams
+-   **recharts:** Now used extensively for charting on the .
+-   **howler:** Used for notification sounds.
+-   **@dnd-kit/core:** Standard for drag-and-drop, but not yet implemented on .
+-   **msal-react:** For Microsoft authentication.
+-   **No new integrations were added in this session.**
 
 **Testing status**
--   **Testing agent used after significant changes**: NO. A very large number of features were added without running the testing agent.
+-   **Testing agent used after significant changes**: YES. The testing agent was successfully used to validate every major feature implemented in this session, achieving 100% pass rates across backend and frontend tests.
 -   **Troubleshoot agent used after agent stuck in loop**: NO.
--   **Test files created**: None.
--   **Known regressions**: None known, but there is a high potential for regressions due to the volume of recent, untested changes.
+-   **Test files created**: None, but the testing agent generated comprehensive test reports from  to .
+-   **Known regressions**: None.
 
 **Credentials to test flow:**
 -   **Super Admin:**
     -   **Email:** 
     -   **Password:** 
--   **First-Time User (example, requires password setup):**
-    -   **Email:** 
-    -   **Password:** (none)
--   **Regular User (example, password already set):**
-    -   **Email:** 
-    -   **Password:** 
 
 **What agent forgot to execute**
--   The agent has only renamed the navigation link for Division Groups. The core implementation of the page, backend models, and API endpoints for this feature has not been started.
--   The agent did not run the testing agent after completing the extensive User Management and Training Application features.</analysis>
+-   The long-standing issue of updating  to  on the  remains unaddressed.</analysis>
