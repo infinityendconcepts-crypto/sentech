@@ -348,7 +348,7 @@ class Message(BaseModel):
     updated_at: datetime = Field(default_factory=current_time)
 
 class MessageCreate(BaseModel):
-    conversation_id: str
+    conversation_id: Optional[str] = None
     content: str
     message_type: str = "text"
     attachments: List[Dict[str, str]] = []
@@ -1878,7 +1878,8 @@ async def update_note(note_id: str, update_data: NoteUpdate, current_user: dict 
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     
     await db.notes.update_one({"id": note_id}, {"$set": update_dict})
-    return {"message": "Note updated successfully"}
+    updated_note = await db.notes.find_one({"id": note_id}, {"_id": 0})
+    return updated_note
 
 @api_router.delete("/notes/{note_id}")
 async def delete_note(note_id: str, current_user: dict = Depends(get_current_user)):

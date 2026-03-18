@@ -9,255 +9,93 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - **Authentication:** Microsoft Entra ID SSO, standard email/password, First-time Password Setup
 
 ## Core Modules (Pages)
-- Dashboard
-- Bursary Applications
-- Training Applications
-- Sponsors
-- BBBEE
-- Projects
-- Training Track (formerly Tasks)
-- Meetings
-- Events
-- Messages
-- Team
-- Tickets
-- Expenses
-- Reports
-- MICTSETA Documents (formerly Files)
-- Help and Support
-- Settings
-- Users
-- User Profile
-- Personal Development Plan (PDP)
+- Dashboard, Bursary Applications, Training Applications, Sponsors, BBBEE, Projects
+- Training Track (formerly Tasks), Meetings, Events, Messages, Division Groups
+- Tickets, Expenses, Reports, MICTSETA Documents, Help and Support
+- Settings, Users, User Profile, Personal Development Plan (PDP), Notifications, Notes
 
 ## Hidden Pages (Per User Request)
-- Leads (hidden from navigation)
-- Notes (hidden from navigation)
-- Prospects (hidden from navigation)
+- Leads, Notes, Prospects (hidden from navigation)
 
 ## User Personas & Roles
 - **Super Admin:** Highest access level
-- **Admin:** Full access to all modules, can manage users, edit training modules, assign PDP goals
-- **Manager:** OFO Major Group: Managers
-- **Professional:** OFO Major Group: Professionals
-- **Technician:** OFO Major Group: Technicians
-- **Clerical:** OFO Major Group: Clerical Support Workers
-- **Employee:** Default role
+- **Admin:** Full access to all modules
+- **Manager, Professional, Technician, Clerical, Employee**
 
-## Organizational Structure (Imported March 2026)
+## What's Been Implemented
 
-### Divisions (10 total)
-1. Chief Executive Officer (Exec_and_Head)
-2. Finance
-3. Internal Audit
-4. Satellite Business Unit
-5. Research and Innovation
-6. Supply Chain Management
-7. Human Resources
-8. Company Secretariat
-9. Legal
-10. Enterprise Risk and Compliance
-
-### User Fields (from spreadsheet import)
-- Personal: Full Name, Surname, Email, ID Number, Race, Gender, Age
-- Employment: Division, Department, Position, Personnel Number, Start Date, Years of Service, Level
-- OFO Classification: Major Group, Sub Major Group, Occupation, OFO Code
-
-### First-Time Password Setup
-- Imported users have `requires_password_setup: true`
-- On first login attempt, they're redirected to password setup screen
-- After setting password, they're automatically logged in
-- 120 users imported from organizational spreadsheet
-
-## What's Been Implemented (March 2026)
-
-### Core Features
-- User authentication with JWT and Microsoft SSO
-- Role-based access control (admin/student)
+### Core Features (Complete)
+- User authentication (JWT + Microsoft SSO + OTP)
+- Role-based access control (super_admin/admin/employee)
 - Dashboard with stats and quick actions
-- Full application management workflow
+- Full bursary application management workflow
+- Training application module with conditional logic
+- Training Track (Kanban, List, Gantt views)
+- Personal Development Plan (PDP) with Excel import
+- MICTSETA Documents with category-based structure
+- Division Groups with subgroups and leaders
+- JIT Temporary Leader feature
 
-### Bursary Application Flow
-- Multi-step application form with validation
-- **District Municipality dropdown** with 14 specific municipalities
-- Conditional fields (disability description for disabled applicants)
-- **Medical Certificate upload** (required when disability = Yes)
-- **Performance Score dropdown (1-5)** - numbers only
-- Academic transcript upload for Continuation applicants
-- **Signed Performance Contract** upload
-- **Proof of Registration / Acceptance Letter** upload
-- "Quotation Amount Requested" file upload
-- **Motivation Document** upload
-- Status management: draft, pending, under review, approved, rejected
-- Student can edit draft/pending applications
-- Admin can change application status
-- **Invoice and Bursary Agreement upload** for approved applications
-- Large detailed view popup showing all application information
-- **"Re-apply" renamed to "Continuation"**
+### Notification System (NEW - Feb 2026) ✅
+- NotificationsPage with filter tabs (All, Unread, Messages, Meetings, Status, Tickets)
+- Bell icon in header with unread count badge and sound
+- Polling every 15 seconds for new notifications
+- Notifications triggered by: new messages, meeting invites, ticket status changes, ticket comments, application status changes (bursary + training)
+- Mark read/unread, mark all read, delete notifications
+- Click notification to navigate to relevant page
 
-### Training Application Module (NEW - Feb 2026)
-- Multi-step application form (4 steps)
-- Step 1: Personal Information with district municipality dropdown
-- Step 2: Employment Details with performance score (1-5)
-- Step 3: Training Information
-  - Training Status (New Training, Continuation, Upgrade/Advanced)
-  - Service Provider (renamed from Institution)
-  - Training Type (renamed from Course of Study)
-  - Total Amount (R) for cost
-  - Supplier Type: Preferred Supplier, South African Supplier (SCM) Route, International Supplier (SCM) Route
-- Step 4: Documents with conditional logic
-  - **If training < R15,000:** Signed Performance Contract, Quotation, SBD 4 Form (or SBD 1 for International), Consent Form, CSD Report, BBBEE Certificate
-  - **If training > R15,000:** Same + Motivation document
-  - **If SCM route selected (SA or International):** Only Scope of Work upload (all other documents disabled)
-  - **If International Supplier:** SBD 1 replaces SBD 4
-- **Additional Training Expenses** (Step 4, optional): Flights, Accommodation, Car Hire/Shuttle, Catering — each with R amount and notes
-- Full CRUD backend endpoints
-- List view with search, status management, and view modal
-- Admin status change functionality
+### Enhanced Messaging System (NEW - Feb 2026) ✅
+- New Chat dialog with 3 tabs: Individual, Division, Subgroup
+- Individual: search users and start direct conversations
+- Division: select a division to message all members
+- Subgroup: select a subgroup to message its members
+- Real-time message display with read receipts
+- Unread count tracking per conversation
 
-### District Municipalities List (Updated Feb 2026)
-Both Bursary and Training Applications use this specific list:
-- 1724 RADIOKOP, ROODEPOORT - City of Johannesburg Metropolitan Municipality
-- 7500 PLATTEKLOOF EXT 3, PAROW - City of Cape Town Metropolitan Municipality
-- 9301 NAVAL VIEW, BLOEMFONTEIN - Mangaung Metropolitan Municipality
-- 4051 BROADWAY, DURBAN NORTH - eThekwini Metropolitan Municipality
-- 2351 ERMELO, ERMELO - Gert Sibande District Municipality
-- 5247 VINCENT, EAST LONDON - Buffalo City Metropolitan Municipality
-- 6529 LOERIE PARK, GEORGE - Garden Route District Municipality
-- 0699 POLOKWANE, POLOKWANE - Capricorn District Municipality
-- 6001 GLENDINNINGVALE, PORT ELIZABETH - Nelson Mandela Bay Metropolitan Municipality
-- 3100 VRYHEID, VRYHEID - Amajuba District Municipality
-- 8601 VRYBURG, VRYBURG - Dr Ruth Segomotsi Mompati District Municipality
-- 5900 MIDROS, MIDDELBURG - Chris Hani District Municipality
-- 8801 RAND, UPINGTON - Namakwa District Municipality
-- 8160 VREDENDAL, VREDENDAL - City of Cape Town Metropolitan Municipality
+### Notes Page (Complete - Feb 2026) ✅
+- Full CRUD: create, read, update, delete notes
+- Folders with color coding
+- Tags support
+- Color-coded notes
+- Pin/unpin notes
+- Shared notes tab
+- Search across notes and tags
 
-### Training Track Module
-- Kanban board with drag-and-drop (using @dnd-kit)
-- List, Kanban, and Gantt views
-- Comments functionality on modules
-- Image upload functionality
-- Due dates for modules
-- Admin-only edit/delete
-- Export to Excel/PDF
-- Attendance feature removed per user request
+### Users Page (Complete - Feb 2026) ✅
+- Table view with: Employee, Division, Department, Position, Role, Status
+- View Details dialog with 4 sections:
+  - Personal Info (Full Name, Surname, ID Number, Gender, Race, Age)
+  - Employment Info (Personnel Number, Division, Department, Position, Level, Start Date, Years of Service)
+  - OFO Classification (Major Group, Sub Major Group, Occupation, OFO Code)
+  - System Info (Roles, Status, Password Setup)
+- Edit user (Division, Department, Position, Role)
+- Activate/deactivate, delete users
 
-### Personal Development Plan (PDP)
-- Goal creation with "Skills gap" (renamed from "What to learn")
-- Admin can assign goals to specific users
-- User filtering for admin view
-- Status tracking (not started, in progress, completed, overdue)
-- Priority levels (low, medium, high)
-- Category tags
-- **Excel Import feature** with downloadable sample template
-- Import preview with ability to remove entries before importing
-
-### MICTSETA Documents (Renamed from Files)
-- **New category-based structure:**
-  - Main Categories: 2025-26 FY, 2026-27 FY
-  - Sub Categories: Internships, University Placements
-- Folder creation within categories
-- File upload with drag-and-drop
-- File download and deletion
-
-### Tickets Module
-- Categories updated to: Technical Support, HR Query, Bursary Query, Other
-
-### UI/UX Refinements
-- "Applications" renamed to "Bursary Applications"
-- **Team** renamed to **Division Groups**
-- Simplified login page (Email/Password and Microsoft SSO only - OTP removed)
-- "Tasks" renamed to "Training Track"
-- "Files" renamed to "MICTSETA Documents"
-- "CONTINUATION APPLICANT" renamed to "RE-APPLY"
-- Navigation hides Leads, Notes, Prospects pages
-- Collapsible sidebar
-- Responsive design
-
-### Division Groups Module (NEW - Feb 2026)
-- Replaced old "Teams" page with "Division Groups"
-- Each organizational division forms a group with its assigned users
-- Admin/super_admin can assign a leader to each division group
-- Admin/super_admin can add/remove members from groups
-- Stats overview: total divisions, total members, leaders assigned
-- Expandable group cards showing all members with role badges
-- Leader highlighted with crown badge
-- Search across divisions and members
-- Thompson Chisoko set as leader of Satellite Business division
-- Backend endpoints: GET /api/division-groups, PUT leader, POST/DELETE members
-- Uses division_groups MongoDB collection for leader assignments
-- Users belong to groups via their 'division' field in users collection
-
-### Subgroups Feature (NEW - Feb 2026)
-- Divisions can have subgroups (expandable dropdown within each division card)
-- Subgroups have their own leader and members (members can be from any division)
-- Admins, super_admins, and Technical Support division users can manage subgroups
-- Subgroups can be created, renamed, and deleted
-- Initial data: "Reporting to the CEO" subgroup under Exec_and_Head with 10 members, Leshope as leader
-- Additional subgroups created under Exec_and_Head:
-  - "Reporting to CFO": 5 members, Simpson as leader
-  - "Reporting to COO": 6 members, Mnisi as leader
-  - "Reporting to CHRO": 6 members, Motlhabi as leader
-  - "Reporting CSO: Strategy and Transformation": 4 members, Segaloe as leader
-  - "Reporting to CCO: MIB": 6 members, Finnis as leader
-- Members in subgroups are excluded from the main division member list
-- Backend endpoints: POST create, PUT rename/update leader, POST/DELETE members, DELETE subgroup
-- Uses subgroups MongoDB collection
-
-### JIT Temporary Leader Feature (NEW - Feb 2026)
-- Leaders, admins, super_admins, and Technical Support can assign a temporary leader to any subgroup
-- Duration options: 1 hour to 2 weeks
-- Orange "Acting" badge with countdown timer on subgroup header
-- Orange banner inside expanded subgroup shows temp leader name and remaining time
-- Auto-expiry: original leader resumes when duration ends
-- Early revocation available via "Revoke" button
-- Backend validates: min 1hr, must be subgroup member, cannot be current leader
-- Endpoints: POST /api/subgroups/{id}/temp-leader, DELETE /api/subgroups/{id}/temp-leader
+### Meeting → Event Sync (Complete - Feb 2026) ✅
+- Creating a meeting auto-creates an event on the Events calendar
+- Events page shows meetings as "meeting" type with purple color
+- Calendar and list views for events
 
 ## Pending/Future Tasks
 
-### P1 - Backend Implementation
-- Projects module CRUD
-- Sponsors module CRUD
-- Meetings module CRUD
-- Notes module CRUD (page hidden but may be needed later)
-- Messages module CRUD
-- Expenses module CRUD
-- Tickets module CRUD
-- Bursary module CRUD
+### P1 - Upcoming
+- Backend CRUD for: Projects, Sponsors, Expenses (partial), Tickets (partial), Bursary
+- Connect frontend placeholder pages to backend APIs
+- Fix ProspectsPage drag-and-drop (migrate react-beautiful-dnd → @dnd-kit)
 
-### P1 - Frontend Integration
-- Connect placeholder pages to backend APIs
-- MeetingsPage, NotesPage, MessagesPage, ExpensesPage, TicketsPage, HelpAndSupportPage
-
-### P2 - Integrations
-- Zoom/Microsoft Teams meeting integration
-- SMTP email notifications (partially implemented)
-
-### P2 - Advanced Features
+### P2 - Future
+- Microsoft Teams API integration (Graph API) for meeting scheduling
 - Advanced RBAC management UI on Settings page
-- Real-time messaging
-- Note sharing
-- Chunked file uploads (refactor from base64)
-
-### P2 - UI Consistency
-- Update ProspectsPage to use @dnd-kit (currently uses react-beautiful-dnd)
+- Refactor file uploads to chunked multipart
+- Refactor server.py monolith into separate routers
+- Real-time messaging (WebSocket)
 
 ## Key API Endpoints
-- `GET /api/applications` - List bursary applications
-- `POST /api/applications` - Create bursary application
-- `PUT /api/applications/{app_id}` - Update bursary application
-- `PUT /api/applications/{app_id}/status` - Update application status
-- `GET /api/training-applications` - List training applications
-- `POST /api/training-applications` - Create training application
-- `PUT /api/training-applications/{app_id}` - Update training application
-- `PUT /api/training-applications/{app_id}/status` - Update training status (admin only)
-- `DELETE /api/training-applications/{app_id}` - Delete training application
-- `PUT /api/tasks/{task_id}` - Update training module (comments, images, due date)
-- `PUT /api/pdp/{pdp_id}` - Update PDP entry (assigned_to, skills gap)
-- `POST /api/users` - Create user (admin only)
-- `GET /api/division-groups` - List all division groups with members and leaders
-- `GET /api/division-groups/{name}` - Get specific division group
-- `PUT /api/division-groups/{name}/leader` - Set group leader (admin only)
-- `POST /api/division-groups/{name}/members/{user_id}` - Add member (admin only)
-- `DELETE /api/division-groups/{name}/members/{user_id}` - Remove member (admin only)
+- Notifications: GET/PUT/DELETE /api/notifications, GET /api/notifications/unread/count
+- Messages: POST /api/messages/group-conversation (individual/division/subgroup)
+- Notes: Full CRUD at /api/notes, /api/notes/folders
+- Events: Auto-created from meetings, full CRUD at /api/events
+- All existing endpoints for applications, users, teams, division-groups, etc.
+
+## Key Credentials
+- Super Admin: jane.smith@uct.ac.za / securepass123
