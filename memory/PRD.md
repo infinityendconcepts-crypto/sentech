@@ -3,91 +3,110 @@
 ## Original Problem Statement
 Build a comprehensive bursary management system named "Sentech" using React, FastAPI, and MongoDB with modules for applications, users, divisions, projects, meetings, and role-based access control.
 
-## Core Requirements
-- **Technology Stack:** React, FastAPI, MongoDB
-- **Branding:** "Sentech" with blue (#0056B3) and gray scheme
-- **Authentication:** Microsoft Entra ID SSO, email/password, First-time Password Setup
+## Technology Stack
+- **Frontend:** React, Shadcn UI, Recharts, @dnd-kit
+- **Backend:** FastAPI, Pydantic, Motor (MongoDB async)
+- **Database:** MongoDB
+- **Auth:** JWT + Microsoft Entra ID SSO + OTP
 
 ## Core Modules
 Dashboard, Bursary Applications, Training Applications, BBBEE, Training Track, Meetings, Events, Messages, Division Groups, Tickets, Expenses, Reports, MICTSETA Documents, Help & Support, Settings, Users, User Profile, PDP, Notifications, Notes
 
 ## Hidden/Removed Pages
 - Leads, Notes, Prospects (hidden from nav)
-- Projects (removed from sidebar and Quick Add per user request)
+- Projects (removed from sidebar + Quick Add + dashboard)
 
 ## What's Been Implemented
 
-### Session 1-2 (Previous)
-- Full auth system (JWT + Microsoft SSO + OTP)
-- RBAC (super_admin/admin/employee)
-- Full bursary + training application workflows
-- Training Track (Kanban, List, Gantt views)
-- PDP with Excel import
+### Foundation (Sessions 1-2)
+- Full auth (JWT + Microsoft SSO + OTP + first-time password setup)
+- RBAC (super_admin/admin/employee + granular permissions)
+- Bursary + Training application workflows
+- Training Track (Kanban/List/Gantt), PDP w/ Excel import
 - MICTSETA Documents, Division Groups, Notifications, Messaging, Notes
-- Application re-edit system with 24hr time lock
-- User management with all HR dataset fields
-- Post-submission expenses (Flights, Accommodation, Car Hire, Catering)
+- Application re-edit system, Post-submission expenses
+- Settings & RBAC permission matrix
 
-### Session 3 (Current - Feb 2026)
+### Session 3 - Feb 2026
 
 **Dashboard Overhaul (DONE)**
-- 6 stat cards: Total/Pending/Approved Applications, Training Apps, Open Tickets, Unread Notifications
-- Real Recent Activity feed from backend
-- Notifications widget with unread badge
-- Report Summary card (admin only)
-- Quick Actions: New Application, Training Apps, BBBEE, Reports
-- Removed Projects and Sponsors from dashboard
-- Backend: GET /api/dashboard/stats, /recent-activity, /report-summary
+- 6 stat cards, real Recent Activity feed, Notifications widget, Report Summary (admin), Quick Actions
 
 **Training Track User Assignment (DONE)**
-- Admins/division heads assign users to training modules
-- Searchable dialog with checkbox selection
-- Unassign capability + notifications to assigned users
-- Backend: POST /api/tasks/{id}/assign, DELETE /api/tasks/{id}/assign/{user_id}
+- Admins/division heads assign users via searchable dialog
 
 **User Import Feature (DONE)**
-- XLSX template download (18 columns with formatted headers)
-- CSV import with results display
-- Template + Import buttons in UsersPage header
-- Backend: GET /api/users/import-template (XLSX), POST /api/users/bulk-import
+- XLSX template download, CSV import with results
 
 **Reports Chart Enhancement (DONE)**
-- Zoom/expand button on chart cards
-- Full-screen modal dialog for enlarged charts
-- Date range filter for exports (From/To)
-- Expanded XLSX export: Bursary Applications, Training Applications, Expenses, Users, Tickets
-- CSV and JSON export options
-- Backend: /api/reports/export/{type} with date_from, date_to params
+- Zoom/expand charts, date range filters, XLSX export for all report types
 
-**Expenses Page Enhancement (DONE)**
-- XLSX export button with tab-aware export (Additional/Bursary/Training)
-- Date range filters (From/To)
-- Active filter badges with individual clear buttons + Clear All
-- Backend: GET /api/expenses/export/excel, GET /api/expenses with date_from/date_to
+**Expenses Enhancement (DONE)**
+- XLSX export, date range filters, active filter badges
 
 **Quick Add Cleanup (DONE)**
-- Removed "New Lead" and "New Project" from header Quick Add menu
-- 6 items remain: Task, Note, Meeting, Ticket, Expense, Message
+- Removed "New Lead" and "New Project" from header
 
-## Pending/Future Tasks
+**Users Page Batch Operations (DONE)**
+- Pagination: 10/25/50/100 per page selector
+- Batch selection: checkboxes per row + select all
+- Batch actions bar: Activate / Deactivate / Delete selected users
+- Backend: POST /api/users/batch-action
 
-### P1 - Upcoming
-- ProspectsPage DnD fix: Migrate react-beautiful-dnd to @dnd-kit
+**Dynamic Page Configuration (DONE)**
+- Settings > Page Settings: Module visibility toggles
+- Field config for Bursary, Training, PDP pages
+- Each field: editable label, required toggle, visibility toggle
+- PageFieldConfig reusable component
 
-### P2 - Future
-- Dynamic Page Configuration: Settings UI for PDP/Bursary/Training field customization
-- Frontend RBAC Enforcement: Hide/disable UI by role permissions
-- Refactor server.py (5100+ lines) into separate routers
-- Refactor file uploads to chunked multipart
+**Frontend RBAC Enforcement (DONE)**
+- Sidebar nav items filtered by role_permissions
+- Login response enriched with aggregated role_permissions from user's roles
+- hasModuleAccess() check for each nav item
+
+**Server.py Refactoring (DONE)**
+- Extracted to routers/reports.py: Dashboard stats, recent activity, report summary, dashboard charts
+- Extracted to routers/notifications.py: CRUD notifications, unread count, mark read/all
+- Shared deps in routers/__init__.py: db, auth, helpers
+- server.py reduced from 5286 to 4970 lines
+
+**File Upload Refactoring (DONE)**
+- New POST /api/files/upload endpoint accepts multipart form data
+- Supports files up to 20MB
+- Frontend filesAPI.upload() method added
+
+## Architecture
+```
+/app/backend/
+├── server.py          (4970 lines - main routes)
+├── routers/
+│   ├── __init__.py    (shared deps: db, auth, helpers)
+│   ├── reports.py     (dashboard + reports endpoints)
+│   └── notifications.py (notification CRUD)
+/app/frontend/src/
+├── pages/             (all page components)
+├── components/
+│   ├── Layout/        (Header, Layout with RBAC nav)
+│   └── ui/            (Shadcn components)
+├── services/api.js    (all API endpoints)
+└── contexts/          (AuthContext)
+```
 
 ## Key API Endpoints
+- Auth: POST /api/auth/login (returns role_permissions)
 - Dashboard: GET /api/dashboard/stats, /recent-activity, /report-summary
-- Tasks: POST /api/tasks/{id}/assign, DELETE /api/tasks/{id}/assign/{user_id}
-- Users: GET /api/users/import-template (XLSX), POST /api/users/bulk-import
-- Expenses: GET /api/expenses (date_from/date_to), GET /api/expenses/export/excel
-- Reports: GET /api/reports/export/{type}?format=excel&date_from=X&date_to=Y
-- Applications: Full CRUD + expenses + re-edit
-- Settings: GET/PUT /api/settings, roles CRUD
+- Notifications: GET/PUT/DELETE /api/notifications (in routers/notifications.py)
+- Reports: GET /api/reports/dashboard, /export/{type}
+- Users: POST /api/users/batch-action, GET /api/users/import-template
+- Tasks: POST /api/tasks/{id}/assign
+- Files: POST /api/files/upload (multipart)
+- Expenses: GET /api/expenses/export/excel
+
+## Pending/Future Tasks
+- ProspectsPage DnD fix (deferred by user)
+- Further server.py decomposition (more routers for users, tasks, applications)
+- WebSocket for real-time messaging
+- Microsoft Teams API integration
 
 ## Credentials
 - Super Admin: jane.smith@uct.ac.za / securepass123
