@@ -341,79 +341,161 @@ const UserProfilePage = () => {
 
         {/* Profile Info Tab */}
         <TabsContent value="profile">
-          <Card className="bg-white border-slate-200">
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Update your profile details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <Label>Full Name</Label>
-                  <div className="relative mt-1">
-                    <User className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                    <Input
-                      className="pl-10"
-                      value={form.full_name}
-                      onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                      placeholder="Your full name"
-                      data-testid="profile-name"
-                    />
+          <div className="space-y-6">
+            {/* Editable Info */}
+            <Card className="bg-white border-slate-200">
+              <CardHeader>
+                <CardTitle>Personal Information</CardTitle>
+                <CardDescription>Update your profile details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <Label>Full Name</Label>
+                    <div className="relative mt-1">
+                      <User className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                      <Input
+                        className="pl-10"
+                        value={form.full_name}
+                        onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                        placeholder="Your full name"
+                        data-testid="profile-name"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <div className="relative mt-1">
+                      <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                      <Input className="pl-10 bg-slate-50" value={profile?.email || ''} disabled />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Phone</Label>
+                    <div className="relative mt-1">
+                      <Phone className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                      <Input
+                        className="pl-10"
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        placeholder="+27 XX XXX XXXX"
+                        data-testid="profile-phone"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Department</Label>
+                    <div className="relative mt-1">
+                      <Building2 className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                      <Input
+                        className="pl-10"
+                        value={form.department}
+                        onChange={(e) => setForm({ ...form, department: e.target.value })}
+                        placeholder="e.g. Finance, HR"
+                        data-testid="profile-department"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div>
-                  <Label>Email</Label>
-                  <div className="relative mt-1">
-                    <Mail className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                    <Input className="pl-10 bg-slate-50" value={profile?.email || ''} disabled />
-                  </div>
+                  <Label>Bio</Label>
+                  <Textarea
+                    className="mt-1"
+                    value={form.bio}
+                    onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                    placeholder="Tell us a bit about yourself..."
+                    rows={3}
+                    data-testid="profile-bio"
+                  />
                 </div>
-                <div>
-                  <Label>Phone</Label>
-                  <div className="relative mt-1">
-                    <Phone className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                    <Input
-                      className="pl-10"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      placeholder="+27 XX XXX XXXX"
-                      data-testid="profile-phone"
-                    />
-                  </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveProfile} disabled={saving} className="gap-2" data-testid="save-profile-btn">
+                    <Save className="w-4 h-4" />
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </Button>
                 </div>
-                <div>
-                  <Label>Department</Label>
-                  <div className="relative mt-1">
-                    <Building2 className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                    <Input
-                      className="pl-10"
-                      value={form.department}
-                      onChange={(e) => setForm({ ...form, department: e.target.value })}
-                      placeholder="e.g. Finance, HR"
-                      data-testid="profile-department"
-                    />
+              </CardContent>
+            </Card>
+
+            {/* Personal Details (from dataset - read-only) */}
+            {(profile?.surname || profile?.id_number || profile?.gender || profile?.race || profile?.age) && (
+              <Card className="bg-white border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-base">Personal Details</CardTitle>
+                  <CardDescription>Information imported from HR records</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[
+                      { label: 'Surname', value: profile?.surname },
+                      { label: 'ID Number', value: profile?.id_number },
+                      { label: 'Gender', value: profile?.gender },
+                      { label: 'Race', value: profile?.race },
+                      { label: 'Age', value: profile?.age },
+                    ].filter(f => f.value).map(({ label, value }) => (
+                      <div key={label} className="bg-slate-50 rounded-lg p-3">
+                        <p className="text-xs text-slate-500">{label}</p>
+                        <p className="text-sm font-medium text-slate-900 mt-0.5">{value}</p>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              </div>
-              <div>
-                <Label>Bio</Label>
-                <Textarea
-                  className="mt-1"
-                  value={form.bio}
-                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                  placeholder="Tell us a bit about yourself..."
-                  rows={3}
-                  data-testid="profile-bio"
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={handleSaveProfile} disabled={saving} className="gap-2" data-testid="save-profile-btn">
-                  <Save className="w-4 h-4" />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Employment Information (from dataset - read-only) */}
+            {(profile?.personnel_number || profile?.division || profile?.position || profile?.level || profile?.start_date) && (
+              <Card className="bg-white border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-base">Employment Information</CardTitle>
+                  <CardDescription>Information from HR records</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[
+                      { label: 'Personnel Number', value: profile?.personnel_number },
+                      { label: 'Division', value: profile?.division },
+                      { label: 'Department', value: profile?.department },
+                      { label: 'Position', value: profile?.position },
+                      { label: 'Level', value: profile?.level },
+                      { label: 'Start Date', value: profile?.start_date },
+                      { label: 'Years of Service', value: profile?.years_of_service ? `${profile.years_of_service} years` : null },
+                    ].filter(f => f.value).map(({ label, value }) => (
+                      <div key={label} className="bg-slate-50 rounded-lg p-3">
+                        <p className="text-xs text-slate-500">{label}</p>
+                        <p className="text-sm font-medium text-slate-900 mt-0.5">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* OFO Classification (from dataset - read-only) */}
+            {(profile?.ofo_major_group || profile?.ofo_code) && (
+              <Card className="bg-white border-slate-200">
+                <CardHeader>
+                  <CardTitle className="text-base">OFO Classification</CardTitle>
+                  <CardDescription>Organising Framework for Occupations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { label: 'Major Group', value: profile?.ofo_major_group },
+                      { label: 'Sub Major Group', value: profile?.ofo_sub_major_group },
+                      { label: 'Occupation', value: profile?.ofo_occupation },
+                      { label: 'OFO Code', value: profile?.ofo_code },
+                    ].filter(f => f.value).map(({ label, value }) => (
+                      <div key={label} className="bg-slate-50 rounded-lg p-3">
+                        <p className="text-xs text-slate-500">{label}</p>
+                        <p className="text-sm font-medium text-slate-900 mt-0.5">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         {/* My Applications Tab */}
@@ -794,7 +876,6 @@ const UserProfilePage = () => {
                     { label: 'Email Verified', value: profile?.is_verified ? 'Yes' : 'No' },
                     { label: 'Member Since', value: profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A' },
                     { label: 'Last Updated', value: profile?.updated_at ? new Date(profile.updated_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A' },
-                    { label: 'Student ID', value: profile?.student_id || 'Not set' },
                   ].map(({ label, value }) => (
                     <div key={label} className="bg-slate-50 rounded-lg p-4">
                       <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>

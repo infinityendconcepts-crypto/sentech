@@ -1,0 +1,104 @@
+{
+  "summary": "Iteration 14: Testing complete for User Edit Dialog, Profile Page Dataset Fields, and Student ID Removal. FIXED: Backend PUT /api/users/{user_id} permission bug - super_admin role was not being checked. All 9 backend tests passed (100%), all frontend features verified via Playwright.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [],
+    "fixed_in_this_iteration": [
+      {
+        "endpoint": "PUT /api/users/{user_id}",
+        "issue": "Permission check only validated 'admin' role, not 'super_admin'. Fixed by adding 'super_admin' to is_admin check.",
+        "file": "/app/backend/server.py",
+        "line": 1600
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_user_edit_profile.py",
+    "/app/test_reports/pytest/users_profile_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PUT /api/users/{user_id} now correctly allows both 'admin' and 'super_admin' roles to edit any user",
+    "UserUpdate model includes all expanded fields: full_name, surname, email, bio, phone, id_number, gender, race, age, personnel_number, division, department, position, level, start_date, years_of_service, ofo_major_group, ofo_sub_major_group, ofo_occupation, ofo_code",
+    "Edit dialog has proper 3-section layout: Personal Information, Employment Information, OFO Classification",
+    "All 20 edit fields have proper data-testid attributes for automated testing",
+    "Profile page correctly shows dataset fields in read-only sections when populated",
+    "Student ID field removed from frontend profile page (still exists in backend model as deprecated)"
+  ],
+  "updated_files": [
+    "/app/backend/server.py",
+    "/app/backend/tests/test_user_edit_profile.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (all 7 test features verified)"
+  },
+  "test_credentials": {
+    "super_admin": {
+      "email": "jane.smith@uct.ac.za",
+      "password": "securepass123"
+    }
+  },
+  "seed_data_creation": "None - used existing Tebogo Joseph Leshope (manager) for edit testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Users page Edit dialog fully functional with all 20 fields across 3 sections. View Details dialog shows all dataset fields. Profile page has 5 working tabs (Profile Info, My Applications, Security, Documents, Account Info). Student ID removed from UI. Jane Smith (super_admin) has limited dataset fields. Tebogo Joseph Leshope has full HR data including OFO codes.",
+  "features_tested": {
+    "1_Users_Page_Edit_Dialog_Fields": {
+      "status": "PASS",
+      "details": "20/20 fields found with data-testid: edit-full-name, edit-surname, edit-email, edit-phone, edit-id-number, edit-gender, edit-race, edit-age, edit-personnel-number, edit-division, edit-department, edit-position, edit-level, edit-start-date, edit-years-of-service, edit-role, edit-ofo-major, edit-ofo-sub-major, edit-ofo-occupation, edit-ofo-code",
+      "sections_verified": ["Personal Information", "Employment Information", "OFO Classification"]
+    },
+    "2_Admin_Edit_Save": {
+      "status": "PASS",
+      "details": "Changed Tebogo's Level to D5, received success toast 'User updated successfully', verified value persisted in View Details dialog"
+    },
+    "3_User_Profile_Dataset_Fields": {
+      "status": "PASS",
+      "details": "Profile Info tab shows Employment Information section (Division, Department, Position) when populated from HR records"
+    },
+    "4_Student_ID_Removed": {
+      "status": "PASS",
+      "details": "Student ID text not found anywhere on /profile page including Account Info tab"
+    },
+    "5_Profile_Page_All_Tabs": {
+      "status": "PASS",
+      "details": "All 5 tabs working: Profile Info, My Applications, Security, Documents, Account Info"
+    },
+    "6_Backend_User_Update_API": {
+      "status": "PASS",
+      "details": "PUT /api/users/{user_id} returns 200 with expanded fields payload. 9 pytest tests covering GET users, update level, update expanded fields, update OFO fields, update email field"
+    },
+    "7_View_User_Details": {
+      "status": "PASS",
+      "details": "View Details dialog for Tebogo shows all 4 sections: Personal Information (Full Name, Surname, ID Number, Gender, Race, Age), Employment Information (Personnel Number, Division, Department, Position, Level, Start Date, Years of Service), OFO Classification (Major Group, Sub Major Group, Occupation, OFO Code), System Information (Role, Status)"
+    }
+  },
+  "bug_fixed": {
+    "description": "PUT /api/users/{user_id} returned 403 'Access denied' when super_admin tried to update other users",
+    "root_cause": "Line 1600 in server.py only checked for 'admin' in roles, not 'super_admin'",
+    "fix_applied": "Changed to: is_admin = 'admin' in current_user.get('roles', []) or 'super_admin' in current_user.get('roles', []); if user_id != current_user['id'] and not is_admin: raise HTTPException(403)",
+    "verification": "All 9 backend tests now pass, including user update operations by super_admin"
+  },
+  "screenshots": [
+    ".screenshots/users_page_loaded.png",
+    ".screenshots/users_search_tebogo.png",
+    ".screenshots/users_actions_dropdown.png",
+    ".screenshots/edit_user_dialog.png",
+    ".screenshots/view_user_dialog.png",
+    ".screenshots/edit_dialog_level_d5.png",
+    ".screenshots/after_save.png",
+    ".screenshots/view_details_after_save.png",
+    ".screenshots/profile_page.png",
+    ".screenshots/profile_info_tab.png",
+    ".screenshots/profile_apps_tab.png",
+    ".screenshots/profile_security_tab.png",
+    ".screenshots/profile_docs_tab.png",
+    ".screenshots/profile_account_tab.png"
+  ]
+}

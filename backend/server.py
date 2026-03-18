@@ -91,8 +91,10 @@ class User(BaseModel):
     is_active: bool = True
     is_verified: bool = False
     requires_password_setup: bool = False  # For first-time login
-    student_id: Optional[str] = None
+    student_id: Optional[str] = None  # deprecated
     permissions: Dict[str, Any] = {}
+    bio: Optional[str] = None
+    surname: Optional[str] = None
     # OFO Fields
     ofo_major_group: Optional[str] = None
     ofo_sub_major_group: Optional[str] = None
@@ -143,6 +145,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     surname: Optional[str] = None
+    bio: Optional[str] = None
     roles: Optional[List[str]] = None
     team_id: Optional[str] = None
     department: Optional[str] = None
@@ -163,6 +166,7 @@ class UserUpdate(BaseModel):
     race: Optional[str] = None
     gender: Optional[str] = None
     age: Optional[int] = None
+    email: Optional[str] = None
     # Employment Details
     start_date: Optional[str] = None
     years_of_service: Optional[float] = None
@@ -1593,7 +1597,8 @@ async def get_user(user_id: str, current_user: dict = Depends(get_current_user))
 
 @api_router.put("/users/{user_id}")
 async def update_user(user_id: str, update_data: UserUpdate, current_user: dict = Depends(get_current_user)):
-    if user_id != current_user["id"] and "admin" not in current_user.get("roles", []):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if user_id != current_user["id"] and not is_admin:
         raise HTTPException(status_code=403, detail="Access denied")
     
     user = await db.users.find_one({"id": user_id}, {"_id": 0})

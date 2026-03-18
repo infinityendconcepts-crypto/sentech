@@ -68,7 +68,14 @@ const UsersPage = () => {
   const [viewDialog, setViewDialog] = useState(false);
   const [editDialog, setEditDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [editForm, setEditForm] = useState({ division: '', department: '', position: '', role: '' });
+  const [editForm, setEditForm] = useState({
+    full_name: '', surname: '', email: '',
+    division: '', department: '', position: '', role: '', level: '',
+    personnel_number: '', id_number: '', gender: '', race: '', age: '',
+    start_date: '', years_of_service: '',
+    ofo_major_group: '', ofo_sub_major_group: '', ofo_occupation: '', ofo_code: '',
+    phone: '',
+  });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -124,10 +131,26 @@ const UsersPage = () => {
   const openEditDialog = (user) => {
     setSelectedUser(user);
     setEditForm({
+      full_name: user.full_name || '',
+      surname: user.surname || '',
+      email: user.email || '',
       division: user.division || '',
       department: user.department || '',
       position: user.position || '',
       role: user.roles?.[0] || 'employee',
+      level: user.level || '',
+      personnel_number: user.personnel_number || '',
+      id_number: user.id_number || '',
+      gender: user.gender || '',
+      race: user.race || '',
+      age: user.age || '',
+      start_date: user.start_date || '',
+      years_of_service: user.years_of_service || '',
+      ofo_major_group: user.ofo_major_group || '',
+      ofo_sub_major_group: user.ofo_sub_major_group || '',
+      ofo_occupation: user.ofo_occupation || '',
+      ofo_code: user.ofo_code || '',
+      phone: user.phone || '',
     });
     if (user.division) {
       fetchDepartmentsForDivision(user.division);
@@ -144,12 +167,31 @@ const UsersPage = () => {
     if (!selectedUser) return;
     setSaving(true);
     try {
-      await usersAPI.update(selectedUser.id, {
+      const payload = {
+        full_name: editForm.full_name || undefined,
+        surname: editForm.surname || undefined,
+        email: editForm.email || undefined,
         division: editForm.division,
         department: editForm.department,
         position: editForm.position,
         roles: [editForm.role],
-      });
+        level: editForm.level || undefined,
+        personnel_number: editForm.personnel_number || undefined,
+        id_number: editForm.id_number || undefined,
+        gender: editForm.gender || undefined,
+        race: editForm.race || undefined,
+        age: editForm.age ? parseInt(editForm.age) : undefined,
+        start_date: editForm.start_date || undefined,
+        years_of_service: editForm.years_of_service ? parseFloat(editForm.years_of_service) : undefined,
+        ofo_major_group: editForm.ofo_major_group || undefined,
+        ofo_sub_major_group: editForm.ofo_sub_major_group || undefined,
+        ofo_occupation: editForm.ofo_occupation || undefined,
+        ofo_code: editForm.ofo_code || undefined,
+        phone: editForm.phone || undefined,
+      };
+      // Remove undefined values
+      Object.keys(payload).forEach(k => payload[k] === undefined && delete payload[k]);
+      await usersAPI.update(selectedUser.id, payload);
       toast.success('User updated successfully');
       setEditDialog(false);
       fetchUsers();
@@ -657,7 +699,7 @@ const UsersPage = () => {
 
       {/* Edit User Dialog */}
       <Dialog open={editDialog} onOpenChange={setEditDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <Pencil className="w-5 h-5 text-primary" />
@@ -678,78 +720,143 @@ const UsersPage = () => {
                 </div>
               </div>
 
-              {/* Division Field */}
-              <div className="space-y-2">
-                <Label htmlFor="edit-division">Division</Label>
-                <Select value={editForm.division || 'none'} onValueChange={(v) => handleDivisionChange(v === 'none' ? '' : v)}>
-                  <SelectTrigger id="edit-division" data-testid="edit-division">
-                    <SelectValue placeholder="Select Division" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">-- No Division --</SelectItem>
-                    {divisions.map(d => (
-                      <SelectItem key={d} value={d}>{d}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Personal Information */}
+              <div>
+                <h4 className="text-sm font-semibold text-slate-700 mb-3">Personal Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label>Full Name</Label>
+                    <Input value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} data-testid="edit-full-name" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Surname</Label>
+                    <Input value={editForm.surname} onChange={(e) => setEditForm({ ...editForm, surname: e.target.value })} data-testid="edit-surname" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Email</Label>
+                    <Input value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} data-testid="edit-email" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Phone</Label>
+                    <Input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder="+27 XX XXX XXXX" data-testid="edit-phone" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>ID Number</Label>
+                    <Input value={editForm.id_number} onChange={(e) => setEditForm({ ...editForm, id_number: e.target.value })} data-testid="edit-id-number" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Gender</Label>
+                    <Select value={editForm.gender || 'none'} onValueChange={(v) => setEditForm({ ...editForm, gender: v === 'none' ? '' : v })}>
+                      <SelectTrigger data-testid="edit-gender"><SelectValue placeholder="Select Gender" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">-- Not Set --</SelectItem>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Race</Label>
+                    <Select value={editForm.race || 'none'} onValueChange={(v) => setEditForm({ ...editForm, race: v === 'none' ? '' : v })}>
+                      <SelectTrigger data-testid="edit-race"><SelectValue placeholder="Select Race" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">-- Not Set --</SelectItem>
+                        <SelectItem value="African">African</SelectItem>
+                        <SelectItem value="Coloured">Coloured</SelectItem>
+                        <SelectItem value="Indian">Indian</SelectItem>
+                        <SelectItem value="White">White</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Age</Label>
+                    <Input type="number" value={editForm.age} onChange={(e) => setEditForm({ ...editForm, age: e.target.value })} data-testid="edit-age" />
+                  </div>
+                </div>
               </div>
 
-              {/* Department Field */}
-              <div className="space-y-2">
-                <Label htmlFor="edit-department">Department</Label>
-                <Select 
-                  value={editForm.department || 'none'} 
-                  onValueChange={(v) => setEditForm({ ...editForm, department: v === 'none' ? '' : v })}
-                >
-                  <SelectTrigger id="edit-department" data-testid="edit-department">
-                    <SelectValue placeholder="Select Department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">-- No Department --</SelectItem>
-                    {departments.map(d => (
-                      <SelectItem key={d} value={d}>{d}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {editForm.division && departments.length === 0 && (
-                  <p className="text-xs text-slate-500">No departments found for this division. You can type a new one below.</p>
-                )}
-                <Input
-                  placeholder="Or enter new department name"
-                  value={editForm.department}
-                  onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                  className="mt-2"
-                  data-testid="edit-department-input"
-                />
+              {/* Employment Information */}
+              <div>
+                <h4 className="text-sm font-semibold text-slate-700 mb-3">Employment Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label>Personnel Number</Label>
+                    <Input value={editForm.personnel_number} onChange={(e) => setEditForm({ ...editForm, personnel_number: e.target.value })} data-testid="edit-personnel-number" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Division</Label>
+                    <Select value={editForm.division || 'none'} onValueChange={(v) => handleDivisionChange(v === 'none' ? '' : v)}>
+                      <SelectTrigger data-testid="edit-division"><SelectValue placeholder="Select Division" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">-- No Division --</SelectItem>
+                        {divisions.map(d => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Department</Label>
+                    <Select value={editForm.department || 'none'} onValueChange={(v) => setEditForm({ ...editForm, department: v === 'none' ? '' : v })}>
+                      <SelectTrigger data-testid="edit-department"><SelectValue placeholder="Select Department" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">-- No Department --</SelectItem>
+                        {departments.map(d => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <Input placeholder="Or enter new department" value={editForm.department} onChange={(e) => setEditForm({ ...editForm, department: e.target.value })} className="mt-1" data-testid="edit-department-input" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Position</Label>
+                    <Input value={editForm.position} onChange={(e) => setEditForm({ ...editForm, position: e.target.value })} data-testid="edit-position" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Level</Label>
+                    <Input value={editForm.level} onChange={(e) => setEditForm({ ...editForm, level: e.target.value })} placeholder="e.g. C3, D1" data-testid="edit-level" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Start Date</Label>
+                    <Input value={editForm.start_date} onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })} placeholder="e.g. 2020-01-15" data-testid="edit-start-date" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Years of Service</Label>
+                    <Input type="number" step="0.1" value={editForm.years_of_service} onChange={(e) => setEditForm({ ...editForm, years_of_service: e.target.value })} data-testid="edit-years-of-service" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Role</Label>
+                    <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
+                      <SelectTrigger data-testid="edit-role"><SelectValue placeholder="Select Role" /></SelectTrigger>
+                      <SelectContent>
+                        {ROLES.map(r => (
+                          <SelectItem key={r} value={r}>{r.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
 
-              {/* Position Field */}
-              <div className="space-y-2">
-                <Label htmlFor="edit-position">Position</Label>
-                <Input
-                  id="edit-position"
-                  placeholder="Enter position/job title"
-                  value={editForm.position}
-                  onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
-                  data-testid="edit-position"
-                />
-              </div>
-
-              {/* Role Field */}
-              <div className="space-y-2">
-                <Label htmlFor="edit-role">Role</Label>
-                <Select value={editForm.role} onValueChange={(v) => setEditForm({ ...editForm, role: v })}>
-                  <SelectTrigger id="edit-role" data-testid="edit-role">
-                    <SelectValue placeholder="Select Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROLES.map(r => (
-                      <SelectItem key={r} value={r}>
-                        {r.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* OFO Classification */}
+              <div>
+                <h4 className="text-sm font-semibold text-slate-700 mb-3">OFO Classification</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label>Major Group</Label>
+                    <Input value={editForm.ofo_major_group} onChange={(e) => setEditForm({ ...editForm, ofo_major_group: e.target.value })} data-testid="edit-ofo-major" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Sub Major Group</Label>
+                    <Input value={editForm.ofo_sub_major_group} onChange={(e) => setEditForm({ ...editForm, ofo_sub_major_group: e.target.value })} data-testid="edit-ofo-sub-major" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Occupation</Label>
+                    <Input value={editForm.ofo_occupation} onChange={(e) => setEditForm({ ...editForm, ofo_occupation: e.target.value })} data-testid="edit-ofo-occupation" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>OFO Code</Label>
+                    <Input value={editForm.ofo_code} onChange={(e) => setEditForm({ ...editForm, ofo_code: e.target.value })} data-testid="edit-ofo-code" />
+                  </div>
+                </div>
               </div>
             </div>
           )}
