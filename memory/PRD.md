@@ -91,6 +91,15 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Admin Edit User dialog expanded to 20 editable fields across 3 sections: Personal Info, Employment Info, OFO Classification
 - Backend UserUpdate model supports all fields including email, bio
 
+### Application Expenses System (NEW - Feb 2026) ✅
+- Post-submission expense adding: Flights, Accommodation, Car Hire/Shuttle, Catering
+- "Add Expenses" / "Edit Expenses" button on each non-draft bursary and training application card
+- Right-click context menu also provides Add/Edit Expenses option
+- Expense dialog with amount + notes fields per category, running total
+- Expenses Page has 3 tabs: "Additional Expenses" (standalone), "Bursary Application", "Training Application"
+- Bursary/Training tabs show: applicant, status, per-category amounts, totals, grand total row
+- Backend: POST /api/applications/{id}/expenses, POST /api/training-applications/{id}/expenses, GET /api/expenses/application-expenses
+
 ## Pending/Future Tasks
 
 ### P1 - Upcoming
