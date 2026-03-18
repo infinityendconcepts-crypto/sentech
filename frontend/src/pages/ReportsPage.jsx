@@ -2,479 +2,262 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { reportsAPI, tasksAPI } from '../services/api';
+import { reportsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   BarChart3, Download, FileText, FileSpreadsheet,
   Users, Briefcase, CheckCircle, DollarSign,
-  TrendingUp, Calendar, Filter, Printer,
+  TrendingUp, Calendar, Printer,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line,
-  Legend,
+  ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 
-const CHART_COLORS = ['#0056B3', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899'];
+const COLORS = ['#0056B3', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316', '#14B8A6', '#6366F1', '#D946EF', '#84CC16'];
 
 const ReportsPage = () => {
   const { user } = useAuth();
-  const [dashboardStats, setDashboardStats] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedReport, setSelectedReport] = useState('applications');
-  const [dateRange, setDateRange] = useState('all');
-
-  const reportTypes = [
-    { value: 'applications', label: 'Applications', icon: FileText },
-    { value: 'expenses', label: 'Expenses', icon: DollarSign },
-    { value: 'tasks', label: 'Tasks', icon: CheckCircle },
-    { value: 'projects', label: 'Projects', icon: Briefcase },
-    { value: 'sponsors', label: 'Sponsors', icon: Users },
-    { value: 'leads', label: 'Leads', icon: TrendingUp },
-    { value: 'tickets', label: 'Tickets', icon: FileText },
-  ];
-
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
-
-  const fetchDashboardStats = async () => {
-    try {
-      const response = await reportsAPI.getDashboard();
-      setDashboardStats(response.data);
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const [exporting, setExporting] = useState(false);
 
-  const handleExport = async (format) => {
+  useEffect(() => { fetchStats(); }, []);
+
+  const fetchStats = async () => {
+    try {
+      const res = await reportsAPI.getDashboard();
+      setStats(res.data);
+    } catch { /* empty */ } finally { setLoading(false); }
+  };
+
+  const handleExport = async (type, format) => {
     setExporting(true);
     try {
-      const response = await reportsAPI.export(selectedReport, format);
-      
-      const mimeTypes = {
-        'excel': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'pdf': 'application/pdf',
-        'csv': 'text/csv',
-        'json': 'application/json',
-      };
-      const extensions = { 'excel': 'xlsx', 'pdf': 'pdf', 'csv': 'csv', 'json': 'json' };
-      
-      let blobData = response.data;
-      if (format === 'json') blobData = JSON.stringify(response.data, null, 2);
-      
-      const blob = new Blob([blobData], { type: mimeTypes[format] });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${selectedReport}_report.${extensions[format]}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast.success(`Report exported as ${format.toUpperCase()}`);
-    } catch (error) {
-      toast.error('Failed to export report');
-      console.error(error);
-    } finally {
-      setExporting(false);
-    }
+      const res = await reportsAPI.export(type, format);
+      if (format === 'json') {
+        const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `${type}_report.json`; a.click();
+      } else {
+        const url = URL.createObjectURL(res.data);
+        const a = document.createElement('a');
+        a.href = url; a.download = `${type}_report.${format}`; a.click();
+      }
+      toast.success('Report exported');
+    } catch { toast.error('Export failed'); } finally { setExporting(false); }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(amount || 0);
-  };
-
-  // Build chart data from dashboardStats
-  const applicationStatusData = dashboardStats ? [
-    { name: 'Pending', value: dashboardStats.applications?.pending || 0, fill: '#F59E0B' },
-    { name: 'Approved', value: dashboardStats.applications?.approved || 0, fill: '#10B981' },
-    { name: 'Rejected', value: dashboardStats.applications?.rejected || 0, fill: '#EF4444' },
-    { name: 'Under Review', value: dashboardStats.applications?.under_review || 0, fill: '#0056B3' },
-  ].filter(d => d.value > 0) : [];
-
-  const taskStatusData = dashboardStats ? [
-    { name: 'To Do', value: dashboardStats.tasks?.todo || 0 },
-    { name: 'In Progress', value: dashboardStats.tasks?.in_progress || 0 },
-    { name: 'Completed', value: dashboardStats.tasks?.completed || 0 },
-    { name: 'Blocked', value: dashboardStats.tasks?.blocked || 0 },
-  ] : [];
-
-  const overviewBarData = dashboardStats ? [
-    { name: 'Applications', Total: dashboardStats.applications?.total || 0 },
-    { name: 'Sponsors', Total: dashboardStats.sponsors?.total || 0 },
-    { name: 'Tasks', Total: dashboardStats.tasks?.total || 0 },
-    { name: 'Projects', Total: dashboardStats.projects?.total || 0 },
-    { name: 'Leads', Total: dashboardStats.leads?.total || 0 },
-    { name: 'Tickets', Total: dashboardStats.tickets?.total || 0 },
-  ] : [];
+  const formatCurrency = (v) => `R ${(v || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
+
+  const divisionData = stats?.users?.by_division || [];
+  const activeInactiveData = [
+    { name: 'Active', value: stats?.users?.active || 0 },
+    { name: 'Inactive', value: stats?.users?.inactive || 0 },
+  ];
+  const expenseTypeData = stats?.expense_breakdown?.by_type?.filter(e => e.value > 0) || [];
+  const applicantExpenses = stats?.expense_breakdown?.by_applicant || [];
 
   return (
     <div className="space-y-6" data-testid="reports-page">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Reports & Analytics</h2>
-          <p className="text-slate-600 mt-1">View insights and export data</p>
+          <h1 className="text-2xl font-bold text-slate-900">Reports & Analytics</h1>
+          <p className="text-sm text-slate-500">Overview of all system metrics and data</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handlePrint} className="gap-2" data-testid="print-btn">
-            <Printer className="w-4 h-4" />
-            Print
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="gap-2" disabled={exporting} data-testid="export-report-btn">
-                <Download className="w-4 h-4" />
-                {exporting ? 'Exporting...' : 'Export'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport('excel')} data-testid="export-excel-btn">
-                <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />
-                Export to Excel
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('pdf')} data-testid="export-pdf-btn">
-                <FileText className="w-4 h-4 mr-2 text-red-600" />
-                Export to PDF
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('csv')} data-testid="export-csv-btn">
-                <Download className="w-4 h-4 mr-2 text-blue-600" />
-                Export to CSV
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="gap-2" disabled={exporting} data-testid="export-btn">
+              <Download className="w-4 h-4" /> Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => handleExport('applications', 'excel')}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" /> Applications (Excel)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('expenses', 'excel')}>
+              <DollarSign className="w-4 h-4 mr-2" /> Expenses (Excel)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('applications', 'json')}>
+              <FileText className="w-4 h-4 mr-2" /> Applications (JSON)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Dashboard Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Users', value: stats?.users?.total || 0, sub: `${stats?.users?.active || 0} active`, icon: Users, color: 'bg-blue-500' },
+          { label: 'Applications', value: stats?.applications?.total || 0, sub: `${stats?.applications?.pending || 0} pending`, icon: FileText, color: 'bg-amber-500' },
+          { label: 'Total Expenses', value: formatCurrency(stats?.expense_breakdown?.total_application_expenses || 0), sub: `${applicantExpenses.length} applicants`, icon: DollarSign, color: 'bg-emerald-500' },
+          { label: 'Open Tickets', value: stats?.tickets?.open || 0, sub: 'Awaiting response', icon: Briefcase, color: 'bg-rose-500' },
+        ].map(({ label, value, sub, icon: Icon, color }) => (
+          <Card key={label} className="bg-white border-slate-200">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className={`${color} w-12 h-12 rounded-lg flex items-center justify-center`}>
+                <Icon className="w-6 h-6 text-white" />
+              </div>
               <div>
-                <p className="text-sm text-slate-600">Applications</p>
-                <p className="text-2xl font-bold text-slate-900">{dashboardStats?.applications?.total || 0}</p>
-                <p className="text-xs text-emerald-600">
-                  {dashboardStats?.applications?.approved || 0} approved
-                </p>
+                <p className="text-xs text-slate-500">{label}</p>
+                <p className="text-xl font-bold text-slate-900">{value}</p>
+                <p className="text-xs text-slate-400">{sub}</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-full">
-                <FileText className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">Active Sponsors</p>
-                <p className="text-2xl font-bold text-slate-900">{dashboardStats?.sponsors?.active || 0}</p>
-                <p className="text-xs text-slate-500">
-                  of {dashboardStats?.sponsors?.total || 0} total
-                </p>
-              </div>
-              <div className="p-3 bg-purple-100 rounded-full">
-                <Users className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">Tasks Completed</p>
-                <p className="text-2xl font-bold text-slate-900">{dashboardStats?.tasks?.completed || 0}</p>
-                <p className="text-xs text-emerald-600">
-                  {dashboardStats?.tasks?.completion_rate || 0}% completion rate
-                </p>
-              </div>
-              <div className="p-3 bg-emerald-100 rounded-full">
-                <CheckCircle className="w-6 h-6 text-emerald-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white border-slate-200">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-600">Total Expenses</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {formatCurrency(dashboardStats?.expenses?.total)}
-                </p>
-                <p className="text-xs text-slate-500">All time</p>
-              </div>
-              <div className="p-3 bg-amber-100 rounded-full">
-                <DollarSign className="w-6 h-6 text-amber-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Analytics Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Overview Bar Chart */}
-        <Card className="bg-white border-slate-200 xl:col-span-2">
-          <CardHeader><CardTitle className="text-base">System Overview</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={overviewBarData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#64748b' }} />
-                <RechartsTooltip contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }} />
-                <Bar dataKey="Total" fill="#0056B3" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Application Status Pie */}
+      {/* Charts Row 1: Division Pie + Active/Inactive */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Users by Division */}
         <Card className="bg-white border-slate-200">
-          <CardHeader><CardTitle className="text-base">Application Status</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Users by Division</CardTitle></CardHeader>
           <CardContent>
-            {applicationStatusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
+            {divisionData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={320}>
                 <PieChart>
-                  <Pie data={applicationStatusData} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
-                    dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false}
-                    fontSize={11}>
-                    {applicationStatusData.map((entry, index) => (
-                      <Cell key={index} fill={entry.fill || CHART_COLORS[index % CHART_COLORS.length]} />
+                  <Pie
+                    data={divisionData}
+                    cx="50%" cy="50%"
+                    labelLine={false}
+                    label={({ name, value, percent }) => `${name.length > 12 ? name.slice(0, 12) + '...' : name} (${value})`}
+                    outerRadius={110}
+                    dataKey="value"
+                  >
+                    {divisionData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }} />
+                  <RechartsTooltip formatter={(value, name) => [`${value} users`, name]} />
+                  <Legend layout="vertical" align="right" verticalAlign="middle" wrapperStyle={{ fontSize: '11px' }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-[220px] text-slate-400 text-sm">No application data yet</div>
+              <p className="text-center text-slate-400 py-12">No division data</p>
             )}
           </CardContent>
         </Card>
 
-        {/* Task Status Bar */}
-        <Card className="bg-white border-slate-200 xl:col-span-3">
-          <CardHeader><CardTitle className="text-base">Task Status Breakdown</CardTitle></CardHeader>
+        {/* Active vs Inactive Users */}
+        <Card className="bg-white border-slate-200">
+          <CardHeader><CardTitle className="text-base">Active vs Inactive Users</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={taskStatusData} layout="vertical" margin={{ top: 0, right: 20, left: 30, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 12, fill: '#64748b' }} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} width={80} />
-                <RechartsTooltip contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8 }} />
-                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                  {taskStatusData.map((_, index) => (
-                    <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie
+                  data={activeInactiveData}
+                  cx="50%" cy="50%"
+                  innerRadius={60} outerRadius={110}
+                  label={({ name, value }) => `${name}: ${value}`}
+                  dataKey="value"
+                >
+                  <Cell fill="#10B981" />
+                  <Cell fill="#EF4444" />
+                </Pie>
+                <RechartsTooltip />
+                <Legend />
+              </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Report Selection */}
-      <Card className="bg-white border-slate-200">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Select value={selectedReport} onValueChange={setSelectedReport}>
-                <SelectTrigger className="w-48" data-testid="select-report-type">
-                  <SelectValue placeholder="Select report" />
-                </SelectTrigger>
-                <SelectContent>
-                  {reportTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      <div className="flex items-center gap-2">
-                        <type.icon className="w-4 h-4" />
-                        {type.label}
+      {/* Charts Row 2: Expense Type Breakdown + Applicant Expenses */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Expense Type Breakdown */}
+        <Card className="bg-white border-slate-200">
+          <CardHeader><CardTitle className="text-base">Expenses by Type</CardTitle></CardHeader>
+          <CardContent>
+            {expenseTypeData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={expenseTypeData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" tickFormatter={(v) => `R${(v/1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
+                  <RechartsTooltip formatter={(value) => [formatCurrency(value), 'Amount']} />
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
+                    {expenseTypeData.map((_, i) => (
+                      <Cell key={i} fill={['#0056B3', '#F59E0B', '#10B981', '#EC4899'][i % 4]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-center text-slate-400 py-12">No expense data</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Expenses by Applicant */}
+        <Card className="bg-white border-slate-200">
+          <CardHeader><CardTitle className="text-base">Expenses by Applicant</CardTitle></CardHeader>
+          <CardContent>
+            {applicantExpenses.length > 0 ? (
+              <div className="space-y-3">
+                {applicantExpenses.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 border border-slate-100 rounded-lg" data-testid={`applicant-expense-${i}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS[i % COLORS.length] + '20', color: COLORS[i % COLORS.length] }}>
+                        <Users className="w-4 h-4" />
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Date range" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Time</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This Week</SelectItem>
-                  <SelectItem value="month">This Month</SelectItem>
-                  <SelectItem value="quarter">This Quarter</SelectItem>
-                  <SelectItem value="year">This Year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Badge variant="outline" className="gap-2">
-              <Calendar className="w-4 h-4" />
-              Last updated: {new Date().toLocaleDateString()}
-            </Badge>
-          </div>
+                      <div>
+                        <p className="font-medium text-sm text-slate-900">{item.applicant}</p>
+                        <Badge variant="outline" className="text-xs capitalize">{item.type}</Badge>
+                      </div>
+                    </div>
+                    <span className="font-bold text-slate-900">{formatCurrency(item.total)}</span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg font-semibold">
+                  <span className="text-slate-700">Grand Total</span>
+                  <span className="text-slate-900">{formatCurrency(stats?.expense_breakdown?.total_application_expenses || 0)}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-center text-slate-400 py-12">No applicant expenses</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Applications Overview Bar Chart */}
+      <Card className="bg-white border-slate-200">
+        <CardHeader><CardTitle className="text-base">Applications Overview</CardTitle></CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={[
+              { name: 'Total', value: stats?.applications?.total || 0, fill: '#0056B3' },
+              { name: 'Pending', value: stats?.applications?.pending || 0, fill: '#F59E0B' },
+              { name: 'Approved', value: stats?.applications?.approved || 0, fill: '#10B981' },
+              { name: 'Tasks', value: stats?.tasks?.total || 0, fill: '#8B5CF6' },
+              { name: 'Completed', value: stats?.tasks?.completed || 0, fill: '#06B6D4' },
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <RechartsTooltip />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                {[
+                  { fill: '#0056B3' }, { fill: '#F59E0B' }, { fill: '#10B981' }, { fill: '#8B5CF6' }, { fill: '#06B6D4' },
+                ].map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
-
-      {/* Report Tabs */}
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
-          <TabsTrigger value="details" data-testid="tab-details">Details</TabsTrigger>
-          <TabsTrigger value="trends" data-testid="tab-trends">Trends</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Applications Overview */}
-            <Card className="bg-white border-slate-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  Applications Overview
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span className="text-sm">Total Applications</span>
-                    <span className="font-bold">{dashboardStats?.applications?.total || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
-                    <span className="text-sm text-amber-700">Pending Review</span>
-                    <span className="font-bold text-amber-700">{dashboardStats?.applications?.pending || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
-                    <span className="text-sm text-emerald-700">Approved</span>
-                    <span className="font-bold text-emerald-700">{dashboardStats?.applications?.approved || 0}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Projects Overview */}
-            <Card className="bg-white border-slate-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Briefcase className="w-5 h-5" />
-                  Projects Overview
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span className="text-sm">Total Projects</span>
-                    <span className="font-bold">{dashboardStats?.projects?.total || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                    <span className="text-sm text-blue-700">Active Projects</span>
-                    <span className="font-bold text-blue-700">{dashboardStats?.projects?.active || 0}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Leads Overview */}
-            <Card className="bg-white border-slate-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  Leads Overview
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span className="text-sm">Total Leads</span>
-                    <span className="font-bold">{dashboardStats?.leads?.total || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
-                    <span className="text-sm text-emerald-700">Won</span>
-                    <span className="font-bold text-emerald-700">{dashboardStats?.leads?.won || 0}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Tickets Overview */}
-            <Card className="bg-white border-slate-200">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  Support Tickets
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                    <span className="text-sm text-blue-700">Open Tickets</span>
-                    <span className="font-bold text-blue-700">{dashboardStats?.tickets?.open || 0}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="details">
-          <Card className="bg-white border-slate-200">
-            <CardContent className="p-12 text-center">
-              <BarChart3 className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-heading font-semibold text-slate-900 mb-2">Detailed Report</h3>
-              <p className="text-slate-600 mb-4">
-                Export the {selectedReport} report to view detailed data
-              </p>
-              <div className="flex justify-center gap-4">
-                <Button variant="outline" onClick={() => handleExport('csv')}>
-                  Export as CSV
-                </Button>
-                <Button onClick={() => handleExport('json')}>
-                  Export as JSON
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="trends">
-          <Card className="bg-white border-slate-200">
-            <CardContent className="p-12 text-center">
-              <TrendingUp className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-heading font-semibold text-slate-900 mb-2">Trend Analysis</h3>
-              <p className="text-slate-600">
-                Trend analysis and charts will be available here
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   );
 };

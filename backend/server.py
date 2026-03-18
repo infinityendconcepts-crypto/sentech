@@ -3459,8 +3459,8 @@ async def get_settings(current_user: dict = Depends(get_current_user)):
 
 @api_router.put("/settings")
 async def update_settings(update_data: SystemSettingsUpdate, current_user: dict = Depends(get_current_user)):
-    # Allow managers and admins to update settings
-    if not any(r in current_user.get("roles", []) for r in ["admin", "manager"]):
+    # Allow managers and admins (including super_admin) to update settings
+    if not any(r in current_user.get("roles", []) for r in ["admin", "manager", "super_admin"]):
         raise HTTPException(status_code=403, detail="Only admins and managers can update settings")
     
     settings = await db.settings.find_one({"id": "system_settings"}, {"_id": 0})
@@ -3542,7 +3542,8 @@ async def get_roles(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/settings/roles")
 async def create_role(role_data: RoleCreate, current_user: dict = Depends(get_current_user)):
-    if "admin" not in current_user.get("roles", []):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if not is_admin:
         raise HTTPException(status_code=403, detail="Only admins can create roles")
     
     existing = await db.roles.find_one({"name": role_data.name}, {"_id": 0})
@@ -3556,6 +3557,69 @@ async def create_role(role_data: RoleCreate, current_user: dict = Depends(get_cu
     
     await db.roles.insert_one({**role_dict})
     return role
+
+@api_router.put("/settings/roles/{role_id}")
+async def update_role(role_id: str, update_data: dict, current_user: dict = Depends(get_current_user)):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can update roles")
+    
+    role = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    
+    update_fields = {}
+    if "description" in update_data:
+        update_fields["description"] = update_data["description"]
+    if "permissions" in update_data:
+        update_fields["permissions"] = update_data["permissions"]
+    update_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    await db.roles.update_one({"id": role_id}, {"$set": update_fields})
+    updated = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/settings/roles/{role_id}")
+async def delete_role(role_id: str, current_user: dict = Depends(get_current_user)):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can delete roles")
+    
+    role = await db.roles.find_one({"id": role_id}, {"_id": 0})
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    if role.get("is_system"):
+        raise HTTPException(status_code=400, detail="Cannot delete system roles")
+    
+    await db.roles.delete_one({"id": role_id})
+    return {"message": "Role deleted"}
+
+@api_router.get("/settings/dashboard-preferences")
+async def get_dashboard_preferences(current_user: dict = Depends(get_current_user)):
+    prefs = await db.dashboard_preferences.find_one({"user_id": current_user["id"]}, {"_id": 0})
+    if not prefs:
+        return {
+            "user_id": current_user["id"],
+            "visible_widgets": ["applications", "training", "expenses", "users", "tickets", "tasks", "quick_actions"],
+            "layout": "default",
+        }
+    return prefs
+
+@api_router.put("/settings/dashboard-preferences")
+async def update_dashboard_preferences(prefs_data: dict, current_user: dict = Depends(get_current_user)):
+    now = datetime.now(timezone.utc).isoformat()
+    prefs = {
+        "user_id": current_user["id"],
+        "visible_widgets": prefs_data.get("visible_widgets", []),
+        "layout": prefs_data.get("layout", "default"),
+        "updated_at": now,
+    }
+    await db.dashboard_preferences.update_one(
+        {"user_id": current_user["id"]},
+        {"$set": prefs},
+        upsert=True
+    )
+    return prefs
 
 @api_router.get("/settings/faqs")
 async def get_faqs(
@@ -3635,6 +3699,55 @@ async def get_dashboard_report(current_user: dict = Depends(get_current_user)):
     total_leads = await db.leads.count_documents({})
     won_leads = await db.leads.count_documents({"status": "won"})
     
+    # User stats by division
+    all_users = await db.users.find({}, {"_id": 0, "division": 1, "is_active": 1}).to_list(10000)
+    division_counts = {}
+    active_count = 0
+    inactive_count = 0
+    for u in all_users:
+        div = u.get("division", "Unassigned") or "Unassigned"
+        division_counts[div] = division_counts.get(div, 0) + 1
+        if u.get("is_active", True):
+            active_count += 1
+        else:
+            inactive_count += 1
+    
+    division_chart = [{"name": k, "value": v} for k, v in sorted(division_counts.items(), key=lambda x: -x[1])]
+    
+    # Application expenses breakdown
+    bursary_apps = await db.applications.find(
+        {"additional_expenses": {"$exists": True}}, {"_id": 0, "id": 1, "user_id": 1, "user_email": 1, "additional_expenses": 1, "status": 1}
+    ).to_list(1000)
+    training_apps = await db.training_applications.find(
+        {"additional_expenses": {"$exists": True}}, {"_id": 0, "id": 1, "user_id": 1, "additional_expenses": 1, "status": 1}
+    ).to_list(1000)
+    
+    expense_types = {"flights": 0, "accommodation": 0, "car_hire_or_shuttle": 0, "catering": 0}
+    for app in bursary_apps + training_apps:
+        exp = app.get("additional_expenses", {})
+        for k in expense_types:
+            expense_types[k] += float(exp.get(k, 0) or 0)
+    
+    expense_type_chart = [
+        {"name": "Flights", "value": expense_types["flights"]},
+        {"name": "Accommodation", "value": expense_types["accommodation"]},
+        {"name": "Car Hire/Shuttle", "value": expense_types["car_hire_or_shuttle"]},
+        {"name": "Catering", "value": expense_types["catering"]},
+    ]
+    
+    # Per-applicant expense totals
+    applicant_expenses = []
+    for app in bursary_apps + training_apps:
+        exp = app.get("additional_expenses", {})
+        total = sum(float(exp.get(k, 0) or 0) for k in expense_types)
+        if total > 0:
+            user = await db.users.find_one({"id": app.get("user_id")}, {"_id": 0, "full_name": 1})
+            applicant_expenses.append({
+                "applicant": user.get("full_name", "Unknown") if user else "Unknown",
+                "total": total,
+                "type": "bursary" if app in bursary_apps else "training",
+            })
+    
     return {
         "applications": {
             "total": total_applications,
@@ -3663,7 +3776,18 @@ async def get_dashboard_report(current_user: dict = Depends(get_current_user)):
         "leads": {
             "total": total_leads,
             "won": won_leads
-        }
+        },
+        "users": {
+            "total": len(all_users),
+            "active": active_count,
+            "inactive": inactive_count,
+            "by_division": division_chart,
+        },
+        "expense_breakdown": {
+            "by_type": expense_type_chart,
+            "by_applicant": applicant_expenses,
+            "total_application_expenses": sum(e["total"] for e in applicant_expenses),
+        },
     }
 
 @api_router.get("/reports/export/{report_type}")
