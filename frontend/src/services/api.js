@@ -55,6 +55,7 @@ export const usersAPI = {
   changeRole: (id, roles) => api.put(`/users/${id}/role`, { roles }),
   delete: (id) => api.delete(`/users/${id}`),
   downloadImportTemplate: () => api.get('/users/import-template', { responseType: 'blob' }),
+  batchAction: (action, userIds) => api.post('/users/batch-action', { action, user_ids: userIds }),
 };
 
 export const divisionsAPI = {
@@ -163,6 +164,9 @@ export const filesAPI = {
   share: (id, userIds, teamIds) => api.post(`/files/${id}/share`, { user_ids: userIds, team_ids: teamIds }),
   getFolders: (params) => api.get('/files/folders/list', { params }),
   createFolder: (data) => api.post('/files/folders', data),
+  upload: (formData) => api.post('/files/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
 };
 
 export const tasksAPI = {

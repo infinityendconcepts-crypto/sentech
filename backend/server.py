@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Request
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, Request, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import RedirectResponse, StreamingResponse
 from dotenv import load_dotenv
@@ -1194,7 +1194,19 @@ async def login(credentials: UserLogin):
     
     access_token = create_access_token(data={"sub": user["id"]})
     user_response = {k: v for k, v in user.items() if k != 'password_hash'}
-    
+
+    # Aggregate RBAC permissions from user's roles
+    role_permissions = {}
+    user_roles = user.get("roles", [])
+    if user_roles:
+        role_docs = await db.roles.find({"name": {"$in": user_roles}}, {"_id": 0}).to_list(20)
+        for role_doc in role_docs:
+            for module, perms in role_doc.get("permissions", {}).items():
+                if module not in role_permissions:
+                    role_permissions[module] = []
+                role_permissions[module] = list(set(role_permissions[module] + perms))
+    user_response["role_permissions"] = role_permissions
+
     return TokenResponse(access_token=access_token, user=user_response)
 
 @api_router.post("/auth/check-password-setup")
@@ -2686,6 +2698,47 @@ async def share_file(file_id: str, user_ids: List[str] = [], team_ids: List[str]
     )
     return {"message": "File shared successfully"}
 
+@api_router.post("/files/upload")
+async def upload_file_multipart(
+    file: UploadFile = File(...),
+    folder_id: Optional[str] = Form(None),
+    project_id: Optional[str] = Form(None),
+    category: Optional[str] = Form(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a file using multipart form data instead of base64"""
+    import base64
+    MAX_SIZE = 20 * 1024 * 1024  # 20MB
+    content = await file.read()
+    if len(content) > MAX_SIZE:
+        raise HTTPException(status_code=413, detail="File too large. Maximum size is 20MB")
+
+    # Store as base64 in MongoDB for backward compatibility
+    b64_data = base64.b64encode(content).decode('utf-8')
+    file_ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    content_type = file.content_type or 'application/octet-stream'
+
+    file_doc = {
+        "id": generate_uuid(),
+        "name": file.filename,
+        "file_type": file_ext,
+        "content_type": content_type,
+        "size": len(content),
+        "file_data": f"data:{content_type};base64,{b64_data}",
+        "folder_id": folder_id,
+        "project_id": project_id,
+        "category": category,
+        "uploaded_by": current_user["id"],
+        "is_shared": False,
+        "shared_with": [],
+        "shared_with_teams": [],
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.files.insert_one({**file_doc})
+    file_doc.pop("file_data", None)
+    return file_doc
+
 # ============== TASKS ROUTES ==============
 
 @api_router.get("/tasks")
@@ -3793,120 +3846,7 @@ async def delete_faq(faq_id: str, current_user: dict = Depends(get_current_user)
     return {"message": "FAQ deleted successfully"}
 
 # ============== REPORTS ROUTES ==============
-
-@api_router.get("/reports/dashboard")
-async def get_dashboard_report(current_user: dict = Depends(get_current_user)):
-    total_applications = await db.applications.count_documents({})
-    pending_applications = await db.applications.count_documents({"status": "pending"})
-    approved_applications = await db.applications.count_documents({"status": "approved"})
-    
-    total_sponsors = await db.sponsors.count_documents({})
-    active_sponsors = await db.sponsors.count_documents({"status": "active"})
-    
-    total_projects = await db.projects.count_documents({})
-    active_projects = await db.projects.count_documents({"status": "active"})
-    
-    total_tasks = await db.tasks.count_documents({})
-    completed_tasks = await db.tasks.count_documents({"status": "completed"})
-    
-    expenses = await db.expenses.find({}, {"_id": 0, "amount": 1, "status": 1}).to_list(10000)
-    total_expenses = sum(e.get("amount", 0) for e in expenses)
-    
-    open_tickets = await db.tickets.count_documents({"status": "open"})
-    
-    total_leads = await db.leads.count_documents({})
-    won_leads = await db.leads.count_documents({"status": "won"})
-    
-    # User stats by division
-    all_users = await db.users.find({}, {"_id": 0, "division": 1, "is_active": 1}).to_list(10000)
-    division_counts = {}
-    active_count = 0
-    inactive_count = 0
-    for u in all_users:
-        div = u.get("division", "Unassigned") or "Unassigned"
-        division_counts[div] = division_counts.get(div, 0) + 1
-        if u.get("is_active", True):
-            active_count += 1
-        else:
-            inactive_count += 1
-    
-    division_chart = [{"name": k, "value": v} for k, v in sorted(division_counts.items(), key=lambda x: -x[1])]
-    
-    # Application expenses breakdown
-    bursary_apps = await db.applications.find(
-        {"additional_expenses": {"$exists": True}}, {"_id": 0, "id": 1, "user_id": 1, "user_email": 1, "additional_expenses": 1, "status": 1}
-    ).to_list(1000)
-    training_apps = await db.training_applications.find(
-        {"additional_expenses": {"$exists": True}}, {"_id": 0, "id": 1, "user_id": 1, "additional_expenses": 1, "status": 1}
-    ).to_list(1000)
-    
-    expense_types = {"flights": 0, "accommodation": 0, "car_hire_or_shuttle": 0, "catering": 0}
-    for app in bursary_apps + training_apps:
-        exp = app.get("additional_expenses", {})
-        for k in expense_types:
-            expense_types[k] += float(exp.get(k, 0) or 0)
-    
-    expense_type_chart = [
-        {"name": "Flights", "value": expense_types["flights"]},
-        {"name": "Accommodation", "value": expense_types["accommodation"]},
-        {"name": "Car Hire/Shuttle", "value": expense_types["car_hire_or_shuttle"]},
-        {"name": "Catering", "value": expense_types["catering"]},
-    ]
-    
-    # Per-applicant expense totals
-    applicant_expenses = []
-    for app in bursary_apps + training_apps:
-        exp = app.get("additional_expenses", {})
-        total = sum(float(exp.get(k, 0) or 0) for k in expense_types)
-        if total > 0:
-            user = await db.users.find_one({"id": app.get("user_id")}, {"_id": 0, "full_name": 1})
-            applicant_expenses.append({
-                "applicant": user.get("full_name", "Unknown") if user else "Unknown",
-                "total": total,
-                "type": "bursary" if app in bursary_apps else "training",
-            })
-    
-    return {
-        "applications": {
-            "total": total_applications,
-            "pending": pending_applications,
-            "approved": approved_applications
-        },
-        "sponsors": {
-            "total": total_sponsors,
-            "active": active_sponsors
-        },
-        "projects": {
-            "total": total_projects,
-            "active": active_projects
-        },
-        "tasks": {
-            "total": total_tasks,
-            "completed": completed_tasks,
-            "completion_rate": round((completed_tasks / total_tasks * 100) if total_tasks > 0 else 0, 1)
-        },
-        "expenses": {
-            "total": total_expenses
-        },
-        "tickets": {
-            "open": open_tickets
-        },
-        "leads": {
-            "total": total_leads,
-            "won": won_leads
-        },
-        "users": {
-            "total": len(all_users),
-            "active": active_count,
-            "inactive": inactive_count,
-            "by_division": division_chart,
-        },
-        "expense_breakdown": {
-            "by_type": expense_type_chart,
-            "by_applicant": applicant_expenses,
-            "total_application_expenses": sum(e["total"] for e in applicant_expenses),
-        },
-    }
+# /reports/dashboard moved to routers/reports.py
 
 @api_router.get("/reports/export/{report_type}")
 async def export_report(
@@ -4454,6 +4394,43 @@ async def delete_department(dept_id: str, current_user: dict = Depends(get_curre
 
 # ============== USER IMPORT ROUTES ==============
 
+@api_router.post("/users/batch-action")
+async def batch_user_action(body: dict, current_user: dict = Depends(get_current_user)):
+    """Batch activate, deactivate, or delete users"""
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
+        raise HTTPException(status_code=403, detail="Only admins can perform batch actions")
+
+    action = body.get("action")
+    user_ids = body.get("user_ids", [])
+    if not user_ids:
+        raise HTTPException(status_code=400, detail="No users selected")
+    if action not in ["activate", "deactivate", "delete"]:
+        raise HTTPException(status_code=400, detail="Invalid action. Use: activate, deactivate, delete")
+
+    # Exclude current user from batch operations
+    user_ids = [uid for uid in user_ids if uid != current_user["id"]]
+    if not user_ids:
+        raise HTTPException(status_code=400, detail="Cannot perform batch actions on yourself")
+
+    count = 0
+    if action == "activate":
+        result = await db.users.update_many(
+            {"id": {"$in": user_ids}},
+            {"$set": {"is_active": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        count = result.modified_count
+    elif action == "deactivate":
+        result = await db.users.update_many(
+            {"id": {"$in": user_ids}},
+            {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        count = result.modified_count
+    elif action == "delete":
+        result = await db.users.delete_many({"id": {"$in": user_ids}})
+        count = result.deleted_count
+
+    return {"message": f"{action.title()}d {count} user(s)", "count": count}
+
 @api_router.post("/users/bulk-import")
 async def bulk_import_users(users_data: List[dict], current_user: dict = Depends(get_current_user)):
     """Bulk import users from spreadsheet data"""
@@ -4870,40 +4847,7 @@ async def revoke_temp_leader(subgroup_id: str, current_user: dict = Depends(get_
     return {"message": "Temporary leader revoked"}
 
 # ============== NOTIFICATIONS ROUTES ==============
-
-@api_router.get("/notifications")
-async def get_notifications(current_user: dict = Depends(get_current_user)):
-    notifications = await db.notifications.find(
-        {"user_id": current_user["id"]},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(100)
-    return notifications
-
-@api_router.get("/notifications/unread/count")
-async def get_unread_notifications_count(current_user: dict = Depends(get_current_user)):
-    count = await db.notifications.count_documents({"user_id": current_user["id"], "is_read": False})
-    return {"unread_count": count}
-
-@api_router.put("/notifications/{notification_id}/read")
-async def mark_notification_read(notification_id: str, current_user: dict = Depends(get_current_user)):
-    await db.notifications.update_one(
-        {"id": notification_id, "user_id": current_user["id"]},
-        {"$set": {"is_read": True}}
-    )
-    return {"message": "Notification marked as read"}
-
-@api_router.put("/notifications/read-all")
-async def mark_all_notifications_read(current_user: dict = Depends(get_current_user)):
-    await db.notifications.update_many(
-        {"user_id": current_user["id"], "is_read": False},
-        {"$set": {"is_read": True}}
-    )
-    return {"message": "All notifications marked as read"}
-
-@api_router.delete("/notifications/{notification_id}")
-async def delete_notification(notification_id: str, current_user: dict = Depends(get_current_user)):
-    await db.notifications.delete_one({"id": notification_id, "user_id": current_user["id"]})
-    return {"message": "Notification deleted"}
+# Moved to routers/notifications.py
 
 # ============== GROUP MESSAGING ROUTES ==============
 
@@ -5001,225 +4945,15 @@ async def _create_message_notifications(conversation, sender_id, sender_name, co
             await db.notifications.insert_one({**notif})
 
 # ============== DASHBOARD STATS ==============
-
-@api_router.get("/dashboard/stats")
-async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
-    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
-    if is_admin:
-        total_applications = await db.applications.count_documents({})
-        pending_applications = await db.applications.count_documents({"status": "pending"})
-        approved_applications = await db.applications.count_documents({"status": "approved"})
-        training_applications = await db.training_applications.count_documents({})
-        open_tickets = await db.tickets.count_documents({"status": "open"})
-        active_users = await db.users.count_documents({"is_active": True})
-    else:
-        total_applications = await db.applications.count_documents({"user_id": current_user["id"]})
-        pending_applications = await db.applications.count_documents({"user_id": current_user["id"], "status": "pending"})
-        approved_applications = await db.applications.count_documents({"user_id": current_user["id"], "status": "approved"})
-        training_applications = await db.training_applications.count_documents({"user_id": current_user["id"]})
-        open_tickets = await db.tickets.count_documents({"created_by": current_user["id"], "status": "open"})
-        active_users = 0
-
-    unread_notifications = await db.notifications.count_documents({"user_id": current_user["id"], "is_read": False})
-
-    return {
-        "total_applications": total_applications,
-        "pending_applications": pending_applications,
-        "approved_applications": approved_applications,
-        "training_applications": training_applications,
-        "open_tickets": open_tickets,
-        "unread_notifications": unread_notifications,
-        "active_users": active_users,
-    }
-
-@api_router.get("/dashboard/recent-activity")
-async def get_recent_activity(current_user: dict = Depends(get_current_user)):
-    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
-    activities = []
-
-    # Fetch recent notifications for this user (last 20)
-    notifications = await db.notifications.find(
-        {"user_id": current_user["id"]},
-        {"_id": 0}
-    ).sort("created_at", -1).limit(10).to_list(10)
-    for n in notifications:
-        activities.append({
-            "id": n.get("id", ""),
-            "type": n.get("type", "notification"),
-            "title": n.get("title", "Notification"),
-            "description": n.get("message", ""),
-            "created_at": n.get("created_at", ""),
-            "icon": "bell",
-        })
-
-    # Fetch recent applications
-    app_query = {} if is_admin else {"user_id": current_user["id"]}
-    recent_apps = await db.applications.find(app_query, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
-    for a in recent_apps:
-        applicant = a.get("applicant_name") or a.get("full_name") or "Unknown"
-        activities.append({
-            "id": a.get("id", ""),
-            "type": "application",
-            "title": f"Bursary Application - {a.get('status', 'submitted').title()}",
-            "description": f"{applicant} - {a.get('institution', 'N/A')}",
-            "created_at": a.get("created_at", ""),
-            "icon": "file-text",
-        })
-
-    # Fetch recent training applications
-    ta_query = {} if is_admin else {"user_id": current_user["id"]}
-    recent_tas = await db.training_applications.find(ta_query, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
-    for t in recent_tas:
-        applicant = t.get("applicant_name") or t.get("full_name") or "Unknown"
-        activities.append({
-            "id": t.get("id", ""),
-            "type": "training_application",
-            "title": f"Training Application - {t.get('status', 'submitted').title()}",
-            "description": f"{applicant} - {t.get('training_title', 'N/A')}",
-            "created_at": t.get("created_at", ""),
-            "icon": "graduation-cap",
-        })
-
-    # Fetch recent tickets
-    tkt_query = {} if is_admin else {"created_by": current_user["id"]}
-    recent_tickets = await db.tickets.find(tkt_query, {"_id": 0}).sort("created_at", -1).limit(5).to_list(5)
-    for tk in recent_tickets:
-        activities.append({
-            "id": tk.get("id", ""),
-            "type": "ticket",
-            "title": f"Ticket: {tk.get('title', 'Untitled')}",
-            "description": f"Status: {tk.get('status', 'open').title()} - Priority: {tk.get('priority', 'medium').title()}",
-            "created_at": tk.get("created_at", ""),
-            "icon": "ticket",
-        })
-
-    # Sort all activities by created_at desc, take top 15
-    activities.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-    return activities[:15]
-
-@api_router.get("/dashboard/report-summary")
-async def get_dashboard_report_summary(current_user: dict = Depends(get_current_user)):
-    total_users = await db.users.count_documents({})
-    active_users = await db.users.count_documents({"is_active": True})
-    total_bursary = await db.applications.count_documents({})
-    approved_bursary = await db.applications.count_documents({"status": "approved"})
-    total_training = await db.training_applications.count_documents({})
-    approved_training = await db.training_applications.count_documents({"status": "approved"})
-    total_expenses = 0
-    expenses_cursor = db.expenses.find({}, {"_id": 0, "amount": 1})
-    async for exp in expenses_cursor:
-        total_expenses += exp.get("amount", 0)
-    open_tickets = await db.tickets.count_documents({"status": "open"})
-    closed_tickets = await db.tickets.count_documents({"status": "closed"})
-
-    return {
-        "total_users": total_users,
-        "active_users": active_users,
-        "total_bursary_applications": total_bursary,
-        "approved_bursary_applications": approved_bursary,
-        "total_training_applications": total_training,
-        "approved_training_applications": approved_training,
-        "total_expenses": total_expenses,
-        "open_tickets": open_tickets,
-        "closed_tickets": closed_tickets,
-    }
-
-@api_router.post("/tasks/{task_id}/assign")
-async def assign_task_users(task_id: str, body: dict, current_user: dict = Depends(get_current_user)):
-    """Assign one or more users to a training track module. Only admins, division heads, sub-division heads."""
-    user_roles = current_user.get("roles", [])
-    is_admin = "admin" in user_roles or "super_admin" in user_roles
-    is_division_head = "division_head" in user_roles or "sub_division_head" in user_roles
-    if not is_admin and not is_division_head:
-        raise HTTPException(status_code=403, detail="Only admins and division heads can assign users")
-
-    task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
-    if not task:
-        raise HTTPException(status_code=404, detail="Training module not found")
-
-    user_ids = body.get("user_ids", [])
-    if not user_ids:
-        raise HTTPException(status_code=400, detail="At least one user_id is required")
-
-    # Fetch user names for assignment records
-    assigned_users = []
-    for uid in user_ids:
-        u = await db.users.find_one({"id": uid}, {"_id": 0, "full_name": 1, "email": 1, "id": 1})
-        if u:
-            assigned_users.append({
-                "user_id": u["id"],
-                "full_name": u.get("full_name", u.get("email", "")),
-                "assigned_at": datetime.now(timezone.utc).isoformat(),
-                "assigned_by": current_user["id"],
-            })
-
-    # Store in a dedicated field
-    existing_assigned = task.get("assigned_users", [])
-    existing_ids = {a["user_id"] for a in existing_assigned}
-    new_users = [u for u in assigned_users if u["user_id"] not in existing_ids]
-    all_assigned = existing_assigned + new_users
-
-    # Also update assignee_name to show the first assigned user
-    first_name = all_assigned[0]["full_name"] if all_assigned else None
-    suffix = f" (+{len(all_assigned) - 1})" if len(all_assigned) > 1 else ""
-    display_name = f"{first_name}{suffix}" if first_name else None
-
-    await db.tasks.update_one(
-        {"id": task_id},
-        {"$set": {
-            "assigned_users": all_assigned,
-            "assignee_name": display_name,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }}
-    )
-
-    # Send notifications to assigned users
-    for au in new_users:
-        notif = {
-            "id": generate_uuid(),
-            "user_id": au["user_id"],
-            "type": "task_assignment",
-            "title": "Training Module Assigned",
-            "message": f'You have been assigned to "{task.get("title", "")}" by {current_user.get("full_name", "Admin")}',
-            "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        await db.notifications.insert_one({**notif})
-
-    updated = await db.tasks.find_one({"id": task_id}, {"_id": 0})
-    return updated
-
-@api_router.delete("/tasks/{task_id}/assign/{user_id}")
-async def unassign_task_user(task_id: str, user_id: str, current_user: dict = Depends(get_current_user)):
-    """Remove a user from a training track module assignment."""
-    user_roles = current_user.get("roles", [])
-    is_admin = "admin" in user_roles or "super_admin" in user_roles
-    is_division_head = "division_head" in user_roles or "sub_division_head" in user_roles
-    if not is_admin and not is_division_head:
-        raise HTTPException(status_code=403, detail="Only admins and division heads can unassign users")
-
-    task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
-    if not task:
-        raise HTTPException(status_code=404, detail="Training module not found")
-
-    existing = task.get("assigned_users", [])
-    updated_users = [u for u in existing if u["user_id"] != user_id]
-
-    first_name = updated_users[0]["full_name"] if updated_users else None
-    suffix = f" (+{len(updated_users) - 1})" if len(updated_users) > 1 else ""
-    display_name = f"{first_name}{suffix}" if first_name else None
-
-    await db.tasks.update_one(
-        {"id": task_id},
-        {"$set": {
-            "assigned_users": updated_users,
-            "assignee_name": display_name,
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }}
-    )
-    return {"message": "User unassigned successfully"}
+# Moved to routers/reports.py
 
 # ============== APP SETUP ==============
+
+# Include extracted routers
+from routers.reports import router as reports_router
+from routers.notifications import router as notifications_router
+app.include_router(reports_router)
+app.include_router(notifications_router)
 
 app.include_router(api_router)
 

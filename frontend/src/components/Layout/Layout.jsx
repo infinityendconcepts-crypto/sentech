@@ -33,27 +33,28 @@ import {
 } from 'lucide-react';
 
 // adminOnly: true = visible only to admins
+// rbacModule: key matching RBAC permissions system
 const navigation = [
-  { name: 'Dashboard',     href: '/dashboard',   icon: LayoutDashboard },
-  { name: 'Bursary Applications',  href: '/applications', icon: FileText },
-  { name: 'Training Applications', href: '/training-applications', icon: GraduationCap },
-  { name: 'Personal Dev Plan', href: '/pdp',      icon: TrendingUp },
-  { name: 'Training Track',href: '/tasks',        icon: CheckSquare },
-  { name: 'Meetings',      href: '/meetings',     icon: Calendar },
-  { name: 'Events',        href: '/events',       icon: CalendarDays },
-  { name: 'Messages',      href: '/messages',     icon: MessageSquare },
-  { name: 'MICTSETA Docs', href: '/files',        icon: FolderOpen },
-  { name: 'Tickets',       href: '/tickets',      icon: Ticket },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Division Groups', href: '/division-groups',  icon: UsersRound },
+  { name: 'Dashboard',     href: '/dashboard',   icon: LayoutDashboard, rbacModule: 'dashboard' },
+  { name: 'Bursary Applications',  href: '/applications', icon: FileText, rbacModule: 'applications' },
+  { name: 'Training Applications', href: '/training-applications', icon: GraduationCap, rbacModule: 'training_applications' },
+  { name: 'Personal Dev Plan', href: '/pdp',      icon: TrendingUp, rbacModule: 'pdp' },
+  { name: 'Training Track',href: '/tasks',        icon: CheckSquare, rbacModule: 'tasks' },
+  { name: 'Meetings',      href: '/meetings',     icon: Calendar, rbacModule: 'meetings' },
+  { name: 'Events',        href: '/events',       icon: CalendarDays, rbacModule: 'events' },
+  { name: 'Messages',      href: '/messages',     icon: MessageSquare, rbacModule: 'messages' },
+  { name: 'MICTSETA Docs', href: '/files',        icon: FolderOpen, rbacModule: 'documents' },
+  { name: 'Tickets',       href: '/tickets',      icon: Ticket, rbacModule: 'tickets' },
+  { name: 'Notifications', href: '/notifications', icon: Bell, rbacModule: 'notifications' },
+  { name: 'Division Groups', href: '/division-groups',  icon: UsersRound, rbacModule: 'division_groups' },
   { name: 'Help & Support',href: '/help',         icon: HelpCircle },
   // ── Admin only ──
   { name: 'Sponsors',   href: '/sponsors',   icon: Users,        adminOnly: true },
   { name: 'BBBEE',      href: '/bbbee',      icon: Award,        adminOnly: true },
-  { name: 'Expenses',   href: '/expenses',   icon: Receipt,      adminOnly: true },
-  { name: 'Reports',    href: '/reports',    icon: BarChart3,    adminOnly: true },
-  { name: 'Users',      href: '/users',      icon: Users,        adminOnly: true },
-  { name: 'Settings',   href: '/settings',   icon: Settings,     adminOnly: true },
+  { name: 'Expenses',   href: '/expenses',   icon: Receipt,      adminOnly: true, rbacModule: 'expenses' },
+  { name: 'Reports',    href: '/reports',    icon: BarChart3,    adminOnly: true, rbacModule: 'reports' },
+  { name: 'Users',      href: '/users',      icon: Users,        adminOnly: true, rbacModule: 'users' },
+  { name: 'Settings',   href: '/settings',   icon: Settings,     adminOnly: true, rbacModule: 'settings' },
 ];
 
 const Layout = () => {
@@ -63,8 +64,23 @@ const Layout = () => {
   const location = useLocation();
   const { user, logout, isAdmin } = useAuth();
 
-  // Filter navigation based on role
-  const visibleNav = navigation.filter(item => !item.adminOnly || isAdmin);
+  // Get user's permissions from their roles
+  const userPermissions = user?.role_permissions || {};
+
+  // Check if user has at least read access to a module
+  const hasModuleAccess = (rbacModule) => {
+    if (!rbacModule) return true; // no RBAC restriction = always visible
+    if (isAdmin) return true; // admins see everything
+    const perms = userPermissions[rbacModule] || [];
+    return perms.includes('read') || perms.length > 0;
+  };
+
+  // Filter navigation based on role and RBAC permissions
+  const visibleNav = navigation.filter(item => {
+    if (item.adminOnly && !isAdmin) return false;
+    if (item.rbacModule && !hasModuleAccess(item.rbacModule)) return false;
+    return true;
+  });
 
   // Handle responsive behavior
   useEffect(() => {

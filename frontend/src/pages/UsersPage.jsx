@@ -20,7 +20,8 @@ import {
   Users, Search, MoreVertical, Shield, ShieldOff,
   Trash2, Mail, Building2, CheckCircle, XCircle, UserCheck,
   Briefcase, Calendar, Hash, X, Eye, Pencil,
-  Upload, Download, FileSpreadsheet,
+  Upload, Download, FileSpreadsheet, ChevronLeft, ChevronRight,
+  CheckSquare, Square,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -85,6 +86,14 @@ const UsersPage = () => {
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+
+  // Pagination state
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Batch selection state
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [batchLoading, setBatchLoading] = useState(false);
 
   const isAdmin = currentUser?.roles?.includes('admin') || currentUser?.roles?.includes('super_admin');
 
@@ -332,9 +341,55 @@ const UsersPage = () => {
     setFilterRole('all');
     setFilterStatus('all');
     setFilterGender('all');
+    setCurrentPage(1);
+  };
+
+  // Batch actions
+  const toggleSelectUser = (userId) => {
+    setSelectedIds(prev =>
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    const pageUserIds = paginatedUsers.map(u => u.id).filter(id => id !== currentUser?.id);
+    const allSelected = pageUserIds.every(id => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds(prev => prev.filter(id => !pageUserIds.includes(id)));
+    } else {
+      setSelectedIds(prev => [...new Set([...prev, ...pageUserIds])]);
+    }
+  };
+
+  const handleBatchAction = async (action) => {
+    if (!selectedIds.length) return;
+    const actionLabel = action === 'delete' ? 'delete' : action;
+    if (action === 'delete') {
+      if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} user(s)? This cannot be undone.`)) return;
+    }
+    setBatchLoading(true);
+    try {
+      const res = await usersAPI.batchAction(action, selectedIds);
+      toast.success(res.data.message);
+      setSelectedIds([]);
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || `Failed to ${actionLabel} users`);
+    } finally {
+      setBatchLoading(false);
+    }
   };
 
   const hasActiveFilters = search || filterDepartment !== 'all' || filterRole !== 'all' || filterStatus !== 'all' || filterGender !== 'all';
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pageUserIds = paginatedUsers.map(u => u.id).filter(id => id !== currentUser?.id);
+  const allPageSelected = pageUserIds.length > 0 && pageUserIds.every(id => selectedIds.includes(id));
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [search, filterDepartment, filterRole, filterStatus, filterGender, pageSize]);
 
   // Get unique values for stats
   const uniqueDepartmentsInUsers = [...new Set(users.map(u => u.department).filter(Boolean))].sort();
@@ -457,12 +512,74 @@ const UsersPage = () => {
         </CardContent>
       </Card>
 
+      {/* Batch Actions Bar */}
+      {selectedIds.length > 0 && isAdmin && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckSquare className="w-5 h-5 text-primary" />
+              <span className="text-sm font-medium text-slate-900">{selectedIds.length} user(s) selected</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                onClick={() => handleBatchAction('activate')}
+                disabled={batchLoading}
+                data-testid="batch-activate-btn"
+              >
+                <Shield className="w-3.5 h-3.5" /> Activate
+              </Button>
+              <Button
+                variant="outline" size="sm" className="gap-1.5 text-amber-600 border-amber-200 hover:bg-amber-50"
+                onClick={() => handleBatchAction('deactivate')}
+                disabled={batchLoading}
+                data-testid="batch-deactivate-btn"
+              >
+                <ShieldOff className="w-3.5 h-3.5" /> Deactivate
+              </Button>
+              <Button
+                variant="outline" size="sm" className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50"
+                onClick={() => handleBatchAction('delete')}
+                disabled={batchLoading}
+                data-testid="batch-delete-btn"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </Button>
+              <Button
+                variant="ghost" size="sm" className="text-xs"
+                onClick={() => setSelectedIds([])}
+                data-testid="clear-selection-btn"
+              >
+                <X className="w-3 h-3 mr-1" /> Clear
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Users Table */}
       <Card className="bg-white border-slate-200">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
-            {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} found
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold">
+              {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} found
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Show</span>
+              <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                <SelectTrigger className="w-20 h-8 text-xs" data-testid="page-size-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-slate-500">per page</span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -480,6 +597,17 @@ const UsersPage = () => {
               <table className="w-full">
                 <thead className="bg-slate-50 border-y border-slate-100">
                   <tr>
+                    {isAdmin && (
+                      <th className="px-4 py-3 w-10">
+                        <button onClick={toggleSelectAll} className="flex items-center" data-testid="select-all-checkbox">
+                          {allPageSelected ? (
+                            <CheckSquare className="w-4 h-4 text-primary" />
+                          ) : (
+                            <Square className="w-4 h-4 text-slate-400" />
+                          )}
+                        </button>
+                      </th>
+                    )}
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Employee</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Division</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">Department</th>
@@ -490,8 +618,21 @@ const UsersPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredUsers.map(u => (
-                    <tr key={u.id} className="hover:bg-slate-50 transition-colors" data-testid={`user-row-${u.id}`}>
+                  {paginatedUsers.map(u => (
+                    <tr key={u.id} className={`hover:bg-slate-50 transition-colors ${selectedIds.includes(u.id) ? 'bg-primary/5' : ''}`} data-testid={`user-row-${u.id}`}>
+                      {isAdmin && (
+                        <td className="px-4 py-3">
+                          {u.id !== currentUser?.id && (
+                            <button onClick={() => toggleSelectUser(u.id)} data-testid={`select-user-${u.id}`}>
+                              {selectedIds.includes(u.id) ? (
+                                <CheckSquare className="w-4 h-4 text-primary" />
+                              ) : (
+                                <Square className="w-4 h-4 text-slate-400" />
+                              )}
+                            </button>
+                          )}
+                        </td>
+                      )}
                       {/* Employee Info */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -607,6 +748,55 @@ const UsersPage = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {filteredUsers.length > 0 && (
+            <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3">
+              <div className="text-sm text-slate-500">
+                Showing {Math.min((currentPage - 1) * pageSize + 1, filteredUsers.length)}–{Math.min(currentPage * pageSize, filteredUsers.length)} of {filteredUsers.length}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline" size="sm" className="h-8 w-8 p-0"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  data-testid="prev-page-btn"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let page;
+                  if (totalPages <= 5) {
+                    page = i + 1;
+                  } else if (currentPage <= 3) {
+                    page = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    page = totalPages - 4 + i;
+                  } else {
+                    page = currentPage - 2 + i;
+                  }
+                  return (
+                    <Button
+                      key={page} variant={page === currentPage ? 'default' : 'outline'}
+                      size="sm" className="h-8 w-8 p-0 text-xs"
+                      onClick={() => setCurrentPage(page)}
+                      data-testid={`page-btn-${page}`}
+                    >
+                      {page}
+                    </Button>
+                  );
+                })}
+                <Button
+                  variant="outline" size="sm" className="h-8 w-8 p-0"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  data-testid="next-page-btn"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

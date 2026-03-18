@@ -459,34 +459,98 @@ const SettingsPage = () => {
 
           {/* Page Settings */}
           {activeTab === 'pages' && (
-            <Card className="bg-white border-slate-200">
-              <CardHeader><CardTitle>Page Settings</CardTitle><CardDescription>Configure visibility and defaults for each page module</CardDescription></CardHeader>
-              <CardContent className="space-y-3">
-                {MODULES.filter(m => m.key !== 'settings').map(({ key, label, icon: Icon }) => (
-                  <div key={key} className="flex items-center justify-between p-3 border border-slate-200 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Icon className="w-4 h-4 text-slate-500" />
-                      <div>
-                        <p className="font-medium text-sm text-slate-900">{label}</p>
-                        <p className="text-xs text-slate-500">Enable or disable this module</p>
+            <div className="space-y-6">
+              {/* Module Enable/Disable */}
+              <Card className="bg-white border-slate-200">
+                <CardHeader><CardTitle>Module Visibility</CardTitle><CardDescription>Enable or disable modules across the system</CardDescription></CardHeader>
+                <CardContent className="space-y-3">
+                  {MODULES.filter(m => m.key !== 'settings').map(({ key, label, icon: Icon }) => (
+                    <div key={key} className="flex items-center justify-between p-3 border border-slate-200 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-4 h-4 text-slate-500" />
+                        <div>
+                          <p className="font-medium text-sm text-slate-900">{label}</p>
+                          <p className="text-xs text-slate-500">Enable or disable this module</p>
+                        </div>
                       </div>
+                      <Switch
+                        checked={settings?.page_settings?.[key]?.enabled !== false}
+                        onCheckedChange={(v) => {
+                          const ps = { ...settings?.page_settings };
+                          ps[key] = { ...ps[key], enabled: v };
+                          setSettings({ ...settings, page_settings: ps });
+                        }}
+                        data-testid={`page-toggle-${key}`}
+                      />
                     </div>
-                    <Switch
-                      checked={settings?.page_settings?.[key]?.enabled !== false}
-                      onCheckedChange={(v) => {
-                        const ps = { ...settings?.page_settings };
-                        ps[key] = { ...ps[key], enabled: v };
-                        setSettings({ ...settings, page_settings: ps });
-                      }}
-                      data-testid={`page-toggle-${key}`}
-                    />
+                  ))}
+                  <div className="flex justify-end pt-4">
+                    <Button onClick={handleSaveSettings} disabled={saving} className="gap-2"><Save className="w-4 h-4" /> Save Module Settings</Button>
                   </div>
-                ))}
-                <div className="flex justify-end pt-4">
-                  <Button onClick={handleSaveSettings} disabled={saving} className="gap-2"><Save className="w-4 h-4" /> Save Page Settings</Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Dynamic Page Field Configuration */}
+              <PageFieldConfig
+                title="Bursary Application Fields"
+                description="Configure which fields appear on the Bursary Application form"
+                pageKey="applications"
+                settings={settings}
+                setSettings={setSettings}
+                onSave={handleSaveSettings}
+                saving={saving}
+                defaultFields={[
+                  { key: 'institution', label: 'Institution', required: true },
+                  { key: 'course', label: 'Course / Qualification', required: true },
+                  { key: 'year_of_study', label: 'Year of Study', required: true },
+                  { key: 'amount_requested', label: 'Amount Requested', required: true },
+                  { key: 'motivation', label: 'Motivation / Reason', required: false },
+                  { key: 'supporting_docs', label: 'Supporting Documents', required: false },
+                  { key: 'start_date', label: 'Start Date', required: false },
+                  { key: 'end_date', label: 'End Date', required: false },
+                ]}
+              />
+
+              <PageFieldConfig
+                title="Training Application Fields"
+                description="Configure which fields appear on the Training Application form"
+                pageKey="training_applications"
+                settings={settings}
+                setSettings={setSettings}
+                onSave={handleSaveSettings}
+                saving={saving}
+                defaultFields={[
+                  { key: 'training_type', label: 'Training Type', required: true },
+                  { key: 'service_provider', label: 'Service Provider', required: true },
+                  { key: 'training_title', label: 'Training Title', required: true },
+                  { key: 'start_date', label: 'Start Date', required: true },
+                  { key: 'end_date', label: 'End Date', required: true },
+                  { key: 'cost', label: 'Estimated Cost', required: false },
+                  { key: 'motivation', label: 'Motivation', required: false },
+                  { key: 'manager_approval', label: 'Require Manager Approval', required: false },
+                ]}
+              />
+
+              <PageFieldConfig
+                title="Personal Development Plan Fields"
+                description="Configure which fields appear on the PDP form"
+                pageKey="pdp"
+                settings={settings}
+                setSettings={setSettings}
+                onSave={handleSaveSettings}
+                saving={saving}
+                defaultFields={[
+                  { key: 'development_area', label: 'Development Area', required: true },
+                  { key: 'current_competency', label: 'Current Competency Level', required: false },
+                  { key: 'target_competency', label: 'Target Competency Level', required: false },
+                  { key: 'action_plan', label: 'Action Plan', required: true },
+                  { key: 'timeline', label: 'Timeline', required: false },
+                  { key: 'resources_needed', label: 'Resources Needed', required: false },
+                  { key: 'success_criteria', label: 'Success Criteria', required: false },
+                  { key: 'mentor', label: 'Mentor / Coach', required: false },
+                ]}
+              />
+            </div>
           )}
 
           {/* Data & Storage */}
@@ -592,6 +656,93 @@ const SettingsPage = () => {
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+const PageFieldConfig = ({ title, description, pageKey, settings, setSettings, onSave, saving, defaultFields }) => {
+  const fields = settings?.page_settings?.[pageKey]?.fields || defaultFields;
+
+  const updateField = (fieldKey, property, value) => {
+    const ps = { ...settings?.page_settings };
+    const currentFields = ps[pageKey]?.fields || [...defaultFields];
+    const updated = currentFields.map(f =>
+      f.key === fieldKey ? { ...f, [property]: value } : f
+    );
+    ps[pageKey] = { ...ps[pageKey], fields: updated };
+    setSettings({ ...settings, page_settings: ps });
+  };
+
+  const toggleFieldVisibility = (fieldKey) => {
+    const ps = { ...settings?.page_settings };
+    const currentFields = ps[pageKey]?.fields || [...defaultFields];
+    const updated = currentFields.map(f =>
+      f.key === fieldKey ? { ...f, hidden: !f.hidden } : f
+    );
+    ps[pageKey] = { ...ps[pageKey], fields: updated };
+    setSettings({ ...settings, page_settings: ps });
+  };
+
+  const toggleFieldRequired = (fieldKey) => {
+    const ps = { ...settings?.page_settings };
+    const currentFields = ps[pageKey]?.fields || [...defaultFields];
+    const updated = currentFields.map(f =>
+      f.key === fieldKey ? { ...f, required: !f.required } : f
+    );
+    ps[pageKey] = { ...ps[pageKey], fields: updated };
+    setSettings({ ...settings, page_settings: ps });
+  };
+
+  return (
+    <Card className="bg-white border-slate-200">
+      <CardHeader>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-slate-50 rounded-lg text-xs font-semibold text-slate-500 uppercase">
+          <span className="col-span-4">Field</span>
+          <span className="col-span-3">Label</span>
+          <span className="col-span-2 text-center">Required</span>
+          <span className="col-span-2 text-center">Visible</span>
+          <span className="col-span-1" />
+        </div>
+        {fields.map(field => (
+          <div key={field.key} className={`grid grid-cols-12 gap-2 items-center px-3 py-2.5 border rounded-lg transition-colors ${field.hidden ? 'bg-slate-50 border-slate-200 opacity-60' : 'border-slate-200'}`} data-testid={`field-config-${pageKey}-${field.key}`}>
+            <span className="col-span-4 text-sm font-mono text-slate-600">{field.key}</span>
+            <div className="col-span-3">
+              <Input
+                value={field.label}
+                onChange={(e) => updateField(field.key, 'label', e.target.value)}
+                className="h-8 text-xs"
+                data-testid={`field-label-${pageKey}-${field.key}`}
+              />
+            </div>
+            <div className="col-span-2 text-center">
+              <Checkbox
+                checked={field.required}
+                onCheckedChange={() => toggleFieldRequired(field.key)}
+                data-testid={`field-required-${pageKey}-${field.key}`}
+              />
+            </div>
+            <div className="col-span-2 text-center">
+              <button onClick={() => toggleFieldVisibility(field.key)} data-testid={`field-visible-${pageKey}-${field.key}`}>
+                {field.hidden ? <EyeOff className="w-4 h-4 text-slate-400 mx-auto" /> : <Eye className="w-4 h-4 text-emerald-500 mx-auto" />}
+              </button>
+            </div>
+            <div className="col-span-1">
+              <Badge variant={field.hidden ? 'secondary' : 'outline'} className="text-[10px]">
+                {field.hidden ? 'Off' : 'On'}
+              </Badge>
+            </div>
+          </div>
+        ))}
+        <div className="flex justify-end pt-4">
+          <Button onClick={onSave} disabled={saving} className="gap-2" data-testid={`save-fields-${pageKey}`}>
+            <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Fields'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
