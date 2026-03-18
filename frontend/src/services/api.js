@@ -140,6 +140,7 @@ export const expensesAPI = {
   approve: (id) => api.post(`/expenses/${id}/approve`),
   reject: (id, reason) => api.post(`/expenses/${id}/reject`, { reason }),
   getApplicationExpenses: () => api.get('/expenses/application-expenses'),
+  exportExcel: (params) => api.get('/expenses/export/excel', { params, responseType: 'blob' }),
 };
 
 export const ticketsAPI = {
@@ -259,8 +260,8 @@ export const settingsAPI = {
 
 export const reportsAPI = {
   getDashboard: () => api.get('/reports/dashboard'),
-  export: (reportType, format = 'json') => api.get(`/reports/export/${reportType}`, { 
-    params: { format },
+  export: (reportType, format = 'json', params = {}) => api.get(`/reports/export/${reportType}`, { 
+    params: { format, ...params },
     responseType: ['excel', 'pdf', 'csv'].includes(format) ? 'blob' : 'json'
   }),
 };

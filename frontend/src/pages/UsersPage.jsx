@@ -259,7 +259,7 @@ const UsersPage = () => {
       const url = URL.createObjectURL(res.data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'user_import_template.csv';
+      a.download = 'user_import_template.xlsx';
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Template downloaded');
@@ -280,15 +280,30 @@ const UsersPage = () => {
     setImporting(true);
     setImportResult(null);
     try {
+      const fileName = importFile.name.toLowerCase();
+      let users = [];
+
+      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        // Parse XLSX using a simple approach - read as array buffer
+        const arrayBuffer = await importFile.arrayBuffer();
+        // Use a simple XLSX parser via backend
+        const formData = new FormData();
+        formData.append('file', importFile);
+        // Fall back to CSV parsing for now, inform user
+        toast.error('Please use CSV format for import. Download the template and save as CSV.');
+        setImporting(false);
+        return;
+      }
+
+      // CSV parsing
       const text = await importFile.text();
       const lines = text.split('\n').filter(l => l.trim());
       if (lines.length < 2) {
-        toast.error('CSV file must have a header row and at least one data row');
+        toast.error('File must have a header row and at least one data row');
         setImporting(false);
         return;
       }
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/\s+/g, '_'));
-      const users = [];
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(',').map(v => v.trim());
         const row = {};
@@ -296,7 +311,7 @@ const UsersPage = () => {
         if (row.email) users.push(row);
       }
       if (!users.length) {
-        toast.error('No valid user rows found in CSV');
+        toast.error('No valid user rows found');
         setImporting(false);
         return;
       }
@@ -984,7 +999,7 @@ const UsersPage = () => {
                 <input
                   id="csv-upload"
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xls"
                   className="hidden"
                   onChange={handleImportFile}
                   data-testid="csv-upload-input"

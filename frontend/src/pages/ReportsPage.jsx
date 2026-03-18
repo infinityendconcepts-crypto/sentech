@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -10,10 +12,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   BarChart3, Download, FileText, FileSpreadsheet,
-  Users, Briefcase, DollarSign, Maximize2, X,
+  Users, Briefcase, DollarSign, Maximize2, CalendarDays, X,
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
@@ -27,8 +30,7 @@ const ChartCard = ({ title, children, onZoom }) => (
     <CardHeader className="flex flex-row items-center justify-between pb-2">
       <CardTitle className="text-base">{title}</CardTitle>
       <Button
-        variant="ghost"
-        size="sm"
+        variant="ghost" size="sm"
         className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
         onClick={onZoom}
         data-testid={`zoom-${title.toLowerCase().replace(/\s+/g, '-')}`}
@@ -46,6 +48,8 @@ const ReportsPage = () => {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [zoomChart, setZoomChart] = useState(null);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => { fetchStats(); }, []);
 
@@ -59,20 +63,23 @@ const ReportsPage = () => {
   const handleExport = async (type, format) => {
     setExporting(true);
     try {
-      const res = await reportsAPI.export(type, format);
+      const params = {};
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+      const res = await reportsAPI.export(type, format, params);
       if (format === 'json') {
         const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `${type}_report.json`; a.click();
+        const a = document.createElement('a'); a.href = url; a.download = `${type}_report.json`; a.click();
       } else {
         const url = URL.createObjectURL(res.data);
-        const a = document.createElement('a');
-        a.href = url; a.download = `${type}_report.${format}`; a.click();
+        const a = document.createElement('a'); a.href = url; a.download = `${type}_report.${format === 'excel' ? 'xlsx' : format}`; a.click();
       }
       toast.success('Report exported');
     } catch { toast.error('Export failed'); } finally { setExporting(false); }
   };
+
+  const clearDateFilters = () => { setDateFrom(''); setDateTo(''); };
 
   const formatCurrency = (v) => `R ${(v || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}`;
 
@@ -159,30 +166,80 @@ const ReportsPage = () => {
 
   return (
     <div className="space-y-6" data-testid="reports-page">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Reports & Analytics</h1>
           <p className="text-sm text-slate-500">Overview of all system metrics and data</p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2" disabled={exporting} data-testid="export-btn">
-              <Download className="w-4 h-4" /> Export
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => handleExport('applications', 'excel')}>
-              <FileSpreadsheet className="w-4 h-4 mr-2" /> Applications (Excel)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExport('expenses', 'excel')}>
-              <DollarSign className="w-4 h-4 mr-2" /> Expenses (Excel)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExport('applications', 'json')}>
-              <FileText className="w-4 h-4 mr-2" /> Applications (JSON)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-3">
+          {/* Date Filters */}
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-1.5">
+            <CalendarDays className="w-4 h-4 text-slate-400" />
+            <Input
+              type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+              className="border-0 shadow-none h-8 w-32 p-0 focus-visible:ring-0" placeholder="From"
+              data-testid="reports-date-from"
+            />
+            <span className="text-slate-400 text-sm">to</span>
+            <Input
+              type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+              className="border-0 shadow-none h-8 w-32 p-0 focus-visible:ring-0" placeholder="To"
+              data-testid="reports-date-to"
+            />
+            {(dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={clearDateFilters} data-testid="clear-date-filters">
+                <X className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2" disabled={exporting} data-testid="export-btn">
+                <Download className="w-4 h-4" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase">Excel (XLSX)</div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExport('applications', 'excel')} data-testid="export-apps-xlsx">
+                <FileSpreadsheet className="w-4 h-4 mr-2" /> Bursary Applications
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('training_applications', 'excel')} data-testid="export-training-xlsx">
+                <FileSpreadsheet className="w-4 h-4 mr-2" /> Training Applications
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('expenses', 'excel')} data-testid="export-expenses-xlsx">
+                <DollarSign className="w-4 h-4 mr-2" /> Expenses
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('users', 'excel')} data-testid="export-users-xlsx">
+                <Users className="w-4 h-4 mr-2" /> Users
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('tickets', 'excel')} data-testid="export-tickets-xlsx">
+                <Briefcase className="w-4 h-4 mr-2" /> Tickets
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 uppercase">Other Formats</div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExport('applications', 'csv')}>
+                <FileText className="w-4 h-4 mr-2" /> Applications (CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('applications', 'json')}>
+                <FileText className="w-4 h-4 mr-2" /> Applications (JSON)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
+
+      {/* Date filter badges */}
+      {(dateFrom || dateTo) && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">Export date range:</span>
+          {dateFrom && <Badge variant="secondary" className="gap-1 text-xs">From: {dateFrom} <X className="w-3 h-3 cursor-pointer" onClick={() => setDateFrom('')} /></Badge>}
+          {dateTo && <Badge variant="secondary" className="gap-1 text-xs">To: {dateTo} <X className="w-3 h-3 cursor-pointer" onClick={() => setDateTo('')} /></Badge>}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -207,7 +264,7 @@ const ReportsPage = () => {
         ))}
       </div>
 
-      {/* Charts Row 1 */}
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard title="Users by Division" onZoom={() => setZoomChart('division')}>
           {renderDivisionChart()}
@@ -217,7 +274,6 @@ const ReportsPage = () => {
         </ChartCard>
       </div>
 
-      {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard title="Expenses by Type" onZoom={() => setZoomChart('expenseType')}>
           {renderExpenseTypeChart()}
@@ -253,12 +309,11 @@ const ReportsPage = () => {
         </Card>
       </div>
 
-      {/* Applications Overview */}
       <ChartCard title="Applications Overview" onZoom={() => setZoomChart('appOverview')}>
         {renderAppOverviewChart()}
       </ChartCard>
 
-      {/* Zoom/Fullscreen Chart Dialog */}
+      {/* Zoom Dialog */}
       <Dialog open={!!zoomChart} onOpenChange={() => setZoomChart(null)}>
         <DialogContent className="max-w-4xl max-h-[85vh]" data-testid="chart-zoom-dialog">
           <DialogHeader>

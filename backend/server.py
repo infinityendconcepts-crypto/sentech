@@ -1552,7 +1552,7 @@ async def create_user(data: dict, current_user: dict = Depends(get_current_user)
 
 @api_router.get("/users/import-template")
 async def download_import_template(current_user: dict = Depends(get_current_user)):
-    """Generate and return a CSV template for user import"""
+    """Generate and return an XLSX template for user import"""
     if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
         raise HTTPException(status_code=403, detail="Only admins can download import template")
 
@@ -1569,16 +1569,29 @@ async def download_import_template(current_user: dict = Depends(get_current_user
         "PROFESSIONALS", "Science and Engineering", "Software Developer", "251201"
     ]
 
-    output = io.StringIO()
-    output.write(",".join(headers) + "\n")
-    output.write(",".join(sample_row) + "\n")
-    content = output.getvalue()
-    output.close()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "User Import Template"
+    header_fill = PatternFill(start_color="0056B3", end_color="0056B3", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for col_idx, h in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx, value=h.replace("_", " ").title())
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+    for col_idx, val in enumerate(sample_row, 1):
+        ws.cell(row=2, column=col_idx, value=val)
+    for col_idx, h in enumerate(headers, 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = max(len(h) + 4, 15)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
 
     return StreamingResponse(
-        io.BytesIO(content.encode('utf-8')),
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=user_import_template.csv"}
+        iter([output.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=user_import_template.xlsx"}
     )
 
 @api_router.put("/users/{user_id}/status")
@@ -2112,6 +2125,8 @@ async def get_expenses(
     category: Optional[str] = None,
     project_id: Optional[str] = None,
     sponsor_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     if "admin" in current_user.get("roles", []):
@@ -2127,9 +2142,81 @@ async def get_expenses(
         query["project_id"] = project_id
     if sponsor_id:
         query["sponsor_id"] = sponsor_id
+    if date_from:
+        query.setdefault("date", {})["$gte"] = date_from
+    if date_to:
+        query.setdefault("date", {})["$lte"] = date_to + "T23:59:59"
     
     expenses = await db.expenses.find(query, {"_id": 0}).sort("date", -1).to_list(1000)
     return expenses
+
+@api_router.get("/expenses/export/excel")
+async def export_expenses_excel(
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+    tab: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Export expenses to XLSX with filters"""
+    if tab == "bursary" or tab == "training":
+        # Export application expenses
+        is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+        user_query = {} if is_admin else {"user_id": current_user["id"]}
+        coll = db.applications if tab == "bursary" else db.training_applications
+        apps = await coll.find(
+            {**user_query, "additional_expenses": {"$exists": True}}, {"_id": 0}
+        ).to_list(10000)
+        rows = []
+        for app in apps:
+            exp = app.get("additional_expenses", {})
+            total = sum(exp.get(k, 0) for k in ["flights", "accommodation", "car_hire_or_shuttle", "catering"] if isinstance(exp.get(k), (int, float)))
+            if total <= 0:
+                continue
+            row = {
+                "applicant": app.get("applicant_name") or app.get("full_name", ""),
+                "status": app.get("status", ""),
+                "flights": exp.get("flights", 0),
+                "accommodation": exp.get("accommodation", 0),
+                "car_hire_shuttle": exp.get("car_hire_or_shuttle", 0),
+                "catering": exp.get("catering", 0),
+                "total": total,
+            }
+            if tab == "training":
+                row["training_type"] = app.get("training_type") or app.get("service_provider", "")
+            rows.append(row)
+        excel_stream = generate_excel(rows, title=f"{tab.title()} Expenses")
+    else:
+        # Export standalone expenses
+        query = {} if "admin" in current_user.get("roles", []) else {"submitted_by": current_user["id"]}
+        if status:
+            query["status"] = status
+        if category:
+            query["category"] = category
+        if date_from:
+            query.setdefault("date", {})["$gte"] = date_from
+        if date_to:
+            query.setdefault("date", {})["$lte"] = date_to + "T23:59:59"
+        raw = await db.expenses.find(query, {"_id": 0}).sort("date", -1).to_list(10000)
+        rows = []
+        for e in raw:
+            rows.append({
+                "title": e.get("title", ""),
+                "category": e.get("category", ""),
+                "amount": e.get("amount", 0),
+                "date": str(e.get("date", ""))[:10],
+                "status": e.get("status", ""),
+                "vendor": e.get("vendor", ""),
+                "description": e.get("description", ""),
+            })
+        excel_stream = generate_excel(rows, title="Expenses")
+
+    return StreamingResponse(
+        iter([excel_stream.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=expenses_export.xlsx"}
+    )
 
 @api_router.get("/expenses/stats")
 async def get_expense_stats(current_user: dict = Depends(get_current_user)):
@@ -3825,22 +3912,35 @@ async def get_dashboard_report(current_user: dict = Depends(get_current_user)):
 async def export_report(
     report_type: str,
     format: str = "json",
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
+    date_query = {}
+    if date_from:
+        date_query["$gte"] = date_from
+    if date_to:
+        date_query["$lte"] = date_to + "T23:59:59"
+
+    query = {}
+    if date_query:
+        query["created_at"] = date_query
+
     if report_type == "applications":
-        data = await db.applications.find({}, {"_id": 0}).to_list(10000)
+        data = await db.applications.find(query, {"_id": 0}).to_list(10000)
     elif report_type == "expenses":
-        data = await db.expenses.find({}, {"_id": 0}).to_list(10000)
+        eq = {}
+        if date_query:
+            eq["date"] = date_query
+        data = await db.expenses.find(eq, {"_id": 0}).to_list(10000)
     elif report_type == "tasks":
-        data = await db.tasks.find({}, {"_id": 0}).to_list(10000)
-    elif report_type == "projects":
-        data = await db.projects.find({}, {"_id": 0}).to_list(10000)
-    elif report_type == "sponsors":
-        data = await db.sponsors.find({}, {"_id": 0}).to_list(10000)
-    elif report_type == "leads":
-        data = await db.leads.find({}, {"_id": 0}).to_list(10000)
+        data = await db.tasks.find(query, {"_id": 0}).to_list(10000)
     elif report_type == "tickets":
-        data = await db.tickets.find({}, {"_id": 0}).to_list(10000)
+        data = await db.tickets.find(query, {"_id": 0}).to_list(10000)
+    elif report_type == "users":
+        data = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(10000)
+    elif report_type == "training_applications":
+        data = await db.training_applications.find(query, {"_id": 0}).to_list(10000)
     else:
         raise HTTPException(status_code=400, detail="Invalid report type")
     

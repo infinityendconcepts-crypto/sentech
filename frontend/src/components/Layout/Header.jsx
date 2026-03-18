@@ -9,9 +9,9 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Search, Bell, Plus, CheckSquare, FolderKanban, StickyNote,
-  Calendar, Ticket, MessageSquare, UserPlus, DollarSign,
-  TrendingUp, ChevronRight,
+  Search, Bell, Plus, CheckSquare, StickyNote,
+  Calendar, Ticket, MessageSquare, DollarSign,
+  ChevronRight,
 } from 'lucide-react';
 
 const navigation = [
@@ -87,10 +87,8 @@ const Header = () => {
     { label: 'New Note', icon: StickyNote, href: '/notes', testId: 'add-note-quick' },
     { label: 'New Meeting', icon: Calendar, href: '/meetings', testId: 'add-meeting-quick' },
     { label: 'New Ticket', icon: Ticket, href: '/tickets', testId: 'add-ticket-quick' },
-    { label: 'New Lead', icon: TrendingUp, href: '/leads', testId: 'add-lead-quick' },
     { label: 'New Expense', icon: DollarSign, href: '/expenses', testId: 'add-expense-quick' },
     { label: 'New Message', icon: MessageSquare, href: '/messages', testId: 'add-message-quick' },
-    { label: 'New Project', icon: FolderKanban, href: '/projects', testId: 'add-project-quick' },
   ];
 
   const handleSearch = (e) => {
