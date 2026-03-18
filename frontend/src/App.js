@@ -34,6 +34,7 @@ import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
 import UserProfilePage from './pages/UserProfilePage';
 import EventsPage from './pages/EventsPage';
+import NotificationsPage from './pages/NotificationsPage';
 import PDPPage from './pages/PDPPage';
 
 function App() {
@@ -65,6 +66,7 @@ function App() {
               <Route path="/pdp" element={<PDPPage />} />
               <Route path="/tasks" element={<TrainingTrackPage />} />
               <Route path="/tickets" element={<TicketsPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/meetings" element={<MeetingsPage />} />
               <Route path="/division-groups" element={<DivisionGroupsPage />} />
 

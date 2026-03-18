@@ -13,7 +13,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { messagesAPI, usersAPI } from '../services/api';
+import { messagesAPI, usersAPI, divisionGroupsAPI, groupMessagesAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import {
@@ -26,6 +26,8 @@ import {
   MoreVertical,
   Check,
   CheckCheck,
+  Building2,
+  Layers,
 } from 'lucide-react';
 
 const MessagesPage = () => {
@@ -38,11 +40,15 @@ const MessagesPage = () => {
   const [messageInput, setMessageInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [newChatDialog, setNewChatDialog] = useState(false);
+  const [chatTab, setChatTab] = useState('individual');
+  const [divisions, setDivisions] = useState([]);
+  const [userSearch, setUserSearch] = useState('');
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     fetchConversations();
     fetchUsers();
+    fetchDivisions();
   }, []);
 
   useEffect(() => {
@@ -75,6 +81,15 @@ const MessagesPage = () => {
     }
   };
 
+  const fetchDivisions = async () => {
+    try {
+      const response = await divisionGroupsAPI.getAll();
+      setDivisions(response.data);
+    } catch (error) {
+      console.error('Failed to fetch divisions:', error);
+    }
+  };
+
   const fetchMessages = async (conversationId) => {
     try {
       const response = await messagesAPI.getMessages(conversationId);
@@ -90,16 +105,38 @@ const MessagesPage = () => {
 
   const handleStartConversation = async (otherUserId) => {
     try {
-      const response = await messagesAPI.createConversation({
-        type: 'direct',
-        participant_ids: [otherUserId],
+      const response = await groupMessagesAPI.createConversation({
+        target_type: 'individual',
+        target_id: otherUserId,
       });
-      setConversations(prev => [response.data, ...prev]);
+      setConversations(prev => {
+        const exists = prev.find(c => c.id === response.data.id);
+        return exists ? prev : [response.data, ...prev];
+      });
       setSelectedConversation(response.data);
       setNewChatDialog(false);
       fetchConversations();
     } catch (error) {
       toast.error('Failed to start conversation');
+    }
+  };
+
+  const handleStartGroupConversation = async (targetType, targetId, targetName) => {
+    try {
+      const response = await groupMessagesAPI.createConversation({
+        target_type: targetType,
+        target_id: targetId,
+        target_name: targetName,
+      });
+      setConversations(prev => {
+        const exists = prev.find(c => c.id === response.data.id);
+        return exists ? prev : [response.data, ...prev];
+      });
+      setSelectedConversation(response.data);
+      setNewChatDialog(false);
+      fetchConversations();
+    } catch (error) {
+      toast.error('Failed to start group conversation');
     }
   };
 
@@ -190,29 +227,57 @@ const MessagesPage = () => {
                       <Plus className="w-4 h-4" />
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-md">
                     <DialogHeader>
                       <DialogTitle>Start New Conversation</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {users.map((u) => (
-                        <div
-                          key={u.id}
-                          className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 cursor-pointer"
-                          onClick={() => handleStartConversation(u.id)}
-                        >
-                          <Avatar>
-                            <AvatarFallback className="bg-primary text-white">
-                              {u.full_name?.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{u.full_name}</p>
-                            <p className="text-sm text-slate-500">{u.email}</p>
-                          </div>
-                        </div>
+                    <div className="flex gap-1 mb-3 bg-slate-100 rounded-lg p-1">
+                      {[['individual', 'Individual', User], ['division', 'Division', Building2], ['subgroup', 'Subgroup', Layers]].map(([key, label, Icon]) => (
+                        <button key={key} onClick={() => setChatTab(key)}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-md transition-colors ${chatTab === key ? 'bg-white text-[#0056B3] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                          data-testid={`chat-tab-${key}`}>
+                          <Icon className="w-3.5 h-3.5" />{label}
+                        </button>
                       ))}
                     </div>
+                    {chatTab === 'individual' && (
+                      <div className="space-y-2">
+                        <Input placeholder="Search users..." value={userSearch} onChange={e => setUserSearch(e.target.value)} data-testid="search-users-chat" />
+                        <div className="max-h-72 overflow-y-auto space-y-1">
+                          {users.filter(u => !userSearch || u.full_name?.toLowerCase().includes(userSearch.toLowerCase()) || u.email?.toLowerCase().includes(userSearch.toLowerCase())).slice(0, 20).map((u) => (
+                            <div key={u.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-100 cursor-pointer" onClick={() => handleStartConversation(u.id)}>
+                              <Avatar className="w-8 h-8"><AvatarFallback className="bg-[#0056B3] text-white text-xs">{u.full_name?.charAt(0)}</AvatarFallback></Avatar>
+                              <div><p className="font-medium text-sm">{u.full_name}</p><p className="text-xs text-slate-500">{u.division || ''} — {u.email}</p></div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {chatTab === 'division' && (
+                      <div className="max-h-72 overflow-y-auto space-y-1">
+                        {divisions.map(d => (
+                          <div key={d.division_id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-100 cursor-pointer" onClick={() => handleStartGroupConversation('division', d.division_name, d.division_name)}>
+                            <div className="w-8 h-8 rounded-md bg-[#0056B3] flex items-center justify-center text-white font-bold text-sm">{d.division_name.charAt(0)}</div>
+                            <div><p className="font-medium text-sm">{d.division_name}</p><p className="text-xs text-slate-500">{d.member_count} members</p></div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {chatTab === 'subgroup' && (
+                      <div className="max-h-72 overflow-y-auto space-y-1">
+                        {divisions.filter(d => d.subgroups?.length > 0).map(d => (
+                          <div key={d.division_id}>
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide px-2 py-1.5">{d.division_name}</p>
+                            {d.subgroups.map(sg => (
+                              <div key={sg.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-100 cursor-pointer ml-2" onClick={() => handleStartGroupConversation('subgroup', sg.id, sg.name)}>
+                                <div className="w-8 h-8 rounded-md bg-violet-100 flex items-center justify-center text-violet-700 font-semibold text-sm">{sg.name.charAt(0)}</div>
+                                <div><p className="font-medium text-sm">{sg.name}</p><p className="text-xs text-slate-500">{sg.members?.length || 0} members</p></div>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </DialogContent>
                 </Dialog>
               </div>

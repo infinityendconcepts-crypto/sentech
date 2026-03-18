@@ -28,6 +28,8 @@ import {
   Menu,
   TrendingUp,
   GraduationCap,
+  Bell,
+  StickyNote,
 } from 'lucide-react';
 
 // adminOnly: true = visible only to admins
@@ -42,6 +44,7 @@ const navigation = [
   { name: 'Messages',      href: '/messages',     icon: MessageSquare },
   { name: 'MICTSETA Docs', href: '/files',        icon: FolderOpen },
   { name: 'Tickets',       href: '/tickets',      icon: Ticket },
+  { name: 'Notifications', href: '/notifications', icon: Bell },
   { name: 'Division Groups', href: '/division-groups',  icon: UsersRound },
   { name: 'Help & Support',href: '/help',         icon: HelpCircle },
   // ── Admin only ──

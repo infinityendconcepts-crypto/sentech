@@ -1725,6 +1725,43 @@ async def create_meeting(meeting_data: MeetingCreate, current_user: dict = Depen
     meeting_dict['updated_at'] = meeting_dict['updated_at'].isoformat()
     
     await db.meetings.insert_one({**meeting_dict})
+    
+    # Auto-create event for this meeting
+    event_dict = {
+        "id": generate_uuid(),
+        "title": meeting_dict.get("title", "Meeting"),
+        "description": meeting_dict.get("description", ""),
+        "start_date": meeting_dict.get("start_time"),
+        "end_date": meeting_dict.get("end_time"),
+        "event_type": "meeting",
+        "location": meeting_dict.get("location", ""),
+        "organizer_id": current_user["id"],
+        "attendee_ids": meeting_dict.get("attendee_ids", []),
+        "meeting_id": meeting_dict["id"],
+        "meeting_link": meeting_dict.get("meeting_link", ""),
+        "is_recurring": False,
+        "created_by": current_user["id"],
+        "created_at": meeting_dict["created_at"],
+        "updated_at": meeting_dict["updated_at"],
+    }
+    await db.events.insert_one({**event_dict})
+    
+    # Create notification for attendees
+    for attendee_id in meeting_dict.get("attendee_ids", []):
+        if attendee_id != current_user["id"]:
+            notif = {
+                "id": generate_uuid(),
+                "user_id": attendee_id,
+                "type": "meeting_invite",
+                "title": "New Meeting Invitation",
+                "message": f"You've been invited to: {meeting_dict.get('title', 'Meeting')}",
+                "reference_id": meeting_dict["id"],
+                "reference_type": "meeting",
+                "is_read": False,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+            await db.notifications.insert_one({**notif})
+    
     return meeting
 
 @api_router.put("/meetings/{meeting_id}")
@@ -2014,6 +2051,9 @@ async def send_message(conversation_id: str, message_data: MessageCreate, curren
             }
         }
     )
+    
+    # Create notifications for recipients
+    await _create_message_notifications(conversation, current_user["id"], current_user.get("full_name", "Unknown"), message_data.content)
     
     return message
 
@@ -4216,6 +4256,137 @@ async def revoke_temp_leader(subgroup_id: str, current_user: dict = Depends(get_
     }})
     
     return {"message": "Temporary leader revoked"}
+
+# ============== NOTIFICATIONS ROUTES ==============
+
+@api_router.get("/notifications")
+async def get_notifications(current_user: dict = Depends(get_current_user)):
+    notifications = await db.notifications.find(
+        {"user_id": current_user["id"]},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return notifications
+
+@api_router.get("/notifications/unread/count")
+async def get_unread_notifications_count(current_user: dict = Depends(get_current_user)):
+    count = await db.notifications.count_documents({"user_id": current_user["id"], "is_read": False})
+    return {"unread_count": count}
+
+@api_router.put("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str, current_user: dict = Depends(get_current_user)):
+    await db.notifications.update_one(
+        {"id": notification_id, "user_id": current_user["id"]},
+        {"$set": {"is_read": True}}
+    )
+    return {"message": "Notification marked as read"}
+
+@api_router.put("/notifications/read-all")
+async def mark_all_notifications_read(current_user: dict = Depends(get_current_user)):
+    await db.notifications.update_many(
+        {"user_id": current_user["id"], "is_read": False},
+        {"$set": {"is_read": True}}
+    )
+    return {"message": "All notifications marked as read"}
+
+@api_router.delete("/notifications/{notification_id}")
+async def delete_notification(notification_id: str, current_user: dict = Depends(get_current_user)):
+    await db.notifications.delete_one({"id": notification_id, "user_id": current_user["id"]})
+    return {"message": "Notification deleted"}
+
+# ============== GROUP MESSAGING ROUTES ==============
+
+@api_router.post("/messages/group-conversation")
+async def create_group_conversation(body: dict, current_user: dict = Depends(get_current_user)):
+    target_type = body.get("target_type")  # 'division', 'subgroup', 'individual'
+    target_id = body.get("target_id")
+    target_name = body.get("target_name", "")
+    
+    participant_ids = [current_user["id"]]
+    conv_name = target_name
+    
+    if target_type == "division":
+        users = await db.users.find({"division": target_name}, {"_id": 0, "id": 1}).to_list(500)
+        participant_ids += [u["id"] for u in users if u["id"] != current_user["id"]]
+        conv_name = f"Division: {target_name}"
+    elif target_type == "subgroup":
+        sg = await db.subgroups.find_one({"id": target_id}, {"_id": 0})
+        if sg:
+            participant_ids += [uid for uid in sg.get("member_user_ids", []) if uid != current_user["id"]]
+            conv_name = f"Subgroup: {sg.get('name', '')}"
+    elif target_type == "individual":
+        participant_ids.append(target_id)
+        other = await db.users.find_one({"id": target_id}, {"_id": 0, "full_name": 1})
+        conv_name = other.get("full_name", "") if other else ""
+    
+    participant_ids = list(set(participant_ids))
+    
+    # Check for existing group conversation with same target
+    if target_type in ["division", "subgroup"]:
+        existing = await db.conversations.find_one({
+            "target_type": target_type,
+            "target_id": target_id or target_name,
+        }, {"_id": 0})
+        if existing:
+            participants = await db.users.find(
+                {"id": {"$in": existing["participant_ids"]}},
+                {"_id": 0, "id": 1, "full_name": 1, "email": 1}
+            ).to_list(500)
+            existing["participants"] = participants
+            return existing
+    elif target_type == "individual":
+        existing = await db.conversations.find_one({
+            "type": "direct",
+            "participant_ids": {"$all": participant_ids, "$size": 2}
+        }, {"_id": 0})
+        if existing:
+            participants = await db.users.find(
+                {"id": {"$in": existing["participant_ids"]}},
+                {"_id": 0, "id": 1, "full_name": 1, "email": 1}
+            ).to_list(100)
+            existing["participants"] = participants
+            return existing
+    
+    now = datetime.now(timezone.utc).isoformat()
+    conv = {
+        "id": generate_uuid(),
+        "type": "group" if target_type in ["division", "subgroup"] else "direct",
+        "name": conv_name,
+        "participant_ids": participant_ids,
+        "target_type": target_type,
+        "target_id": target_id or target_name,
+        "created_by": current_user["id"],
+        "last_message_at": now,
+        "unread_count": {},
+        "is_archived": False,
+        "created_at": now,
+        "updated_at": now,
+    }
+    await db.conversations.insert_one({**conv})
+    
+    participants = await db.users.find(
+        {"id": {"$in": participant_ids}},
+        {"_id": 0, "id": 1, "full_name": 1, "email": 1}
+    ).to_list(500)
+    conv["participants"] = participants
+    
+    return conv
+
+# Helper to create notifications from messages
+async def _create_message_notifications(conversation, sender_id, sender_name, content):
+    for pid in conversation.get("participant_ids", []):
+        if pid != sender_id:
+            notif = {
+                "id": generate_uuid(),
+                "user_id": pid,
+                "type": "new_message",
+                "title": f"New message from {sender_name}",
+                "message": content[:100] + ("..." if len(content) > 100 else ""),
+                "reference_id": conversation["id"],
+                "reference_type": "conversation",
+                "is_read": False,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+            await db.notifications.insert_one({**notif})
 
 # ============== DASHBOARD STATS ==============
 
