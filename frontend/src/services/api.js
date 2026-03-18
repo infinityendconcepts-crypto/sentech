@@ -216,6 +216,8 @@ export const applicationsAPI = {
   create: (data) => api.post('/applications', data),
   update: (id, data) => api.put(`/applications/${id}`, data),
   updateStatus: (id, data) => api.put(`/applications/${id}/status`, data),
+  requestReEdit: (id, reason) => api.post(`/applications/${id}/request-re-edit`, { reason }),
+  allowReEdit: (id, approved) => api.put(`/applications/${id}/allow-re-edit`, { approved }),
 };
 
 export const trainingApplicationsAPI = {
@@ -224,6 +226,8 @@ export const trainingApplicationsAPI = {
   create: (data) => api.post('/training-applications', data),
   update: (id, data) => api.put(`/training-applications/${id}`, data),
   updateStatus: (id, data) => api.put(`/training-applications/${id}/status`, data),
+  requestReEdit: (id, reason) => api.post(`/training-applications/${id}/request-re-edit`, { reason }),
+  allowReEdit: (id, approved) => api.put(`/training-applications/${id}/allow-re-edit`, { approved }),
 };
 
 export const bbbeeAPI = {

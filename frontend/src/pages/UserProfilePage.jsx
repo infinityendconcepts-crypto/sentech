@@ -6,15 +6,24 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { useAuth } from '../contexts/AuthContext';
-import { usersAPI, documentsAPI } from '../services/api';
+import { usersAPI, documentsAPI, applicationsAPI, trainingApplicationsAPI } from '../services/api';
 import {
   User, Mail, Phone, Building2, Lock, Save,
   Shield, Camera, CheckCircle, Eye, EyeOff,
   Upload, FileText, CheckCircle2, XCircle, Clock,
-  Trash2, RefreshCw,
+  Trash2, RefreshCw, GraduationCap, BookOpen,
+  Edit, AlertTriangle, Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const getRoleColor = (role) => {
   switch (role) {
@@ -37,6 +46,7 @@ const getAvatarColor = (email) => {
 
 const UserProfilePage = () => {
   const { user: authUser, login } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,6 +62,14 @@ const UserProfilePage = () => {
   const reuploadRef = useRef(null);
   const [reuploadDocId, setReuploadDocId] = useState(null);
   const [docForm, setDocForm] = useState({ name: '', document_type: 'general' });
+
+  // Applications state
+  const [bursaryApps, setBursaryApps] = useState([]);
+  const [trainingApps, setTrainingApps] = useState([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [reEditDialog, setReEditDialog] = useState(null);
+  const [reEditReason, setReEditReason] = useState('');
+  const [requestingReEdit, setRequestingReEdit] = useState(false);
 
   const [form, setForm] = useState({
     full_name: '',
@@ -104,6 +122,62 @@ const UserProfilePage = () => {
       setDocuments([]);
     } finally {
       setDocsLoading(false);
+    }
+  };
+
+  const fetchApplications = async () => {
+    setAppsLoading(true);
+    try {
+      const [bRes, tRes] = await Promise.all([
+        applicationsAPI.getAll(),
+        trainingApplicationsAPI.getAll(),
+      ]);
+      const userId = authUser?.id;
+      const allBursary = Array.isArray(bRes.data) ? bRes.data : [];
+      const allTraining = Array.isArray(tRes.data) ? tRes.data : [];
+      setBursaryApps(allBursary.filter(a => a.user_id === userId));
+      setTrainingApps(allTraining.filter(a => a.user_id === userId));
+    } catch {
+      setBursaryApps([]);
+      setTrainingApps([]);
+    } finally {
+      setAppsLoading(false);
+    }
+  };
+
+  const isWithin24Hours = (submittedAt) => {
+    if (!submittedAt) return true;
+    const submitted = new Date(submittedAt);
+    const now = new Date();
+    return (now - submitted) < 86400000; // 24hrs in ms
+  };
+
+  const getTimeRemaining = (submittedAt) => {
+    if (!submittedAt) return '';
+    const submitted = new Date(submittedAt);
+    const deadline = new Date(submitted.getTime() + 86400000);
+    const now = new Date();
+    const remaining = deadline - now;
+    if (remaining <= 0) return 'Expired';
+    const hours = Math.floor(remaining / 3600000);
+    const mins = Math.floor((remaining % 3600000) / 60000);
+    return `${hours}h ${mins}m remaining`;
+  };
+
+  const handleRequestReEdit = async () => {
+    if (!reEditDialog) return;
+    setRequestingReEdit(true);
+    try {
+      const api = reEditDialog.type === 'bursary' ? applicationsAPI : trainingApplicationsAPI;
+      await api.requestReEdit(reEditDialog.id, reEditReason);
+      toast.success('Re-edit request submitted. An admin will review your request.');
+      setReEditDialog(null);
+      setReEditReason('');
+      fetchApplications();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to submit request');
+    } finally {
+      setRequestingReEdit(false);
     }
   };
 
@@ -259,6 +333,7 @@ const UserProfilePage = () => {
       <Tabs defaultValue="profile">
         <TabsList className="bg-slate-100">
           <TabsTrigger value="profile">Profile Info</TabsTrigger>
+          <TabsTrigger value="applications" onClick={fetchApplications}>My Applications</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
           <TabsTrigger value="documents" onClick={fetchDocuments}>Documents</TabsTrigger>
           <TabsTrigger value="activity">Account Info</TabsTrigger>
@@ -339,6 +414,171 @@ const UserProfilePage = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* My Applications Tab */}
+        <TabsContent value="applications">
+          <div className="space-y-6">
+            {appsLoading ? (
+              <div className="flex justify-center py-16">
+                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <>
+                {/* Bursary Applications */}
+                <Card className="bg-white border-slate-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <GraduationCap className="w-5 h-5 text-[#0056B3]" />
+                      Bursary Applications
+                    </CardTitle>
+                    <CardDescription>Your bursary application submissions and their statuses</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {bursaryApps.length === 0 ? (
+                      <div className="text-center py-10">
+                        <GraduationCap className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                        <p className="text-slate-500 text-sm">No bursary applications yet</p>
+                        <Button variant="outline" className="mt-3 gap-2" onClick={() => navigate('/applications')}>
+                          <FileText className="w-4 h-4" /> Go to Bursary Applications
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {bursaryApps.map(app => {
+                          const canEdit = app.status === 'draft' || (isWithin24Hours(app.submitted_at) && !['approved', 'rejected'].includes(app.status));
+                          const editExpired = !canEdit && !['approved', 'rejected', 'draft'].includes(app.status);
+                          const reEditPending = app.re_edit_requested && !app.re_edit_approved;
+                          const reEditApproved = app.re_edit_approved;
+                          return (
+                            <div key={app.id} className="flex items-center gap-4 p-4 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 transition-colors" data-testid={`bursary-app-${app.id}`}>
+                              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <GraduationCap className="w-5 h-5 text-[#0056B3]" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-900 text-sm">
+                                  {app.personal_info?.full_name || app.academic_bursary_info?.institution_name || 'Bursary Application'}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  Submitted: {app.submitted_at ? new Date(app.submitted_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) : app.created_at ? new Date(app.created_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                                </p>
+                                {canEdit && app.submitted_at && app.status !== 'draft' && (
+                                  <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    Edit window: {getTimeRemaining(app.submitted_at)}
+                                  </p>
+                                )}
+                                {reEditPending && (
+                                  <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" /> Re-edit request pending approval
+                                  </p>
+                                )}
+                                {reEditApproved && (
+                                  <p className="text-xs text-emerald-600 mt-0.5 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" /> Re-edit approved — you can now edit
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <AppStatusBadge status={app.status} />
+                                {(canEdit || reEditApproved) && (
+                                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => navigate('/applications')} data-testid={`edit-bursary-${app.id}`}>
+                                    <Edit className="w-3 h-3" /> Edit
+                                  </Button>
+                                )}
+                                {editExpired && !reEditPending && !reEditApproved && (
+                                  <Button variant="outline" size="sm" className="gap-1 text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                                    onClick={() => setReEditDialog({ id: app.id, type: 'bursary', title: 'Bursary Application' })} data-testid={`request-reedit-bursary-${app.id}`}>
+                                    <Send className="w-3 h-3" /> Request Re-edit
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Training Applications */}
+                <Card className="bg-white border-slate-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-purple-600" />
+                      Training Applications
+                    </CardTitle>
+                    <CardDescription>Your training application submissions and their statuses</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {trainingApps.length === 0 ? (
+                      <div className="text-center py-10">
+                        <BookOpen className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                        <p className="text-slate-500 text-sm">No training applications yet</p>
+                        <Button variant="outline" className="mt-3 gap-2" onClick={() => navigate('/training-applications')}>
+                          <FileText className="w-4 h-4" /> Go to Training Applications
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {trainingApps.map(app => {
+                          const canEdit = app.status === 'draft' || (isWithin24Hours(app.submitted_at) && !['approved', 'rejected'].includes(app.status));
+                          const editExpired = !canEdit && !['approved', 'rejected', 'draft'].includes(app.status);
+                          const reEditPending = app.re_edit_requested && !app.re_edit_approved;
+                          const reEditApproved = app.re_edit_approved;
+                          return (
+                            <div key={app.id} className="flex items-center gap-4 p-4 border border-slate-200 rounded-lg bg-white hover:bg-slate-50 transition-colors" data-testid={`training-app-${app.id}`}>
+                              <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <BookOpen className="w-5 h-5 text-purple-600" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-900 text-sm">
+                                  {app.training_info?.training_type || app.training_info?.service_provider || 'Training Application'}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  Submitted: {app.submitted_at ? new Date(app.submitted_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) : app.created_at ? new Date(app.created_at).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                                </p>
+                                {canEdit && app.submitted_at && app.status !== 'draft' && (
+                                  <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    Edit window: {getTimeRemaining(app.submitted_at)}
+                                  </p>
+                                )}
+                                {reEditPending && (
+                                  <p className="text-xs text-amber-600 mt-0.5 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" /> Re-edit request pending approval
+                                  </p>
+                                )}
+                                {reEditApproved && (
+                                  <p className="text-xs text-emerald-600 mt-0.5 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" /> Re-edit approved — you can now edit
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <AppStatusBadge status={app.status} />
+                                {(canEdit || reEditApproved) && (
+                                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => navigate('/training-applications')} data-testid={`edit-training-${app.id}`}>
+                                    <Edit className="w-3 h-3" /> Edit
+                                  </Button>
+                                )}
+                                {editExpired && !reEditPending && !reEditApproved && (
+                                  <Button variant="outline" size="sm" className="gap-1 text-xs border-amber-300 text-amber-700 hover:bg-amber-50"
+                                    onClick={() => setReEditDialog({ id: app.id, type: 'training', title: 'Training Application' })} data-testid={`request-reedit-training-${app.id}`}>
+                                    <Send className="w-3 h-3" /> Request Re-edit
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
         </TabsContent>
 
         {/* Security Tab */}
@@ -575,8 +815,62 @@ const UserProfilePage = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Re-edit Request Dialog */}
+      <Dialog open={!!reEditDialog} onOpenChange={(open) => { if (!open) { setReEditDialog(null); setReEditReason(''); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Request Re-edit
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-slate-600">
+              The 24-hour edit window for your <strong>{reEditDialog?.title}</strong> has expired. You can request an admin to re-enable editing.
+            </p>
+            <div>
+              <Label>Reason for re-edit</Label>
+              <Textarea
+                data-testid="re-edit-reason-input"
+                placeholder="Please explain why you need to edit this application..."
+                value={reEditReason}
+                onChange={(e) => setReEditReason(e.target.value)}
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setReEditDialog(null); setReEditReason(''); }}>Cancel</Button>
+            <Button
+              data-testid="submit-re-edit-request"
+              onClick={handleRequestReEdit}
+              disabled={requestingReEdit || !reEditReason.trim()}
+              className="bg-[#0056B3] hover:bg-[#004494] gap-2"
+            >
+              {requestingReEdit ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Submit Request
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
+};
+
+const AppStatusBadge = ({ status }) => {
+  const config = {
+    draft: { label: 'Draft', className: 'bg-slate-100 text-slate-700 border-slate-300' },
+    pending: { label: 'Pending', className: 'bg-amber-50 text-amber-700 border-amber-300' },
+    submitted: { label: 'Submitted', className: 'bg-blue-50 text-blue-700 border-blue-300' },
+    under_review: { label: 'Under Review', className: 'bg-indigo-50 text-indigo-700 border-indigo-300' },
+    approved: { label: 'Approved', className: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+    rejected: { label: 'Rejected', className: 'bg-red-50 text-red-700 border-red-300' },
+    completed: { label: 'Completed', className: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+  };
+  const c = config[status] || { label: status || 'Unknown', className: 'bg-slate-100 text-slate-600 border-slate-300' };
+  return <Badge variant="outline" className={`text-xs ${c.className}`} data-testid={`status-badge-${status}`}>{c.label}</Badge>;
 };
 
 export default UserProfilePage;

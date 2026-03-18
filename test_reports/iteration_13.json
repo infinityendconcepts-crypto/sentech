@@ -1,0 +1,91 @@
+{
+  "summary": "Iteration 13 testing complete for Profile Page 'My Applications' tab with re-edit feature. All backend APIs (9/9 tests passed) and frontend UI working correctly. Features tested: Bursary/Training applications display, status badges, Edit button within 24hr window, Request Re-edit button after 24hr expiry, Re-edit dialog with reason input, Allow re-edit admin approval, and notifications.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Re-edit Dialog",
+        "issues": ["Minor: Console warning about missing Description or aria-describedby for DialogContent - accessibility improvement recommended"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_reedit_applications.py",
+    "/app/test_reports/pytest/reedit_applications_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "All re-edit APIs working correctly: POST /api/applications/{id}/request-re-edit, PUT /api/applications/{id}/allow-re-edit, POST /api/training-applications/{id}/request-re-edit, PUT /api/training-applications/{id}/allow-re-edit",
+    "24hr edit window enforcement working in PUT /api/applications/{id} and PUT /api/training-applications/{id} - returns 403 if window expired and re_edit_approved is false",
+    "Notifications created for admins on re-edit request and for users on approval/denial",
+    "Re-edit flags (re_edit_requested, re_edit_approved) properly cleared after successful edit (consumed)",
+    "data-testid attributes properly implemented: bursary-app-{id}, training-app-{id}, edit-bursary-{id}, edit-training-{id}, request-reedit-bursary-{id}, request-reedit-training-{id}, status-badge-{status}, re-edit-reason-input, submit-re-edit-request"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_reedit_applications.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (all features verified via Playwright)"
+  },
+  "test_credentials": {
+    "super_admin": {
+      "email": "jane.smith@uct.ac.za",
+      "password": "securepass123"
+    }
+  },
+  "seed_data_creation": "None - used existing test data (7 bursary apps, 1 training app for Jane Smith)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Profile page My Applications tab fully tested. Jane Smith (super_admin) has 7 bursary applications and 1 training application. Most apps submitted recently (18-19 Feb 2026) so within 24hr window showing Edit button. One bursary app from 20 Feb 2026 shows Request Re-edit button (24hr window expired). The training application shows 'Re-edit approved — you can now edit' green text indicating previous approval. All 5 profile tabs working: Profile Info, My Applications, Security, Documents, Account Info.",
+  "features_tested": {
+    "Profile_My_Applications_Tab": {
+      "tab_navigation": "PASS",
+      "bursary_applications_card": "PASS - shows 7 applications with status badges",
+      "training_applications_card": "PASS - shows 1 application",
+      "status_badges": "PASS - Under Review, Pending, Draft badges visible",
+      "edit_button_within_24hr": "PASS - 7 Edit buttons for recent submissions",
+      "request_reedit_button_after_24hr": "PASS - 1 Request Re-edit button for Feb 20 submission",
+      "reedit_approved_indicator": "PASS - Training app shows green 'Re-edit approved — you can now edit'"
+    },
+    "Re_edit_Dialog": {
+      "dialog_opens": "PASS",
+      "title_text": "PASS - 'Request Re-edit'",
+      "explanation_text": "PASS - 'The 24-hour edit window for your Bursary Application has expired.'",
+      "reason_input_field": "PASS - data-testid='re-edit-reason-input'",
+      "submit_button": "PASS - data-testid='submit-re-edit-request', enabled when reason filled",
+      "cancel_button": "PASS - closes dialog"
+    },
+    "Backend_Re_edit_APIs": {
+      "POST_applications_request_re_edit": "PASS - 200 response, creates notification for admins",
+      "PUT_applications_allow_re_edit": "PASS - 200 response, creates notification for user",
+      "POST_training_applications_request_re_edit": "PASS - 200 response",
+      "PUT_training_applications_allow_re_edit": "PASS - 200 response",
+      "GET_notifications": "PASS - returns re-edit related notifications"
+    },
+    "24hr_Edit_Window_Enforcement": {
+      "edit_within_24hrs": "PASS - allowed",
+      "edit_after_24hrs_without_approval": "PASS - returns 403",
+      "edit_after_24hrs_with_approval": "PASS - allowed (re_edit_approved=true)"
+    },
+    "Other_Profile_Tabs": {
+      "profile_info": "PASS - Personal Information form visible",
+      "security": "PASS - Change Password card visible",
+      "documents": "PASS - My Documents section visible",
+      "account_info": "PASS - Account Information with User ID, Status, Roles"
+    }
+  },
+  "screenshots": [
+    ".screenshots/profile_page_initial.png",
+    ".screenshots/profile_my_applications.png",
+    ".screenshots/profile_apps_scrolled.png",
+    ".screenshots/reedit_dialog.png",
+    ".screenshots/reedit_dialog_filled.png",
+    ".screenshots/profile_full_applications.png"
+  ]
+}

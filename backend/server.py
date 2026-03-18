@@ -2966,9 +2966,20 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
         raise HTTPException(status_code=404, detail="Application not found")
     
     # Allow admin or owner to update
-    is_admin = current_user.get("role") == "admin"
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
     if application["user_id"] != current_user["id"] and not is_admin:
         raise HTTPException(status_code=403, detail="Access denied")
+    
+    # 24hr edit window enforcement for non-admin users
+    if not is_admin and application["user_id"] == current_user["id"]:
+        submitted_at = application.get("submitted_at")
+        if submitted_at and application.get("status") not in ["draft"]:
+            submitted_time = datetime.fromisoformat(submitted_at.replace("Z", "+00:00")) if isinstance(submitted_at, str) else submitted_at
+            now = datetime.now(timezone.utc)
+            if (now - submitted_time).total_seconds() > 86400:
+                # Past 24hrs - check if re-edit was approved
+                if not application.get("re_edit_approved"):
+                    raise HTTPException(status_code=403, detail="Edit window expired. Please request re-edit from your profile page.")
     
     update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -2976,6 +2987,11 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
     # If status is being changed to pending or submitted, set submitted_at
     if update_data.status in ["pending", "submitted"]:
         update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Clear re_edit flags after a successful edit (consumed)
+    if application.get("re_edit_approved"):
+        update_dict["re_edit_approved"] = False
+        update_dict["re_edit_requested"] = False
     
     await db.applications.update_one({"id": application_id}, {"$set": update_dict})
     updated_app = await db.applications.find_one({"id": application_id}, {"_id": 0})
@@ -2996,6 +3012,82 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
         await db.notifications.insert_one({**notif})
     
     return updated_app
+
+@api_router.post("/applications/{application_id}/request-re-edit")
+async def request_bursary_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
+    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if application["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if application.get("re_edit_requested"):
+        raise HTTPException(status_code=400, detail="Re-edit already requested")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    await db.applications.update_one({"id": application_id}, {"$set": {
+        "re_edit_requested": True,
+        "re_edit_requested_at": now,
+        "re_edit_reason": body.get("reason", ""),
+        "re_edit_approved": False,
+        "updated_at": now,
+    }})
+    
+    # Notify admins about re-edit request
+    admins = await db.users.find({"roles": {"$in": ["admin", "super_admin"]}}, {"_id": 0, "id": 1}).to_list(100)
+    for admin in admins:
+        notif = {
+            "id": generate_uuid(),
+            "user_id": admin["id"],
+            "type": "status_change",
+            "title": "Re-edit Request: Bursary Application",
+            "message": f"{current_user.get('full_name', 'A user')} has requested to re-edit their bursary application",
+            "reference_id": application_id,
+            "reference_type": "application",
+            "is_read": False,
+            "created_at": now,
+        }
+        await db.notifications.insert_one({**notif})
+    
+    return {"message": "Re-edit request submitted"}
+
+@api_router.put("/applications/{application_id}/allow-re-edit")
+async def allow_bursary_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can approve re-edits")
+    
+    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    
+    approved = body.get("approved", True)
+    now = datetime.now(timezone.utc).isoformat()
+    update = {
+        "re_edit_approved": approved,
+        "re_edit_responded_at": now,
+        "re_edit_responded_by": current_user["id"],
+        "updated_at": now,
+    }
+    if not approved:
+        update["re_edit_requested"] = False
+    
+    await db.applications.update_one({"id": application_id}, {"$set": update})
+    
+    # Notify the applicant
+    notif = {
+        "id": generate_uuid(),
+        "user_id": application["user_id"],
+        "type": "status_change",
+        "title": "Re-edit Request " + ("Approved" if approved else "Denied"),
+        "message": f"Your bursary application re-edit request has been {'approved. You can now edit your application.' if approved else 'denied.'}",
+        "reference_id": application_id,
+        "reference_type": "application",
+        "is_read": False,
+        "created_at": now,
+    }
+    await db.notifications.insert_one({**notif})
+    
+    return {"message": f"Re-edit {'approved' if approved else 'denied'}"}
 
 # ============== TRAINING APPLICATIONS ROUTES ==============
 
@@ -3065,9 +3157,19 @@ async def update_training_application(application_id: str, update_data: Training
         raise HTTPException(status_code=404, detail="Training application not found")
     
     # Allow admin or owner to update
-    is_admin = "admin" in current_user.get("roles", [])
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
     if application["user_id"] != current_user["id"] and not is_admin:
         raise HTTPException(status_code=403, detail="Access denied")
+    
+    # 24hr edit window enforcement for non-admin users
+    if not is_admin and application["user_id"] == current_user["id"]:
+        submitted_at = application.get("submitted_at")
+        if submitted_at and application.get("status") not in ["draft"]:
+            submitted_time = datetime.fromisoformat(submitted_at.replace("Z", "+00:00")) if isinstance(submitted_at, str) else submitted_at
+            now = datetime.now(timezone.utc)
+            if (now - submitted_time).total_seconds() > 86400:
+                if not application.get("re_edit_approved"):
+                    raise HTTPException(status_code=403, detail="Edit window expired. Please request re-edit from your profile page.")
     
     update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -3075,6 +3177,11 @@ async def update_training_application(application_id: str, update_data: Training
     # If status is being changed to pending or submitted, set submitted_at
     if update_data.status in ["pending", "submitted"]:
         update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Clear re_edit flags after a successful edit (consumed)
+    if application.get("re_edit_approved"):
+        update_dict["re_edit_approved"] = False
+        update_dict["re_edit_requested"] = False
     
     await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
     updated_app = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
@@ -3132,6 +3239,80 @@ async def delete_training_application(application_id: str, current_user: dict = 
     
     await db.training_applications.delete_one({"id": application_id})
     return {"message": "Training application deleted successfully"}
+
+@api_router.post("/training-applications/{application_id}/request-re-edit")
+async def request_training_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
+    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Training application not found")
+    if application["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if application.get("re_edit_requested"):
+        raise HTTPException(status_code=400, detail="Re-edit already requested")
+    
+    now = datetime.now(timezone.utc).isoformat()
+    await db.training_applications.update_one({"id": application_id}, {"$set": {
+        "re_edit_requested": True,
+        "re_edit_requested_at": now,
+        "re_edit_reason": body.get("reason", ""),
+        "re_edit_approved": False,
+        "updated_at": now,
+    }})
+    
+    admins = await db.users.find({"roles": {"$in": ["admin", "super_admin"]}}, {"_id": 0, "id": 1}).to_list(100)
+    for admin in admins:
+        notif = {
+            "id": generate_uuid(),
+            "user_id": admin["id"],
+            "type": "status_change",
+            "title": "Re-edit Request: Training Application",
+            "message": f"{current_user.get('full_name', 'A user')} has requested to re-edit their training application",
+            "reference_id": application_id,
+            "reference_type": "application",
+            "is_read": False,
+            "created_at": now,
+        }
+        await db.notifications.insert_one({**notif})
+    
+    return {"message": "Re-edit request submitted"}
+
+@api_router.put("/training-applications/{application_id}/allow-re-edit")
+async def allow_training_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can approve re-edits")
+    
+    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Training application not found")
+    
+    approved = body.get("approved", True)
+    now = datetime.now(timezone.utc).isoformat()
+    update = {
+        "re_edit_approved": approved,
+        "re_edit_responded_at": now,
+        "re_edit_responded_by": current_user["id"],
+        "updated_at": now,
+    }
+    if not approved:
+        update["re_edit_requested"] = False
+    
+    await db.training_applications.update_one({"id": application_id}, {"$set": update})
+    
+    notif = {
+        "id": generate_uuid(),
+        "user_id": application["user_id"],
+        "type": "status_change",
+        "title": "Re-edit Request " + ("Approved" if approved else "Denied"),
+        "message": f"Your training application re-edit request has been {'approved. You can now edit your application.' if approved else 'denied.'}",
+        "reference_id": application_id,
+        "reference_type": "application",
+        "is_read": False,
+        "created_at": now,
+    }
+    await db.notifications.insert_one({**notif})
+    
+    return {"message": f"Re-edit {'approved' if approved else 'denied'}"}
 
 # ============== BBBEE ROUTES ==============
 
