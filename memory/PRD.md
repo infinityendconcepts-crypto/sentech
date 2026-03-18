@@ -85,6 +85,12 @@ Create a comprehensive bursary management system named "Sentech" with React, Fas
 - Once re-edit is approved, user can edit again (flags auto-cleared after edit)
 - Backend enforcement: PUT application endpoints return 403 if edit window expired and no re-edit approval
 
+### User Management Enhancements (Feb 2026) ✅
+- Removed Student ID from user model and all pages
+- User Profile shows all HR dataset fields: Personal Details (surname, ID number, gender, race, age), Employment Info (personnel number, division, department, position, level, start date, years of service), OFO Classification
+- Admin Edit User dialog expanded to 20 editable fields across 3 sections: Personal Info, Employment Info, OFO Classification
+- Backend UserUpdate model supports all fields including email, bio
+
 ## Pending/Future Tasks
 
 ### P1 - Upcoming
