@@ -1176,223 +1176,8 @@ def serialize_doc(doc):
 
 
 
-@api_router.get("/users")
-async def get_users(
-    team_id: Optional[str] = None,
-    role: Optional[str] = None,
-    search: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
-):
-    query = {}
-    if team_id:
-        query["team_id"] = team_id
-    if role:
-        query["roles"] = role
-    if search:
-        query["$or"] = [
-            {"full_name": {"$regex": search, "$options": "i"}},
-            {"email": {"$regex": search, "$options": "i"}},
-        ]
-    users = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
-    return users
-
-@api_router.get("/users/me")
-async def get_my_profile(current_user: dict = Depends(get_current_user)):
-    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
-
-@api_router.put("/users/me")
-async def update_my_profile(update_data: dict, current_user: dict = Depends(get_current_user)):
-    allowed = {"full_name", "phone", "department", "bio", "avatar_initials"}
-    filtered = {k: v for k, v in update_data.items() if k in allowed and v is not None}
-    filtered["updated_at"] = datetime.now(timezone.utc).isoformat()
-    await db.users.update_one({"id": current_user["id"]}, {"$set": filtered})
-    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
-    return user
-
-@api_router.post("/users/me/change-password")
-async def change_my_password(data: dict, current_user: dict = Depends(get_current_user)):
-    current_password = data.get("current_password", "")
-    new_password = data.get("new_password", "")
-    if len(new_password) < 8:
-        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
-    user_record = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
-    if not user_record:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user_record.get("password_hash"):
-        if not verify_password(current_password, user_record["password_hash"]):
-            raise HTTPException(status_code=400, detail="Current password is incorrect")
-    await db.users.update_one(
-        {"id": current_user["id"]},
-        {"$set": {"password_hash": get_password_hash(new_password), "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return {"message": "Password updated successfully"}
-
-@api_router.post("/users/invite")
-async def invite_user(data: dict, current_user: dict = Depends(get_current_user)):
-    if "admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins can invite users")
-    email = data.get("email", "").strip().lower()
-    role = data.get("role", "student")
-    full_name = data.get("full_name", "")
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
-    existing = await db.users.find_one({"email": email})
-    if existing:
-        raise HTTPException(status_code=409, detail="User with this email already exists")
-    otp_code = "".join([str(secrets.randbelow(10)) for _ in range(6)])
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=60)
-    await db.otps.delete_many({"email": email})
-    await db.otps.insert_one({
-        "email": email, "otp": otp_code, "attempts": 0,
-        "expires_at": expires_at, "created_at": datetime.now(timezone.utc)
-    })
-    return {
-        "message": f"Invitation sent to {email}",
-        "email": email,
-        "role": role,
-        "dev_note": f"Login OTP for invited user: {otp_code}"
-    }
-
-@api_router.post("/users")
-async def create_user(data: dict, current_user: dict = Depends(get_current_user)):
-    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins can create users")
-    email = data.get("email", "").strip().lower()
-    full_name = data.get("full_name", "")
-    roles = data.get("roles", [data.get("role", "employee")])
-    password = data.get("password", "")
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
-    if not password or len(password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-    existing = await db.users.find_one({"email": email})
-    if existing:
-        raise HTTPException(status_code=409, detail="User with this email already exists")
-    new_user = User(
-        email=email,
-        full_name=full_name or email.split("@")[0].title(),
-        roles=roles if isinstance(roles, list) else [roles],
-        is_verified=True,
-        is_active=True,
-        password_hash=get_password_hash(password),
-        division=data.get("division", ""),
-        department=data.get("department", ""),
-        position=data.get("position", ""),
-    )
-    user_dict = new_user.model_dump()
-    user_dict["created_at"] = user_dict["created_at"].isoformat()
-    user_dict["updated_at"] = user_dict["updated_at"].isoformat()
-    await db.users.insert_one(user_dict)
-    return_user = {k: v for k, v in user_dict.items() if k not in ["_id", "password_hash"]}
-    return return_user
-
-@api_router.get("/users/import-template")
-async def download_import_template(current_user: dict = Depends(get_current_user)):
-    """Generate and return an XLSX template for user import"""
-    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins can download import template")
-
-    headers = [
-        "email", "full_name", "surname", "personnel_number", "id_number",
-        "gender", "race", "age", "division", "department", "position", "level",
-        "start_date", "years_of_service",
-        "ofo_major_group", "ofo_sub_major_group", "ofo_occupation", "ofo_code"
-    ]
-    sample_row = [
-        "john.doe@sentech.co.za", "John Doe", "Doe", "EMP001", "9001015800088",
-        "Male", "African", "34", "Engineering", "Software Dev", "Developer", "L5",
-        "2020-01-15", "6",
-        "PROFESSIONALS", "Science and Engineering", "Software Developer", "251201"
-    ]
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "User Import Template"
-    header_fill = PatternFill(start_color="0056B3", end_color="0056B3", fill_type="solid")
-    header_font = Font(bold=True, color="FFFFFF")
-    for col_idx, h in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col_idx, value=h.replace("_", " ").title())
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-    for col_idx, val in enumerate(sample_row, 1):
-        ws.cell(row=2, column=col_idx, value=val)
-    for col_idx, h in enumerate(headers, 1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = max(len(h) + 4, 15)
-
-    output = io.BytesIO()
-    wb.save(output)
-    output.seek(0)
-
-    return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=user_import_template.xlsx"}
-    )
-
-@api_router.put("/users/{user_id}/status")
-async def update_user_status(user_id: str, data: dict, current_user: dict = Depends(get_current_user)):
-    if "admin" not in current_user.get("roles", []) and "manager" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Access denied")
-    is_active = data.get("is_active", True)
-    await db.users.update_one(
-        {"id": user_id},
-        {"$set": {"is_active": is_active, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return {"message": f"User {'activated' if is_active else 'deactivated'} successfully"}
-
-@api_router.put("/users/{user_id}/role")
-async def update_user_role(user_id: str, data: dict, current_user: dict = Depends(get_current_user)):
-    if "admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins can change roles")
-    roles = data.get("roles", ["student"])
-    # Ensure only valid roles
-    valid_roles = {"admin", "student"}
-    roles = [r for r in roles if r in valid_roles]
-    if not roles:
-        roles = ["student"]
-    await db.users.update_one(
-        {"id": user_id},
-        {"$set": {"roles": roles, "updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return {"message": "User role updated successfully"}
-
-@api_router.delete("/users/{user_id}")
-async def delete_user(user_id: str, current_user: dict = Depends(get_current_user)):
-    if "admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins can delete users")
-    if user_id == current_user["id"]:
-        raise HTTPException(status_code=400, detail="Cannot delete your own account")
-    result = await db.users.delete_one({"id": user_id})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
-    return {"message": "User deleted successfully"}
-
-@api_router.get("/users/{user_id}")
-async def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
-    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
-
-@api_router.put("/users/{user_id}")
-async def update_user(user_id: str, update_data: UserUpdate, current_user: dict = Depends(get_current_user)):
-    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
-    if user_id != current_user["id"] and not is_admin:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    user = await db.users.find_one({"id": user_id}, {"_id": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
-    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
-    
-    await db.users.update_one({"id": user_id}, {"$set": update_dict})
-    return {"message": "User updated successfully"}
+# ============== USERS ROUTES ==============
+# Moved to routers/users.py
 
 # ============== TEAMS ROUTES ==============
 
@@ -2002,12 +1787,16 @@ async def get_all_application_expenses(current_user: dict = Depends(get_current_
         total = sum(float(exp.get(k, 0) or 0) for k in ["flights", "accommodation", "car_hire_or_shuttle", "catering"])
         if total > 0:
             user = await db.users.find_one({"id": app["user_id"]}, {"_id": 0, "full_name": 1})
+            fi = app.get("financial_info", {})
+            requested_amount = fi.get("total_amount") or fi.get("amount_requested") or fi.get("bursary_amount") or 0
             bursary_expenses.append({
                 "application_id": app["id"],
                 "application_type": "bursary",
                 "applicant_name": user.get("full_name", "Unknown") if user else app.get("user_email", "Unknown"),
                 "status": app.get("status", "draft"),
                 "submitted_at": app.get("submitted_at"),
+                "created_at": app.get("created_at"),
+                "requested_amount": float(requested_amount) if requested_amount else 0,
                 "expenses": exp,
                 "total": total,
             })
@@ -2018,19 +1807,73 @@ async def get_all_application_expenses(current_user: dict = Depends(get_current_
         total = sum(float(exp.get(k, 0) or 0) for k in ["flights", "accommodation", "car_hire_or_shuttle", "catering"])
         if total > 0:
             user = await db.users.find_one({"id": app["user_id"]}, {"_id": 0, "full_name": 1})
+            ti = app.get("training_info", {})
+            requested_amount = ti.get("total_amount") or ti.get("amount_requested") or 0
             training_expenses.append({
                 "application_id": app["id"],
                 "application_type": "training",
                 "applicant_name": user.get("full_name", "Unknown") if user else "Unknown",
-                "training_type": app.get("training_info", {}).get("training_type", ""),
-                "service_provider": app.get("training_info", {}).get("service_provider", ""),
+                "training_type": ti.get("training_type", ""),
+                "service_provider": ti.get("service_provider", ""),
                 "status": app.get("status", "draft"),
                 "submitted_at": app.get("submitted_at"),
+                "created_at": app.get("created_at"),
+                "requested_amount": float(requested_amount) if requested_amount else 0,
                 "expenses": exp,
                 "total": total,
             })
     
     return {"bursary": bursary_expenses, "training": training_expenses}
+
+@api_router.get("/expenses/available-applications")
+async def get_available_applications_for_expenses(current_user: dict = Depends(get_current_user)):
+    """Get all applications (bursary + training) available for expense submission"""
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    user_query = {} if is_admin else {"user_id": current_user["id"]}
+
+    bursary_apps = await db.applications.find(
+        {**user_query, "status": {"$nin": ["draft"]}}, {"_id": 0}
+    ).to_list(1000)
+    training_apps = await db.training_applications.find(
+        {**user_query, "status": {"$nin": ["draft"]}}, {"_id": 0}
+    ).to_list(1000)
+
+    result = []
+    for app in bursary_apps:
+        user = await db.users.find_one({"id": app["user_id"]}, {"_id": 0, "full_name": 1})
+        fi = app.get("financial_info", {})
+        requested_amount = fi.get("total_amount") or fi.get("amount_requested") or fi.get("bursary_amount") or 0
+        has_expenses = bool(app.get("additional_expenses"))
+        result.append({
+            "id": app["id"],
+            "type": "bursary",
+            "applicant_name": user.get("full_name", "Unknown") if user else app.get("user_email", "Unknown"),
+            "user_email": app.get("user_email", ""),
+            "status": app.get("status", ""),
+            "requested_amount": float(requested_amount) if requested_amount else 0,
+            "has_expenses": has_expenses,
+            "existing_expenses": app.get("additional_expenses") if has_expenses else None,
+            "created_at": app.get("created_at"),
+        })
+    for app in training_apps:
+        user = await db.users.find_one({"id": app["user_id"]}, {"_id": 0, "full_name": 1})
+        ti = app.get("training_info", {})
+        requested_amount = ti.get("total_amount") or ti.get("amount_requested") or 0
+        has_expenses = bool(app.get("additional_expenses"))
+        result.append({
+            "id": app["id"],
+            "type": "training",
+            "applicant_name": user.get("full_name", "Unknown") if user else app.get("user_email", "Unknown"),
+            "user_email": app.get("user_email", ""),
+            "status": app.get("status", ""),
+            "training_type": ti.get("training_type", ""),
+            "service_provider": ti.get("service_provider", ""),
+            "requested_amount": float(requested_amount) if requested_amount else 0,
+            "has_expenses": has_expenses,
+            "existing_expenses": app.get("additional_expenses") if has_expenses else None,
+            "created_at": app.get("created_at"),
+        })
+    return result
 
 @api_router.get("/expenses/{expense_id}")
 async def get_expense(expense_id: str, current_user: dict = Depends(get_current_user)):
@@ -3439,68 +3282,7 @@ async def delete_event(event_id: str, current_user: dict = Depends(get_current_u
     return {"message": "Event deleted successfully"}
 
 # ============== USER DOCUMENTS ROUTES ==============
-
-@api_router.get("/users/{user_id}/documents")
-async def get_user_documents(user_id: str, current_user: dict = Depends(get_current_user)):
-    if user_id != current_user["id"] and "admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Access denied")
-    user = await db.users.find_one({"id": user_id}, {"_id": 0, "documents": 1})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user.get("documents", [])
-
-@api_router.post("/users/{user_id}/documents")
-async def upload_user_document(user_id: str, data: dict, current_user: dict = Depends(get_current_user)):
-    if user_id != current_user["id"] and "admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Access denied")
-    doc = {
-        "id": generate_uuid(),
-        "name": data.get("name", "Document"),
-        "file_name": data.get("file_name", ""),
-        "file_data": data.get("file_data", ""),
-        "document_type": data.get("document_type", "general"),
-        "status": "processing",
-        "notes": data.get("notes", ""),
-        "uploaded_at": datetime.now(timezone.utc).isoformat(),
-        "reviewed_at": None,
-        "reviewed_by": None,
-    }
-    await db.users.update_one(
-        {"id": user_id},
-        {"$push": {"documents": doc}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
-    )
-    return doc
-
-@api_router.put("/users/{user_id}/documents/{doc_id}")
-async def update_user_document_status(user_id: str, doc_id: str, data: dict, current_user: dict = Depends(get_current_user)):
-    allowed_status = {"processing", "approved", "rejected"}
-    new_status = data.get("status")
-    if new_status and new_status not in allowed_status:
-        raise HTTPException(status_code=400, detail=f"Status must be one of: {', '.join(allowed_status)}")
-    if "admin" not in current_user.get("roles", []) and "manager" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins/managers can update document status")
-    update_fields = {}
-    if new_status:
-        update_fields["documents.$.status"] = new_status
-    if data.get("notes"):
-        update_fields["documents.$.notes"] = data["notes"]
-    update_fields["documents.$.reviewed_at"] = datetime.now(timezone.utc).isoformat()
-    update_fields["documents.$.reviewed_by"] = current_user["id"]
-    await db.users.update_one(
-        {"id": user_id, "documents.id": doc_id},
-        {"$set": update_fields}
-    )
-    return {"message": "Document status updated"}
-
-@api_router.delete("/users/{user_id}/documents/{doc_id}")
-async def delete_user_document(user_id: str, doc_id: str, current_user: dict = Depends(get_current_user)):
-    if user_id != current_user["id"] and "admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Access denied")
-    await db.users.update_one(
-        {"id": user_id},
-        {"$pull": {"documents": {"id": doc_id}}}
-    )
-    return {"message": "Document deleted"}
+# Moved to routers/users.py
 
 # ============== PERSONAL DEVELOPMENT PLAN ROUTES ==============
 
@@ -3659,120 +3441,7 @@ async def delete_department(dept_id: str, current_user: dict = Depends(get_curre
     return {"message": "Department deleted successfully"}
 
 # ============== USER IMPORT ROUTES ==============
-
-@api_router.post("/users/batch-action")
-async def batch_user_action(body: dict, current_user: dict = Depends(get_current_user)):
-    """Batch activate, deactivate, or delete users"""
-    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins can perform batch actions")
-
-    action = body.get("action")
-    user_ids = body.get("user_ids", [])
-    if not user_ids:
-        raise HTTPException(status_code=400, detail="No users selected")
-    if action not in ["activate", "deactivate", "delete"]:
-        raise HTTPException(status_code=400, detail="Invalid action. Use: activate, deactivate, delete")
-
-    # Exclude current user from batch operations
-    user_ids = [uid for uid in user_ids if uid != current_user["id"]]
-    if not user_ids:
-        raise HTTPException(status_code=400, detail="Cannot perform batch actions on yourself")
-
-    count = 0
-    if action == "activate":
-        result = await db.users.update_many(
-            {"id": {"$in": user_ids}},
-            {"$set": {"is_active": True, "updated_at": datetime.now(timezone.utc).isoformat()}}
-        )
-        count = result.modified_count
-    elif action == "deactivate":
-        result = await db.users.update_many(
-            {"id": {"$in": user_ids}},
-            {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
-        )
-        count = result.modified_count
-    elif action == "delete":
-        result = await db.users.delete_many({"id": {"$in": user_ids}})
-        count = result.deleted_count
-
-    return {"message": f"{action.title()}d {count} user(s)", "count": count}
-
-@api_router.post("/users/bulk-import")
-async def bulk_import_users(users_data: List[dict], current_user: dict = Depends(get_current_user)):
-    """Bulk import users from spreadsheet data"""
-    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins can import users")
-    
-    imported = 0
-    skipped = 0
-    errors = []
-    
-    for user_data in users_data:
-        try:
-            email = user_data.get("email", "").strip().lower()
-            if not email:
-                skipped += 1
-                continue
-            
-            # Check if user already exists
-            existing = await db.users.find_one({"email": email})
-            if existing:
-                skipped += 1
-                continue
-            
-            # Determine role based on OFO Major Group
-            ofo_major = user_data.get("ofo_major_group", "")
-            role = "employee"
-            if "MANAGERS" in ofo_major.upper():
-                role = "manager"
-            elif "PROFESSIONALS" in ofo_major.upper():
-                role = "professional"
-            elif "TECHNICIANS" in ofo_major.upper():
-                role = "technician"
-            elif "CLERICAL" in ofo_major.upper():
-                role = "clerical"
-            
-            user = {
-                "id": generate_uuid(),
-                "email": email,
-                "full_name": user_data.get("full_name", ""),
-                "surname": user_data.get("surname", ""),
-                "password_hash": None,
-                "roles": [role],
-                "division": user_data.get("division", ""),
-                "department": user_data.get("department", ""),
-                "position": user_data.get("position", ""),
-                "is_active": True,
-                "is_verified": False,
-                "requires_password_setup": True,
-                "ofo_major_group": user_data.get("ofo_major_group", ""),
-                "ofo_sub_major_group": user_data.get("ofo_sub_major_group", ""),
-                "ofo_occupation": user_data.get("ofo_occupation", ""),
-                "ofo_code": user_data.get("ofo_code", ""),
-                "personnel_number": user_data.get("personnel_number", ""),
-                "id_number": user_data.get("id_number", ""),
-                "race": user_data.get("race", ""),
-                "gender": user_data.get("gender", ""),
-                "age": user_data.get("age"),
-                "start_date": user_data.get("start_date", ""),
-                "years_of_service": user_data.get("years_of_service"),
-                "level": user_data.get("level", ""),
-                "created_at": datetime.now(timezone.utc).isoformat(),
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            }
-            
-            await db.users.insert_one({**user})
-            imported += 1
-            
-        except Exception as e:
-            errors.append({"email": user_data.get("email", "unknown"), "error": str(e)})
-    
-    return {
-        "imported": imported,
-        "skipped": skipped,
-        "errors": errors,
-        "message": f"Successfully imported {imported} users, skipped {skipped}"
-    }
+# Moved to routers/users.py
 
 # ============== DIVISION GROUPS ROUTES ==============
 
@@ -4220,10 +3889,12 @@ from routers.reports import router as reports_router
 from routers.notifications import router as notifications_router
 from routers.auth import router as auth_router
 from routers.applications import router as applications_router
+from routers.users import router as users_router
 app.include_router(reports_router)
 app.include_router(notifications_router)
 app.include_router(auth_router)
 app.include_router(applications_router)
+app.include_router(users_router)
 
 app.include_router(api_router)
 

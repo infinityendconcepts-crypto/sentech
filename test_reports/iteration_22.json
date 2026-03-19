@@ -1,0 +1,102 @@
+{
+  "summary": "Iteration 22 testing completed: All 16 backend API tests passed (100%), all frontend UI tests passed. Features tested: ExpensesPage rewrite with 3 tabs (Bursary/Training/Standalone), filters (search, status, date, amount), requested_amount display, Submit Expense dialog with application selector, Users router (GET /users, GET /users/me, POST /users/batch-action), available-applications endpoint, application-expenses endpoint with requested_amount.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Submit Expense Dialog",
+        "issues": ["Missing `aria-describedby` warning in console for DialogContent - minor accessibility improvement"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_22.py",
+    "/app/test_reports/pytest/iteration_22_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_22.py"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 passed)",
+    "frontend": "100%"
+  },
+  "features_verified": {
+    "expenses_page_rewrite": {
+      "tabs": {
+        "bursary_application": "PASS - Shows filters, stats cards (Requested Amount, Total Expenses), Grand Total row",
+        "training_application": "PASS - Shows filters, stats cards, Grand Total row with R12,000 requested, R4,500 expenses",
+        "standalone_expenses": "PASS - Shows search, status, category, date filters"
+      },
+      "filters": {
+        "bursary_tab": "PASS - Search, Status, DateFrom/To, AmountMin/Max all present",
+        "training_tab": "PASS - Search, Status, DateFrom/To, AmountMin/Max all present",
+        "standalone_tab": "PASS - Search, Status, Category, DateFrom/To all present"
+      },
+      "submit_expense_dialog": {
+        "application_selector": "PASS - Shows 6 available applications",
+        "expense_fields": "PASS - Flights, Accommodation, Car Hire, Catering with notes",
+        "total_display": "PASS - Shows Total Expenses calculation",
+        "submit_button": "PASS - Submit/Update Expenses button present"
+      },
+      "stats_cards": {
+        "requested_amount": "PASS - Displayed in Bursary/Training tabs",
+        "total_expenses": "PASS - Shows sum of all expenses"
+      }
+    },
+    "users_router": {
+      "get_users": "PASS - Returns user list without password_hash",
+      "get_users_me": "PASS - Returns current user profile",
+      "batch_action": "PASS - Admin only (employee gets 403)"
+    },
+    "expenses_endpoints": {
+      "available_applications": {
+        "endpoint": "GET /api/expenses/available-applications",
+        "status": "PASS",
+        "fields": ["id", "type", "applicant_name", "requested_amount", "has_expenses", "status"]
+      },
+      "application_expenses": {
+        "endpoint": "GET /api/expenses/application-expenses",
+        "status": "PASS",
+        "fields": ["bursary", "training arrays with requested_amount field"]
+      },
+      "add_bursary_expenses": {
+        "endpoint": "POST /api/applications/{id}/expenses",
+        "status": "PASS"
+      },
+      "add_training_expenses": {
+        "endpoint": "POST /api/training-applications/{id}/expenses",
+        "status": "PASS"
+      }
+    },
+    "training_applications_page": {
+      "period_settings_button": "PASS - Admin only",
+      "status_banner": "PASS - Shows 'Training applications are open — Deadline: 12/31/2026'",
+      "admin_controls": "PASS - Edit, Delete, Change Status, Edit Expenses buttons visible",
+      "employee_restrictions": "PASS - Employee sees no Period Settings, no checkboxes"
+    },
+    "employee_visibility_restrictions": {
+      "available_applications": "PASS - Employee sees only own applications",
+      "application_expenses": "PASS - Employee sees only own expenses",
+      "training_page_admin_controls_hidden": "PASS"
+    }
+  },
+  "test_credentials": {
+    "super_admin": {"email": "jane.smith@uct.ac.za", "password": "securepass123"},
+    "test_employee": {"email": "test.employee@sentech.co.za", "password": "password"},
+    "test_admin": {"email": "test.admin@sentech.co.za", "password": "password"}
+  },
+  "mocked_apis": {
+    "SMTP_email_notifications": "MOCKED - Logs to console instead of sending real emails"
+  },
+  "seed_data_creation": "Test bursary and training applications created and cleaned up during tests (TEST_ prefixed)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All iteration 22 features verified working: 1) ExpensesPage completely rewritten with 3 tabs (Bursary Application, Training Application, Standalone Expenses), 2) Each tab has comprehensive filters (search, status, date from/to, amount min/max), 3) Submit Expense dialog allows selecting from available applications (non-draft status) and submitting expenses for flights/accommodation/car hire/catering, 4) requested_amount field now included in application-expenses endpoint response, 5) GET /api/expenses/available-applications returns all non-draft apps with type, requested_amount, has_expenses, 6) Users router (/api/users, /api/users/me, /api/users/batch-action) working correctly in routers/users.py, 7) Training Applications page still has Period Settings, batch delete, admin controls - all correctly hidden for employees."
+}

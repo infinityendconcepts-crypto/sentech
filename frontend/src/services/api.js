@@ -141,6 +141,7 @@ export const expensesAPI = {
   approve: (id) => api.post(`/expenses/${id}/approve`),
   reject: (id, reason) => api.post(`/expenses/${id}/reject`, { reason }),
   getApplicationExpenses: () => api.get('/expenses/application-expenses'),
+  getAvailableApplications: () => api.get('/expenses/available-applications'),
   exportExcel: (params) => api.get('/expenses/export/excel', { params, responseType: 'blob' }),
 };
 
