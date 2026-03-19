@@ -256,26 +256,39 @@ const ExpensesPage = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Expenses', value: formatCurrency(stats?.total), icon: DollarSign, iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
-          { label: 'Pending', value: formatCurrency(stats?.pending), icon: Clock, iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
-          { label: 'Approved', value: formatCurrency(stats?.approved), icon: CheckCircle, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
-          { label: 'Total Count', value: stats?.count || 0, icon: Receipt, iconBg: 'bg-primary/10', iconColor: 'text-primary' },
-        ].map(({ label, value, icon: Icon, iconBg, iconColor }) => (
-          <Card key={label} className="bg-white border-slate-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-slate-600">{label}</p>
-                  <p className="text-2xl font-bold text-slate-900">{value}</p>
-                </div>
-                <div className={`p-3 ${iconBg} rounded-full`}><Icon className={`w-6 h-6 ${iconColor}`} /></div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {(() => {
+        const bursaryRequested = (appExpenses.bursary || []).reduce((s, e) => s + (e.requested_amount || 0), 0);
+        const trainingRequested = (appExpenses.training || []).reduce((s, e) => s + (e.requested_amount || 0), 0);
+        const bursaryAdditional = (appExpenses.bursary || []).reduce((s, e) => s + (e.total || 0), 0);
+        const trainingAdditional = (appExpenses.training || []).reduce((s, e) => s + (e.total || 0), 0);
+        const totalRequested = bursaryRequested + trainingRequested;
+        const totalAdditional = bursaryAdditional + trainingAdditional;
+        const totalExpenses = totalRequested + totalAdditional;
+        const appCount = (appExpenses.bursary || []).length + (appExpenses.training || []).length;
+        const items = [
+          { label: 'Total Requested', value: formatCurrency(totalRequested), icon: DollarSign, iconBg: 'bg-primary/10', iconColor: 'text-primary' },
+          { label: 'Additional Expenses', value: formatCurrency(totalAdditional), icon: Receipt, iconBg: 'bg-amber-100', iconColor: 'text-amber-600' },
+          { label: 'Total Expenses', value: formatCurrency(totalExpenses), icon: TrendingUp, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+          { label: 'Applications', value: appCount, icon: FileText, iconBg: 'bg-blue-100', iconColor: 'text-blue-600' },
+        ];
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {items.map(({ label, value, icon: Icon, iconBg, iconColor }) => (
+              <Card key={label} className={`bg-white border-slate-200 ${label === 'Total Expenses' ? 'border-2 border-primary/20' : ''}`}>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-600">{label}</p>
+                      <p className="text-2xl font-bold text-slate-900" data-testid={`top-stat-${label.toLowerCase().replace(/ /g, '-')}`}>{value}</p>
+                    </div>
+                    <div className={`p-3 ${iconBg} rounded-full`}><Icon className={`w-6 h-6 ${iconColor}`} /></div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Tabs */}
       <Tabs defaultValue="bursary" className="space-y-4" onValueChange={setActiveTab}>
