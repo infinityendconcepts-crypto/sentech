@@ -1,112 +1,99 @@
 # Sentech Bursary Management System - PRD
 
 ## Original Problem Statement
-Build a comprehensive bursary management system named "Sentech" using React, FastAPI, and MongoDB with modules for applications, users, divisions, projects, meetings, and role-based access control.
+Build a comprehensive bursary management system named "Sentech" using React, FastAPI, and MongoDB with modules for managing applications, users, divisions, projects, meetings, and more, with RBAC.
 
-## Technology Stack
-- **Frontend:** React, Shadcn UI, Recharts, @dnd-kit
-- **Backend:** FastAPI, Pydantic, Motor (MongoDB async)
+## Core Architecture
+- **Frontend:** React + Shadcn/UI + Tailwind CSS
+- **Backend:** FastAPI + Motor (async MongoDB)
 - **Database:** MongoDB
-- **Auth:** JWT + Microsoft Entra ID SSO + OTP
+- **Auth:** JWT + Microsoft SSO + Email OTP
 
-## Core Modules
-Dashboard, Bursary Applications, Training Applications, BBBEE, Training Track, Meetings, Events, Messages, Division Groups, Tickets, Expenses, Reports, MICTSETA Documents, Help & Support, Settings, Users, User Profile, PDP, Notifications, Notes
+## Test Users
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | jane.smith@uct.ac.za | securepass123 |
+| Admin | test.admin@sentech.co.za | password |
+| Employee | test.employee@sentech.co.za | password |
 
-## Hidden/Removed Pages
-- Leads, Notes, Prospects (hidden from nav)
-- Projects (removed from sidebar + Quick Add + dashboard)
+## Completed Features
 
-## What's Been Implemented
+### Dashboard
+- Dynamic widgets: Total/Pending/Approved applications, Training Apps, Open Tickets, Notifications
+- Recent Activity feed, Quick Actions
 
-### Foundation (Sessions 1-2)
-- Full auth (JWT + Microsoft SSO + OTP + first-time password setup)
-- RBAC (super_admin/admin/employee + granular permissions)
-- Bursary + Training application workflows
-- Training Track (Kanban/List/Gantt), PDP w/ Excel import
-- MICTSETA Documents, Division Groups, Notifications, Messaging, Notes
-- Application re-edit system, Post-submission expenses
-- Settings & RBAC permission matrix
+### User Management
+- Search, filter, pagination ("show X per page")
+- XLSX user import template
+- Batch actions: activate/deactivate/delete via checkboxes
+- RBAC-based sidebar navigation
 
-### Session 3 - Feb 2026
+### Application Lifecycle (Bursary & Training)
+- Full CRUD for both bursary and training applications
+- Batch delete for admins
+- Application period settings (open/closed, deadline, close-days-before)
+- Status banner showing open/closed + deadline
+- Submission disabled when deadline passed (non-admin)
+- Re-edit request/approval flow with email + internal notifications
+- Admin can add, edit, delete applications on behalf of users
+- Employee sees only their own applications
+- Edit button on UserProfilePage navigates to correct edit page
+- Additional expenses management (flights, accommodation, car hire, catering)
 
-**Dashboard Overhaul (DONE)**
-- 6 stat cards, real Recent Activity feed, Notifications widget, Report Summary (admin), Quick Actions
+### Settings
+- Role management with granular RBAC permissions
+- Dynamic page/form field configuration
+- Dashboard preferences
 
-**Training Track User Assignment (DONE)**
-- Admins/division heads assign users via searchable dialog
+### Reports & Expenses
+- Zoomable charts (recharts)
+- XLSX export with date-range filters
 
-**User Import Feature (DONE)**
-- XLSX template download, CSV import with results
-
-**Reports Chart Enhancement (DONE)**
-- Zoom/expand charts, date range filters, XLSX export for all report types
-
-**Expenses Enhancement (DONE)**
-- XLSX export, date range filters, active filter badges
-
-**Quick Add Cleanup (DONE)**
-- Removed "New Lead" and "New Project" from header
-
-**Users Page Batch Operations (DONE)**
-- Pagination: 10/25/50/100 per page selector
-- Batch selection: checkboxes per row + select all
-- Batch actions bar: Activate / Deactivate / Delete selected users
-- Backend: POST /api/users/batch-action
-
-**Dynamic Page Configuration (DONE)**
-- Settings > Page Settings: Module visibility toggles
-- Field config for Bursary, Training, PDP pages
-- Each field: editable label, required toggle, visibility toggle
-- PageFieldConfig reusable component
-
-**Frontend RBAC Enforcement (DONE)**
-- Sidebar nav items filtered by role_permissions
-- Login response enriched with aggregated role_permissions from user's roles
-- hasModuleAccess() check for each nav item
-
-**Server.py Refactoring (DONE)**
-- Extracted to routers/reports.py: Dashboard stats, recent activity, report summary, dashboard charts
-- Extracted to routers/notifications.py: CRUD notifications, unread count, mark read/all
-- Shared deps in routers/__init__.py: db, auth, helpers
-- server.py reduced from 5286 to 4970 lines
-
-**File Upload Refactoring (DONE)**
-- New POST /api/files/upload endpoint accepts multipart form data
-- Supports files up to 20MB
-- Frontend filesAPI.upload() method added
-
-## Architecture
+### Backend Architecture (Refactored)
 ```
 /app/backend/
-├── server.py          (4970 lines - main routes)
+├── server.py              (~4240 lines, down from ~5100)
 ├── routers/
-│   ├── __init__.py    (shared deps: db, auth, helpers)
-│   ├── reports.py     (dashboard + reports endpoints)
-│   └── notifications.py (notification CRUD)
-/app/frontend/src/
-├── pages/             (all page components)
-├── components/
-│   ├── Layout/        (Header, Layout with RBAC nav)
-│   └── ui/            (Shadcn components)
-├── services/api.js    (all API endpoints)
-└── contexts/          (AuthContext)
+│   ├── __init__.py        (Shared: db, auth, helpers)
+│   ├── auth.py            (Registration, Login, SSO, OTP)
+│   ├── applications.py    (Bursary + Training + Settings + Expenses)
+│   ├── reports.py         (Dashboard charts)
+│   └── notifications.py   (Notification CRUD)
+└── requirements.txt
 ```
 
-## Key API Endpoints
-- Auth: POST /api/auth/login (returns role_permissions)
-- Dashboard: GET /api/dashboard/stats, /recent-activity, /report-summary
-- Notifications: GET/PUT/DELETE /api/notifications (in routers/notifications.py)
-- Reports: GET /api/reports/dashboard, /export/{type}
-- Users: POST /api/users/batch-action, GET /api/users/import-template
-- Tasks: POST /api/tasks/{id}/assign
-- Files: POST /api/files/upload (multipart)
-- Expenses: GET /api/expenses/export/excel
+### Other Modules
+- Training Track (Kanban with @dnd-kit, user assignment)
+- Meetings, Events, Messages, Notes, Tickets
+- MICTSETA Docs, Files, Division Groups
+- Prospects (Kanban with react-beautiful-dnd - needs migration)
+- BBBEE management
+- Help & Support (FAQs)
 
-## Pending/Future Tasks
-- ProspectsPage DnD fix (deferred by user)
-- Further server.py decomposition (more routers for users, tasks, applications)
-- WebSocket for real-time messaging
-- Microsoft Teams API integration
+## Key API Endpoints (Router-based)
+- `POST /api/auth/login` — JWT login
+- `POST /api/auth/register` — Registration
+- `GET/POST/PUT/DELETE /api/applications` — Bursary applications CRUD
+- `POST /api/applications/batch-delete` — Batch delete bursary apps
+- `GET/POST/PUT/DELETE /api/training-applications` — Training apps CRUD
+- `POST /api/training-applications/batch-delete` — Batch delete training apps
+- `GET/PUT /api/application-settings` — Period management
+- `POST /api/applications/{id}/request-re-edit` — Re-edit request
+- `POST /api/users/batch-action` — Batch user operations
+- `POST /api/files/upload` — Chunked file upload
 
-## Credentials
-- Super Admin: jane.smith@uct.ac.za / securepass123
+## Pending Tasks
+
+### P1: Continue server.py Refactoring
+- Extract Users routes into routers/users.py
+- Extract Messages, Notes, Tickets into separate routers
+- Extract BBBEE, Settings, Events, Meetings routes
+
+### P2: Future Tasks
+- Replace base64 uploads with chunked multipart endpoint
+- Audit Log feature for admin actions
+- Scheduled auto-export weekly XLSX reports
+- ProspectsPage DND migration (react-beautiful-dnd → @dnd-kit)
+
+## Mocked/Partial
+- **Email:** SMTP not configured — logs to console (intended behavior)
