@@ -564,7 +564,7 @@ const UserProfilePage = () => {
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 <AppStatusBadge status={app.status} />
                                 {(canEdit || reEditApproved) && (
-                                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => navigate('/applications')} data-testid={`edit-bursary-${app.id}`}>
+                                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => navigate(`/applications/${app.id}/edit`)} data-testid={`edit-bursary-${app.id}`}>
                                     <Edit className="w-3 h-3" /> Edit
                                   </Button>
                                 )}
@@ -640,7 +640,7 @@ const UserProfilePage = () => {
                               <div className="flex items-center gap-2 flex-shrink-0">
                                 <AppStatusBadge status={app.status} />
                                 {(canEdit || reEditApproved) && (
-                                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => navigate('/training-applications')} data-testid={`edit-training-${app.id}`}>
+                                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => navigate(`/training-applications/${app.id}/edit`)} data-testid={`edit-training-${app.id}`}>
                                     <Edit className="w-3 h-3" /> Edit
                                   </Button>
                                 )}

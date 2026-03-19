@@ -225,9 +225,13 @@ export const applicationsAPI = {
   create: (data) => api.post('/applications', data),
   update: (id, data) => api.put(`/applications/${id}`, data),
   updateStatus: (id, data) => api.put(`/applications/${id}/status`, data),
+  delete: (id) => api.delete(`/applications/${id}`),
+  batchDelete: (ids) => api.post('/applications/batch-delete', { application_ids: ids }),
   requestReEdit: (id, reason) => api.post(`/applications/${id}/request-re-edit`, { reason }),
   allowReEdit: (id, approved) => api.put(`/applications/${id}/allow-re-edit`, { approved }),
   addExpenses: (id, data) => api.post(`/applications/${id}/expenses`, data),
+  getSettings: () => api.get('/application-settings'),
+  updateSettings: (data) => api.put('/application-settings', data),
 };
 
 export const trainingApplicationsAPI = {
@@ -236,6 +240,8 @@ export const trainingApplicationsAPI = {
   create: (data) => api.post('/training-applications', data),
   update: (id, data) => api.put(`/training-applications/${id}`, data),
   updateStatus: (id, data) => api.put(`/training-applications/${id}/status`, data),
+  delete: (id) => api.delete(`/training-applications/${id}`),
+  batchDelete: (ids) => api.post('/training-applications/batch-delete', { application_ids: ids }),
   requestReEdit: (id, reason) => api.post(`/training-applications/${id}/request-re-edit`, { reason }),
   allowReEdit: (id, approved) => api.put(`/training-applications/${id}/allow-re-edit`, { approved }),
   addExpenses: (id, data) => api.post(`/training-applications/${id}/expenses`, data),

@@ -1,0 +1,121 @@
+{
+  "summary": "Iteration 21 testing completed: All 16 backend API tests passed (100%), all frontend UI tests passed (100%). Features tested: auth login for super admin/test employee/test admin, applications visibility restrictions (admin sees all, employee sees own), training applications visibility, application-settings API, batch delete, period settings dialog, status banners.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_21.py",
+    "/app/test_reports/pytest/iteration_21_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_21.py"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 passed)",
+    "frontend": "100%"
+  },
+  "features_verified": {
+    "auth_login": {
+      "super_admin": {
+        "email": "jane.smith@uct.ac.za",
+        "status": "PASS",
+        "roles_confirmed": ["super_admin"]
+      },
+      "test_employee": {
+        "email": "test.employee@sentech.co.za",
+        "status": "PASS"
+      },
+      "test_admin": {
+        "email": "test.admin@sentech.co.za",
+        "status": "PASS"
+      }
+    },
+    "applications_visibility": {
+      "endpoint": "GET /api/applications",
+      "admin_sees_all": "PASS",
+      "employee_sees_own_only": "PASS",
+      "direct_access_blocked": "PASS - Employee cannot access other user's application by ID (403)"
+    },
+    "training_applications_visibility": {
+      "endpoint": "GET /api/training-applications",
+      "admin_sees_all": "PASS",
+      "employee_sees_own_only": "PASS"
+    },
+    "application_settings": {
+      "get_endpoint": "GET /api/application-settings",
+      "status": "PASS",
+      "fields_present": ["bursary_open", "training_open", "bursary_deadline", "training_deadline", "bursary_close_days_before", "training_close_days_before"],
+      "update_admin_only": "PASS - Employee gets 403, admin can update"
+    },
+    "delete_applications": {
+      "single_delete": {
+        "endpoint": "DELETE /api/applications/{id}",
+        "admin_only": "PASS - Employee gets 403"
+      },
+      "batch_delete": {
+        "endpoint": "POST /api/applications/batch-delete",
+        "admin_only": "PASS - Employee gets 403"
+      }
+    },
+    "delete_training_applications": {
+      "single_delete": {
+        "endpoint": "DELETE /api/training-applications/{id}",
+        "status": "PASS"
+      },
+      "batch_delete": {
+        "endpoint": "POST /api/training-applications/batch-delete",
+        "admin_only": "PASS - Employee gets 403"
+      }
+    },
+    "training_applications_page_ui": {
+      "period_settings_button": "PASS - data-testid='training-app-settings-btn'",
+      "status_banner": "PASS - Shows 'Training applications are open — Deadline: 12/31/2026'",
+      "new_application_button": "PASS - Enabled when period is open",
+      "batch_selection_checkboxes": "PASS - Visible for admin",
+      "admin_edit_buttons": "PASS - data-testid='admin-edit-training-{id}'",
+      "admin_delete_buttons": "PASS - data-testid='delete-training-{id}'",
+      "settings_dialog": "PASS - Contains bursary/training toggles, deadlines, close days"
+    },
+    "bursary_applications_page_ui": {
+      "period_settings_button": "PASS",
+      "status_banner": "PASS - Shows 'Bursary applications are open — Deadline: 12/31/2026'",
+      "new_application_button": "PASS",
+      "batch_selection_checkboxes": "PASS - 5 checkboxes found",
+      "batch_delete_bar": "PASS - Appears when apps selected",
+      "admin_edit_buttons": "PASS",
+      "admin_delete_buttons": "PASS"
+    },
+    "user_profile_page": {
+      "my_applications_tab": "PASS",
+      "bursary_edit_buttons": "PASS - Multiple bursary apps with Edit buttons",
+      "training_edit_buttons": "PASS - Training apps with Edit button navigates to /training-applications/{id}/edit"
+    },
+    "employee_visibility_restrictions_ui": {
+      "period_settings_hidden": "PASS - Not visible for employee",
+      "batch_checkboxes_hidden": "PASS - Not visible for employee",
+      "admin_edit_hidden": "PASS - Not visible for employee",
+      "admin_delete_hidden": "PASS - Not visible for employee",
+      "new_application_visible": "PASS - Employee can still create apps"
+    }
+  },
+  "test_credentials": {
+    "super_admin": {"email": "jane.smith@uct.ac.za", "password": "securepass123"},
+    "test_employee": {"email": "test.employee@sentech.co.za", "password": "password"},
+    "test_admin": {"email": "test.admin@sentech.co.za", "password": "password"}
+  },
+  "mocked_apis": {
+    "SMTP_email_notifications": "MOCKED - Logs to console instead of sending real emails"
+  },
+  "seed_data_creation": "Test applications created and deleted during tests (TEST_ prefixed)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All iteration 21 features verified working: 1) Auth login for super admin/test employee/test admin all working, 2) Applications visibility - admin sees all, employee sees only own and cannot access others by ID (403), 3) Training applications same visibility rules, 4) Application-settings endpoint returns bursary_open/training_open fields and supports deadlines, 5) PUT application-settings admin only, 6) DELETE and batch-delete for both bursary and training apps admin only, 7) TrainingApplicationsPage has Period Settings button, status banner, batch selection, admin edit/delete, 8) Bursary ApplicationsPage same features, 9) UserProfilePage My Applications tab shows edit buttons that navigate to /training-applications/{id}/edit, 10) Employee UI correctly hides admin-only features."
+}

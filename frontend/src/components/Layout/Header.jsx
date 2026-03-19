@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { notificationsAPI } from '../../services/api';
 import { Input } from '@/components/ui/input';
@@ -44,7 +44,7 @@ const NOTIF_SOUND_URL = 'data:audio/wav;base64,UklGRlQFAABXQVZFZm10IBAAAAABAAEAR
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
@@ -99,12 +99,12 @@ const Header = () => {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6">
       <div className="flex items-center flex-1">
-        <h1 className="text-xl font-heading font-semibold text-slate-900">{currentPage}</h1>
+        <h1 className="text-lg md:text-xl font-heading font-semibold text-slate-900 truncate">{currentPage}</h1>
       </div>
-      <div className="flex items-center gap-3">
-        <div className="relative">
+      <div className="flex items-center gap-2 md:gap-3">
+        <div className="relative hidden md:block">
           {searchOpen ? (
             <Input type="text" placeholder="Search anything..." className="w-72 bg-white" autoFocus value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={handleSearch}
@@ -144,12 +144,33 @@ const Header = () => {
           </Button>
         </div>
 
-        <div className="flex items-center gap-2 ml-2">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-sm font-semibold text-white">{user?.full_name?.charAt(0) || 'U'}</span>
-          </div>
-          <span className="text-sm font-medium text-slate-900 hidden lg:block">{user?.full_name || 'User'}</span>
-        </div>
+        {/* User Avatar → Profile */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-2 ml-1 cursor-pointer rounded-full hover:bg-slate-100 px-2 py-1 transition-colors" data-testid="header-avatar-btn">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                <span className="text-sm font-semibold text-white">{user?.full_name?.charAt(0) || 'U'}</span>
+              </div>
+              <span className="text-sm font-medium text-slate-900 hidden lg:block">{user?.full_name || 'User'}</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-white">
+            <div className="px-3 py-2 border-b border-slate-100">
+              <p className="text-sm font-medium text-slate-900">{user?.full_name}</p>
+              <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+            </div>
+            <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')} data-testid="nav-profile-btn">
+              My Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/settings')} data-testid="nav-settings-btn">
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600" onClick={logout} data-testid="nav-logout-btn">
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

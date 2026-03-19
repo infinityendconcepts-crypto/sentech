@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { applicationsAPI } from '../services/api';
-import { FileText, Plus, Search, Clock, CheckCircle2, XCircle, Edit, Eye, AlertCircle, Loader2, User, Briefcase, GraduationCap, Upload, Calendar, Building, X, Receipt, Plane, Hotel, Car, UtensilsCrossed } from 'lucide-react';
+import { FileText, Plus, Search, Clock, CheckCircle2, XCircle, Edit, Eye, AlertCircle, Loader2, User, Briefcase, GraduationCap, Upload, Calendar, Building, X, Receipt, Plane, Hotel, Car, UtensilsCrossed, Trash2, CheckSquare, Square, Settings2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -59,9 +59,25 @@ const ApplicationsPage = () => {
   });
   const [savingExpenses, setSavingExpenses] = useState(false);
 
+  // Batch selection & settings
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [batchDeleting, setBatchDeleting] = useState(false);
+  const [appSettings, setAppSettings] = useState(null);
+  const [settingsDialog, setSettingsDialog] = useState(false);
+  const [settingsForm, setSettingsForm] = useState({});
+
   useEffect(() => {
     fetchApplications();
+    fetchAppSettings();
   }, []);
+
+  const fetchAppSettings = async () => {
+    try {
+      const res = await applicationsAPI.getSettings();
+      setAppSettings(res.data);
+      setSettingsForm(res.data);
+    } catch {}
+  };
 
   const fetchApplications = async () => {
     try {
@@ -72,6 +88,60 @@ const ApplicationsPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Check if submissions are closed based on deadline
+  const isSubmissionClosed = () => {
+    if (!appSettings) return false;
+    if (!appSettings.bursary_open) return true;
+    if (appSettings.bursary_deadline && appSettings.bursary_close_days_before) {
+      const deadline = new Date(appSettings.bursary_deadline);
+      const closeDays = appSettings.bursary_close_days_before || 0;
+      const closeDate = new Date(deadline.getTime() - closeDays * 86400000);
+      if (new Date() > closeDate) return true;
+    }
+    return false;
+  };
+
+  const handleDeleteApp = async (id) => {
+    if (!window.confirm('Delete this application permanently?')) return;
+    try {
+      await applicationsAPI.delete(id);
+      toast.success('Application deleted');
+      fetchApplications();
+    } catch { toast.error('Failed to delete'); }
+  };
+
+  const handleBatchDelete = async () => {
+    if (!selectedIds.length) return;
+    if (!window.confirm(`Delete ${selectedIds.length} application(s)? This cannot be undone.`)) return;
+    setBatchDeleting(true);
+    try {
+      await applicationsAPI.batchDelete(selectedIds);
+      toast.success(`Deleted ${selectedIds.length} application(s)`);
+      setSelectedIds([]);
+      fetchApplications();
+    } catch { toast.error('Batch delete failed'); }
+    finally { setBatchDeleting(false); }
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    const ids = filteredApplications.map(a => a.id);
+    const allSelected = ids.every(id => selectedIds.includes(id));
+    setSelectedIds(allSelected ? [] : ids);
+  };
+
+  const handleSaveAppSettings = async () => {
+    try {
+      await applicationsAPI.updateSettings(settingsForm);
+      toast.success('Application settings saved');
+      setSettingsDialog(false);
+      fetchAppSettings();
+    } catch { toast.error('Failed to save settings'); }
   };
 
   const openExpensesDialog = (app) => {
@@ -255,15 +325,48 @@ const ApplicationsPage = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Bursary Applications</h2>
-          <p className="text-slate-600 mt-1">Manage and track your bursary applications</p>
+          <p className="text-slate-600 mt-1">Manage and track bursary applications</p>
         </div>
-        <Link to="/applications/new">
-          <Button className="gap-2" data-testid="new-application-btn">
-            <Plus className="w-4 h-4" />
-            New Application
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button variant="outline" className="gap-2" onClick={() => { setSettingsForm(appSettings || {}); setSettingsDialog(true); }} data-testid="app-settings-btn">
+              <Settings2 className="w-4 h-4" /> Period Settings
+            </Button>
+          )}
+          <Link to="/applications/new">
+            <Button className="gap-2" disabled={isSubmissionClosed() && !isAdmin} data-testid="new-application-btn">
+              <Plus className="w-4 h-4" /> New Application
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {/* Application Status Banner */}
+      {appSettings && (
+        <div className={`flex items-center gap-3 p-3 rounded-lg border ${appSettings.bursary_open ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
+          {appSettings.bursary_open ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+          <span className="text-sm font-medium">
+            Bursary applications are {appSettings.bursary_open ? 'open' : 'closed'}
+            {appSettings.bursary_deadline && ` — Deadline: ${new Date(appSettings.bursary_deadline).toLocaleDateString()}`}
+          </span>
+        </div>
+      )}
+
+      {/* Batch Actions */}
+      {selectedIds.length > 0 && isAdmin && (
+        <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/20 rounded-lg">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium">{selectedIds.length} selected</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="text-red-600 border-red-200" onClick={handleBatchDelete} disabled={batchDeleting} data-testid="batch-delete-apps-btn">
+              <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete Selected
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}><X className="w-3 h-3 mr-1" /> Clear</Button>
+          </div>
+        </div>
+      )}
 
       <Card className="bg-white border-slate-200">
         <CardContent className="p-6">
@@ -310,13 +413,18 @@ const ApplicationsPage = () => {
             <ContextMenu key={application.id}>
               <ContextMenuTrigger>
                 <Card
-                  className="bg-white border-slate-200 hover:shadow-md transition-all duration-200"
+                  className={`bg-white border-slate-200 hover:shadow-md transition-all duration-200 ${selectedIds.includes(application.id) ? 'ring-2 ring-primary/30' : ''}`}
                   data-testid={`application-card-${application.id}`}
                 >
                   <CardContent className="p-6">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-start gap-3">
+                          {isAdmin && (
+                            <button onClick={(e) => { e.stopPropagation(); toggleSelect(application.id); }} className="mt-1 flex-shrink-0" data-testid={`select-app-${application.id}`}>
+                              {selectedIds.includes(application.id) ? <CheckSquare className="w-5 h-5 text-primary" /> : <Square className="w-5 h-5 text-slate-400" />}
+                            </button>
+                          )}
                           <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
                             <FileText className="w-5 h-5 text-primary" />
                           </div>
@@ -379,6 +487,18 @@ const ApplicationsPage = () => {
                           >
                             <Edit className="w-4 h-4" />
                             Change Status
+                          </Button>
+                        )}
+                        {isAdmin && (
+                          <Link to={`/applications/${application.id}/edit`}>
+                            <Button variant="outline" size="sm" className="gap-1" data-testid={`admin-edit-application-${application.id}`}>
+                              <Edit className="w-4 h-4" /> Edit
+                            </Button>
+                          </Link>
+                        )}
+                        {isAdmin && (
+                          <Button variant="outline" size="sm" className="gap-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleDeleteApp(application.id)} data-testid={`delete-application-${application.id}`}>
+                            <Trash2 className="w-4 h-4" /> Delete
                           </Button>
                         )}
                         {!isAdmin && (application.status === 'draft' || application.status === 'pending') && (
@@ -824,6 +944,61 @@ const ApplicationsPage = () => {
               {savingExpenses ? <Loader2 className="w-4 h-4 animate-spin" /> : <Receipt className="w-4 h-4" />}
               {savingExpenses ? 'Saving...' : 'Save Expenses'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Application Period Settings Dialog */}
+      <Dialog open={settingsDialog} onOpenChange={setSettingsDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" /> Application Period Settings</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-2">
+            {/* Bursary */}
+            <div className="space-y-3 p-4 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-sm">Bursary Applications</span>
+                <button onClick={() => setSettingsForm(f => ({...f, bursary_open: !f.bursary_open}))}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${settingsForm.bursary_open ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}
+                  data-testid="toggle-bursary-open"
+                >
+                  {settingsForm.bursary_open ? 'Open' : 'Closed'}
+                </button>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Deadline Date</Label>
+                <Input type="date" value={settingsForm.bursary_deadline || ''} onChange={(e) => setSettingsForm(f => ({...f, bursary_deadline: e.target.value}))} data-testid="bursary-deadline" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Close submissions X days before deadline</Label>
+                <Input type="number" min="0" value={settingsForm.bursary_close_days_before || 8} onChange={(e) => setSettingsForm(f => ({...f, bursary_close_days_before: parseInt(e.target.value)}))} data-testid="bursary-close-days" />
+              </div>
+            </div>
+            {/* Training */}
+            <div className="space-y-3 p-4 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-sm">Training Applications</span>
+                <button onClick={() => setSettingsForm(f => ({...f, training_open: !f.training_open}))}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${settingsForm.training_open ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}
+                  data-testid="toggle-training-open"
+                >
+                  {settingsForm.training_open ? 'Open' : 'Closed'}
+                </button>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Deadline Date</Label>
+                <Input type="date" value={settingsForm.training_deadline || ''} onChange={(e) => setSettingsForm(f => ({...f, training_deadline: e.target.value}))} data-testid="training-deadline" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs">Close submissions X days before deadline</Label>
+                <Input type="number" min="0" value={settingsForm.training_close_days_before || 8} onChange={(e) => setSettingsForm(f => ({...f, training_close_days_before: parseInt(e.target.value)}))} data-testid="training-close-days" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSettingsDialog(false)}>Cancel</Button>
+            <Button onClick={handleSaveAppSettings} data-testid="save-app-settings-btn">Save Settings</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

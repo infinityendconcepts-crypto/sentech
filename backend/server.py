@@ -1132,6 +1132,36 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
 
+async def send_email_notification(to_email: str, subject: str, body_text: str):
+    """Send email notification. Falls back to logging if SMTP not configured."""
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user = os.getenv("SMTP_USERNAME")
+    smtp_pass = os.getenv("SMTP_PASSWORD")
+    from_email = os.getenv("SMTP_FROM_EMAIL", "noreply@sentech.co.za")
+    from_name = os.getenv("SMTP_FROM_NAME", "Sentech Bursary")
+
+    if not smtp_host or not smtp_user:
+        logger.info(f"[EMAIL] To: {to_email} | Subject: {subject} | Body: {body_text[:100]}...")
+        return
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        msg = MIMEMultipart()
+        msg["From"] = f"{from_name} <{from_email}>"
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body_text, "html"))
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(from_email, to_email, msg.as_string())
+        logger.info(f"[EMAIL SENT] To: {to_email} | Subject: {subject}")
+    except Exception as e:
+        logger.error(f"[EMAIL FAILED] To: {to_email} | Error: {e}")
+
 def serialize_doc(doc):
     """Convert datetime fields to ISO format strings"""
     if doc is None:
@@ -1142,311 +1172,7 @@ def serialize_doc(doc):
     return doc
 
 # ============== AUTH ROUTES ==============
-
-@api_router.post("/auth/register", response_model=TokenResponse)
-async def register(user_data: UserCreate):
-    existing_user = await db.users.find_one({"email": user_data.email}, {"_id": 0})
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    
-    user = User(
-        email=user_data.email,
-        full_name=user_data.full_name,
-        password_hash=get_password_hash(user_data.password),
-        student_id=user_data.student_id,
-        roles=user_data.roles,
-        is_verified=True
-    )
-    
-    user_dict = user.model_dump()
-    user_dict['created_at'] = user_dict['created_at'].isoformat()
-    user_dict['updated_at'] = user_dict['updated_at'].isoformat()
-    
-    await db.users.insert_one({**user_dict})
-    
-    access_token = create_access_token(data={"sub": user.id})
-    user_response = {k: v for k, v in user_dict.items() if k != 'password_hash'}
-    
-    return TokenResponse(access_token=access_token, user=user_response)
-
-@api_router.post("/auth/login", response_model=TokenResponse)
-async def login(credentials: UserLogin):
-    user = await db.users.find_one({"email": credentials.email}, {"_id": 0})
-    
-    # Check if user exists
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid email or password")
-    
-    # Check if user requires password setup (first-time login)
-    if user.get("requires_password_setup", False):
-        raise HTTPException(
-            status_code=403, 
-            detail="Password setup required",
-            headers={"X-Requires-Password-Setup": "true"}
-        )
-    
-    # Verify password
-    if not verify_password(credentials.password, user.get("password_hash", "")):
-        raise HTTPException(status_code=400, detail="Invalid email or password")
-    
-    if not user.get("is_active"):
-        raise HTTPException(status_code=400, detail="Account is inactive")
-    
-    access_token = create_access_token(data={"sub": user["id"]})
-    user_response = {k: v for k, v in user.items() if k != 'password_hash'}
-
-    # Aggregate RBAC permissions from user's roles
-    role_permissions = {}
-    user_roles = user.get("roles", [])
-    if user_roles:
-        role_docs = await db.roles.find({"name": {"$in": user_roles}}, {"_id": 0}).to_list(20)
-        for role_doc in role_docs:
-            for module, perms in role_doc.get("permissions", {}).items():
-                if module not in role_permissions:
-                    role_permissions[module] = []
-                role_permissions[module] = list(set(role_permissions[module] + perms))
-    user_response["role_permissions"] = role_permissions
-
-    return TokenResponse(access_token=access_token, user=user_response)
-
-@api_router.post("/auth/check-password-setup")
-async def check_password_setup(email_data: dict):
-    """Check if a user requires password setup"""
-    email = email_data.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
-    
-    user = await db.users.find_one({"email": email}, {"_id": 0})
-    if not user:
-        return {"requires_setup": False, "exists": False}
-    
-    return {
-        "requires_setup": user.get("requires_password_setup", False),
-        "exists": True,
-        "full_name": user.get("full_name", "")
-    }
-
-@api_router.post("/auth/setup-password")
-async def setup_password(setup_data: PasswordSetup):
-    """Set password for first-time login users"""
-    user = await db.users.find_one({"email": setup_data.email}, {"_id": 0})
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    if not user.get("requires_password_setup", False):
-        raise HTTPException(status_code=400, detail="Password setup not required for this user")
-    
-    # Hash the new password
-    password_hash = get_password_hash(setup_data.new_password)
-    
-    # Update user with new password and remove the setup requirement
-    await db.users.update_one(
-        {"email": setup_data.email},
-        {"$set": {
-            "password_hash": password_hash,
-            "requires_password_setup": False,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }}
-    )
-    
-    # Get updated user and create token
-    updated_user = await db.users.find_one({"email": setup_data.email}, {"_id": 0})
-    access_token = create_access_token(data={"sub": updated_user["id"]})
-    user_response = {k: v for k, v in updated_user.items() if k != 'password_hash'}
-    
-    return TokenResponse(access_token=access_token, user=user_response)
-
-@api_router.get("/auth/me")
-async def get_me(current_user: dict = Depends(get_current_user)):
-    user_response = {k: v for k, v in current_user.items() if k != 'password_hash'}
-    return user_response
-
-@api_router.get("/auth/microsoft/login")
-async def microsoft_login():
-    msal_app = msal.ConfidentialClientApplication(
-        MICROSOFT_CLIENT_ID,
-        authority=MICROSOFT_AUTHORITY,
-        client_credential=MICROSOFT_CLIENT_SECRET,
-    )
-    redirect_uri = f"{os.getenv('REACT_APP_BACKEND_URL')}/auth/microsoft/callback"
-    auth_url = msal_app.get_authorization_request_url(
-        MICROSOFT_SCOPE,
-        redirect_uri=redirect_uri,
-        state=secrets.token_urlsafe(16)
-    )
-    return {"auth_url": auth_url}
-
-@api_router.get("/auth/microsoft/callback")
-async def microsoft_callback(code: str, state: str):
-    try:
-        msal_app = msal.ConfidentialClientApplication(
-            MICROSOFT_CLIENT_ID,
-            authority=MICROSOFT_AUTHORITY,
-            client_credential=MICROSOFT_CLIENT_SECRET,
-        )
-        redirect_uri = f"{os.getenv('REACT_APP_BACKEND_URL')}/auth/microsoft/callback"
-        result = msal_app.acquire_token_by_authorization_code(
-            code,
-            scopes=MICROSOFT_SCOPE,
-            redirect_uri=redirect_uri
-        )
-        
-        if "access_token" not in result:
-            raise HTTPException(status_code=400, detail="Failed to acquire token")
-        
-        graph_response = requests.get(
-            "https://graph.microsoft.com/v1.0/me",
-            headers={"Authorization": f"Bearer {result['access_token']}"}
-        )
-        
-        if graph_response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to get user info")
-        
-        user_info = graph_response.json()
-        user = await db.users.find_one({"email": user_info.get("mail") or user_info.get("userPrincipalName")}, {"_id": 0})
-        
-        if not user:
-            new_user = User(
-                email=user_info.get("mail") or user_info.get("userPrincipalName"),
-                full_name=user_info.get("displayName"),
-                is_verified=True,
-                roles=["employee"]
-            )
-            user_dict = new_user.model_dump()
-            user_dict['created_at'] = user_dict['created_at'].isoformat()
-            user_dict['updated_at'] = user_dict['updated_at'].isoformat()
-            await db.users.insert_one({**user_dict})
-            user = user_dict
-        
-        access_token = create_access_token(data={"sub": user["id"]})
-        frontend_redirect = f"{FRONTEND_URL}/auth/callback?token={access_token}&user={user['id']}"
-        return RedirectResponse(url=frontend_redirect)
-        
-    except Exception as e:
-        logger.error(f"Microsoft auth error: {str(e)}")
-        return RedirectResponse(url=f"{FRONTEND_URL}/login?error=auth_failed")
-
-# ============== EMAIL OTP AUTH ==============
-
-OTP_EXPIRE_MINUTES = 10
-
-def _send_otp_smtp(to_email: str, otp_code: str):
-    """Send OTP via SMTP (blocking - run in executor)"""
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-
-    smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_user = os.environ.get("SMTP_USERNAME", "")
-    smtp_pass = os.environ.get("SMTP_PASSWORD", "")
-    from_name = os.environ.get("SMTP_FROM_NAME", "Sentech Bursary")
-    from_email = os.environ.get("SMTP_FROM_EMAIL", smtp_user)
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"Your {from_name} Login Code"
-    msg["From"] = f"{from_name} <{from_email}>"
-    msg["To"] = to_email
-
-    html = f"""
-    <html><body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">
-      <h2 style="color:#0056B3;">Sentech Bursary System</h2>
-      <p>Your one-time login code is:</p>
-      <div style="background:#E8F0FE;border:1px solid #0056B3;border-radius:8px;text-align:center;padding:24px;margin:20px 0;">
-        <h1 style="color:#0056B3;letter-spacing:12px;font-size:36px;margin:0">{otp_code}</h1>
-      </div>
-      <p>This code expires in <strong>{OTP_EXPIRE_MINUTES} minutes</strong>. Do not share it with anyone.</p>
-      <p style="color:#888;font-size:12px">If you didn't request this, please ignore this email.</p>
-    </body></html>
-    """
-    msg.attach(MIMEText(html, "html"))
-    msg.attach(MIMEText(f"Your login code: {otp_code}. Expires in {OTP_EXPIRE_MINUTES} minutes.", "plain"))
-
-    with smtplib.SMTP(smtp_host, smtp_port, timeout=10) as server:
-        server.ehlo()
-        server.starttls()
-        if smtp_user and smtp_pass:
-            server.login(smtp_user, smtp_pass)
-        server.sendmail(from_email, [to_email], msg.as_string())
-
-
-@api_router.post("/auth/request-otp")
-async def request_otp(body: dict):
-    """Request email OTP for login"""
-    email = body.get("email", "").strip().lower()
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
-
-    otp_code = "".join([str(secrets.randbelow(10)) for _ in range(6)])
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRE_MINUTES)
-
-    await db.otps.delete_many({"email": email})
-    await db.otps.insert_one({
-        "email": email,
-        "otp": otp_code,
-        "attempts": 0,
-        "expires_at": expires_at,
-        "created_at": datetime.now(timezone.utc),
-    })
-
-    smtp_configured = bool(os.environ.get("SMTP_USERNAME", "").strip())
-    if smtp_configured:
-        try:
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, _send_otp_smtp, email, otp_code)
-            logger.info(f"OTP email sent to {email}")
-        except Exception as e:
-            logger.error(f"SMTP send failed for {email}: {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to send OTP email. Please configure SMTP settings in Settings > Integrations.")
-    else:
-        logger.info(f"[DEV MODE] OTP for {email}: {otp_code}")
-
-    return {"message": "OTP sent to your email", "email": email, "dev_note": f"OTP: {otp_code}" if not smtp_configured else None}
-
-
-@api_router.post("/auth/verify-otp")
-async def verify_otp(body: dict):
-    """Verify email OTP and return JWT token"""
-    email = body.get("email", "").strip().lower()
-    otp_input = body.get("otp", "").strip()
-
-    if not email or not otp_input:
-        raise HTTPException(status_code=400, detail="Email and OTP are required")
-
-    record = await db.otps.find_one({"email": email})
-    if not record:
-        raise HTTPException(status_code=400, detail="No OTP found. Please request a new one.")
-
-    if record.get("attempts", 0) >= 5:
-        raise HTTPException(status_code=429, detail="Too many attempts. Please request a new OTP.")
-
-    expires_at = record.get("expires_at")
-    if isinstance(expires_at, datetime):
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if datetime.now(timezone.utc) > expires_at:
-            raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
-
-    if record["otp"] != otp_input:
-        await db.otps.update_one({"email": email}, {"$inc": {"attempts": 1}})
-        remaining = 4 - record.get("attempts", 0)
-        raise HTTPException(status_code=400, detail=f"Invalid OTP. {max(remaining, 0)} attempts remaining.")
-
-    await db.otps.delete_many({"email": email})
-
-    user = await db.users.find_one({"email": email}, {"_id": 0, "password_hash": 0})
-    if not user:
-        new_user = User(email=email, full_name=email.split("@")[0].title(), roles=["employee"], is_verified=True)
-        user_dict = new_user.model_dump()
-        user_dict["created_at"] = user_dict["created_at"].isoformat()
-        user_dict["updated_at"] = user_dict["updated_at"].isoformat()
-        await db.users.insert_one({**user_dict})
-        user = {k: v for k, v in user_dict.items() if k not in ("_id",)}
-
-    access_token = create_access_token(data={"sub": user["id"]})
-    return {"access_token": access_token, "token_type": "bearer", "user": user}
-
+# Moved to routers/auth.py
 
 
 
@@ -1532,14 +1258,12 @@ async def invite_user(data: dict, current_user: dict = Depends(get_current_user)
 
 @api_router.post("/users")
 async def create_user(data: dict, current_user: dict = Depends(get_current_user)):
-    if "admin" not in current_user.get("roles", []):
+    if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
         raise HTTPException(status_code=403, detail="Only admins can create users")
     email = data.get("email", "").strip().lower()
     full_name = data.get("full_name", "")
-    role = data.get("role", "student")
+    roles = data.get("roles", [data.get("role", "employee")])
     password = data.get("password", "")
-    if role not in ["admin", "student"]:
-        raise HTTPException(status_code=400, detail="Role must be 'admin' or 'student'")
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
     if not password or len(password) < 6:
@@ -1550,10 +1274,13 @@ async def create_user(data: dict, current_user: dict = Depends(get_current_user)
     new_user = User(
         email=email,
         full_name=full_name or email.split("@")[0].title(),
-        roles=[role],
+        roles=roles if isinstance(roles, list) else [roles],
         is_verified=True,
         is_active=True,
         password_hash=get_password_hash(password),
+        division=data.get("division", ""),
+        department=data.get("department", ""),
+        position=data.get("position", ""),
     )
     user_dict = new_user.model_dump()
     user_dict["created_at"] = user_dict["created_at"].isoformat()
@@ -3133,468 +2860,7 @@ async def create_sponsor_contact(contact_data: SponsorContactCreate, current_use
     return contact
 
 # ============== APPLICATIONS ROUTES ==============
-
-@api_router.get("/applications")
-async def get_applications(current_user: dict = Depends(get_current_user)):
-    if "admin" in current_user.get("roles", []):
-        applications = await db.applications.find({}, {"_id": 0}).to_list(1000)
-    else:
-        applications = await db.applications.find({"user_id": current_user["id"]}, {"_id": 0}).to_list(1000)
-    return applications
-
-@api_router.get("/applications/{application_id}")
-async def get_application(application_id: str, current_user: dict = Depends(get_current_user)):
-    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    
-    if application["user_id"] != current_user["id"] and "admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    return application
-
-@api_router.post("/applications")
-async def create_application(app_data: ApplicationCreate, current_user: dict = Depends(get_current_user)):
-    application = BursaryApplication(
-        user_id=current_user["id"],
-        user_email=current_user["email"],
-        status=app_data.status or "draft",
-        current_step=app_data.current_step or 1,
-        personal_info=app_data.personal_info or {},
-        academic_info=app_data.academic_info or {},
-        financial_info=app_data.financial_info or {},
-        documents=app_data.documents or {}
-    )
-    
-    # Add additional fields from frontend
-    app_dict = application.model_dump()
-    app_dict['created_at'] = app_dict['created_at'].isoformat()
-    app_dict['updated_at'] = app_dict['updated_at'].isoformat()
-    
-    # Include employment_info and academic_bursary_info if provided
-    if app_data.employment_info:
-        app_dict['employment_info'] = app_data.employment_info
-    if app_data.academic_bursary_info:
-        app_dict['academic_bursary_info'] = app_data.academic_bursary_info
-    
-    # If status is pending, set submitted_at
-    if app_data.status == "pending":
-        app_dict['submitted_at'] = datetime.now(timezone.utc).isoformat()
-    
-    await db.applications.insert_one({**app_dict})
-    return app_dict
-
-@api_router.put("/applications/{application_id}")
-async def update_application(application_id: str, update_data: ApplicationUpdate, current_user: dict = Depends(get_current_user)):
-    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    
-    # Allow admin or owner to update
-    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
-    if application["user_id"] != current_user["id"] and not is_admin:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    # 24hr edit window enforcement for non-admin users
-    if not is_admin and application["user_id"] == current_user["id"]:
-        submitted_at = application.get("submitted_at")
-        if submitted_at and application.get("status") not in ["draft"]:
-            submitted_time = datetime.fromisoformat(submitted_at.replace("Z", "+00:00")) if isinstance(submitted_at, str) else submitted_at
-            now = datetime.now(timezone.utc)
-            if (now - submitted_time).total_seconds() > 86400:
-                # Past 24hrs - check if re-edit was approved
-                if not application.get("re_edit_approved"):
-                    raise HTTPException(status_code=403, detail="Edit window expired. Please request re-edit from your profile page.")
-    
-    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
-    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
-    
-    # If status is being changed to pending or submitted, set submitted_at
-    if update_data.status in ["pending", "submitted"]:
-        update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
-    
-    # Clear re_edit flags after a successful edit (consumed)
-    if application.get("re_edit_approved"):
-        update_dict["re_edit_approved"] = False
-        update_dict["re_edit_requested"] = False
-    
-    await db.applications.update_one({"id": application_id}, {"$set": update_dict})
-    updated_app = await db.applications.find_one({"id": application_id}, {"_id": 0})
-    
-    # Notify applicant about status change
-    if update_data.status and update_data.status != application.get("status") and application["user_id"] != current_user["id"]:
-        notif = {
-            "id": generate_uuid(),
-            "user_id": application["user_id"],
-            "type": "status_change",
-            "title": "Application Status Updated",
-            "message": f"Your bursary application status changed to: {update_data.status}",
-            "reference_id": application_id,
-            "reference_type": "application",
-            "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        await db.notifications.insert_one({**notif})
-    
-    return updated_app
-
-@api_router.post("/applications/{application_id}/request-re-edit")
-async def request_bursary_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
-    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    if application["user_id"] != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Access denied")
-    if application.get("re_edit_requested"):
-        raise HTTPException(status_code=400, detail="Re-edit already requested")
-    
-    now = datetime.now(timezone.utc).isoformat()
-    await db.applications.update_one({"id": application_id}, {"$set": {
-        "re_edit_requested": True,
-        "re_edit_requested_at": now,
-        "re_edit_reason": body.get("reason", ""),
-        "re_edit_approved": False,
-        "updated_at": now,
-    }})
-    
-    # Notify admins about re-edit request
-    admins = await db.users.find({"roles": {"$in": ["admin", "super_admin"]}}, {"_id": 0, "id": 1}).to_list(100)
-    for admin in admins:
-        notif = {
-            "id": generate_uuid(),
-            "user_id": admin["id"],
-            "type": "status_change",
-            "title": "Re-edit Request: Bursary Application",
-            "message": f"{current_user.get('full_name', 'A user')} has requested to re-edit their bursary application",
-            "reference_id": application_id,
-            "reference_type": "application",
-            "is_read": False,
-            "created_at": now,
-        }
-        await db.notifications.insert_one({**notif})
-    
-    return {"message": "Re-edit request submitted"}
-
-@api_router.put("/applications/{application_id}/allow-re-edit")
-async def allow_bursary_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
-    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
-    if not is_admin:
-        raise HTTPException(status_code=403, detail="Only admins can approve re-edits")
-    
-    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    
-    approved = body.get("approved", True)
-    now = datetime.now(timezone.utc).isoformat()
-    update = {
-        "re_edit_approved": approved,
-        "re_edit_responded_at": now,
-        "re_edit_responded_by": current_user["id"],
-        "updated_at": now,
-    }
-    if not approved:
-        update["re_edit_requested"] = False
-    
-    await db.applications.update_one({"id": application_id}, {"$set": update})
-    
-    # Notify the applicant
-    notif = {
-        "id": generate_uuid(),
-        "user_id": application["user_id"],
-        "type": "status_change",
-        "title": "Re-edit Request " + ("Approved" if approved else "Denied"),
-        "message": f"Your bursary application re-edit request has been {'approved. You can now edit your application.' if approved else 'denied.'}",
-        "reference_id": application_id,
-        "reference_type": "application",
-        "is_read": False,
-        "created_at": now,
-    }
-    await db.notifications.insert_one({**notif})
-    
-    return {"message": f"Re-edit {'approved' if approved else 'denied'}"}
-
-# ============== TRAINING APPLICATIONS ROUTES ==============
-
-class TrainingApplicationCreate(BaseModel):
-    status: Optional[str] = "draft"
-    current_step: Optional[int] = 1
-    personal_info: Optional[Dict[str, Any]] = {}
-    employment_info: Optional[Dict[str, Any]] = {}
-    training_info: Optional[Dict[str, Any]] = {}
-    documents: Optional[Dict[str, Any]] = {}
-
-class TrainingApplicationUpdate(BaseModel):
-    current_step: Optional[int] = None
-    status: Optional[str] = None
-    status_note: Optional[str] = None
-    personal_info: Optional[Dict[str, Any]] = None
-    employment_info: Optional[Dict[str, Any]] = None
-    training_info: Optional[Dict[str, Any]] = None
-    documents: Optional[Dict[str, Any]] = None
-
-@api_router.get("/training-applications")
-async def get_training_applications(current_user: dict = Depends(get_current_user)):
-    if "admin" in current_user.get("roles", []):
-        applications = await db.training_applications.find({}, {"_id": 0}).to_list(1000)
-    else:
-        applications = await db.training_applications.find({"user_id": current_user["id"]}, {"_id": 0}).to_list(1000)
-    return applications
-
-@api_router.get("/training-applications/{application_id}")
-async def get_training_application(application_id: str, current_user: dict = Depends(get_current_user)):
-    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Training application not found")
-    
-    if application["user_id"] != current_user["id"] and "admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    return application
-
-@api_router.post("/training-applications")
-async def create_training_application(app_data: TrainingApplicationCreate, current_user: dict = Depends(get_current_user)):
-    app_dict = {
-        "id": generate_uuid(),
-        "user_id": current_user["id"],
-        "user_email": current_user["email"],
-        "status": app_data.status or "draft",
-        "current_step": app_data.current_step or 1,
-        "personal_info": app_data.personal_info or {},
-        "employment_info": app_data.employment_info or {},
-        "training_info": app_data.training_info or {},
-        "documents": app_data.documents or {},
-        "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }
-    
-    # If status is pending, set submitted_at
-    if app_data.status == "pending":
-        app_dict['submitted_at'] = datetime.now(timezone.utc).isoformat()
-    
-    await db.training_applications.insert_one({**app_dict})
-    return app_dict
-
-@api_router.put("/training-applications/{application_id}")
-async def update_training_application(application_id: str, update_data: TrainingApplicationUpdate, current_user: dict = Depends(get_current_user)):
-    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Training application not found")
-    
-    # Allow admin or owner to update
-    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
-    if application["user_id"] != current_user["id"] and not is_admin:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    # 24hr edit window enforcement for non-admin users
-    if not is_admin and application["user_id"] == current_user["id"]:
-        submitted_at = application.get("submitted_at")
-        if submitted_at and application.get("status") not in ["draft"]:
-            submitted_time = datetime.fromisoformat(submitted_at.replace("Z", "+00:00")) if isinstance(submitted_at, str) else submitted_at
-            now = datetime.now(timezone.utc)
-            if (now - submitted_time).total_seconds() > 86400:
-                if not application.get("re_edit_approved"):
-                    raise HTTPException(status_code=403, detail="Edit window expired. Please request re-edit from your profile page.")
-    
-    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
-    update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
-    
-    # If status is being changed to pending or submitted, set submitted_at
-    if update_data.status in ["pending", "submitted"]:
-        update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
-    
-    # Clear re_edit flags after a successful edit (consumed)
-    if application.get("re_edit_approved"):
-        update_dict["re_edit_approved"] = False
-        update_dict["re_edit_requested"] = False
-    
-    await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
-    updated_app = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
-    return updated_app
-
-@api_router.put("/training-applications/{application_id}/status")
-async def update_training_application_status(application_id: str, status_data: dict, current_user: dict = Depends(get_current_user)):
-    # Only admins can update status
-    if "admin" not in current_user.get("roles", []):
-        raise HTTPException(status_code=403, detail="Only admins can update application status")
-    
-    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Training application not found")
-    
-    update_dict = {
-        "status": status_data.get("status"),
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }
-    
-    if status_data.get("status_note"):
-        update_dict["status_note"] = status_data.get("status_note")
-    
-    await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
-    updated_app = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
-    
-    # Notify applicant about status change (only admin status changes)
-    new_status = status_data.get("status")
-    if new_status and new_status != application.get("status") and application["user_id"] != current_user["id"]:
-        notif = {
-            "id": generate_uuid(),
-            "user_id": application["user_id"],
-            "type": "status_change",
-            "title": "Training Application Status Updated",
-            "message": f"Your training application status changed to: {new_status}",
-            "reference_id": application_id,
-            "reference_type": "application",
-            "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        await db.notifications.insert_one({**notif})
-    
-    return updated_app
-
-@api_router.delete("/training-applications/{application_id}")
-async def delete_training_application(application_id: str, current_user: dict = Depends(get_current_user)):
-    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Training application not found")
-    
-    # Only owner or admin can delete
-    is_admin = "admin" in current_user.get("roles", [])
-    if application["user_id"] != current_user["id"] and not is_admin:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    await db.training_applications.delete_one({"id": application_id})
-    return {"message": "Training application deleted successfully"}
-
-@api_router.post("/training-applications/{application_id}/request-re-edit")
-async def request_training_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
-    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Training application not found")
-    if application["user_id"] != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Access denied")
-    if application.get("re_edit_requested"):
-        raise HTTPException(status_code=400, detail="Re-edit already requested")
-    
-    now = datetime.now(timezone.utc).isoformat()
-    await db.training_applications.update_one({"id": application_id}, {"$set": {
-        "re_edit_requested": True,
-        "re_edit_requested_at": now,
-        "re_edit_reason": body.get("reason", ""),
-        "re_edit_approved": False,
-        "updated_at": now,
-    }})
-    
-    admins = await db.users.find({"roles": {"$in": ["admin", "super_admin"]}}, {"_id": 0, "id": 1}).to_list(100)
-    for admin in admins:
-        notif = {
-            "id": generate_uuid(),
-            "user_id": admin["id"],
-            "type": "status_change",
-            "title": "Re-edit Request: Training Application",
-            "message": f"{current_user.get('full_name', 'A user')} has requested to re-edit their training application",
-            "reference_id": application_id,
-            "reference_type": "application",
-            "is_read": False,
-            "created_at": now,
-        }
-        await db.notifications.insert_one({**notif})
-    
-    return {"message": "Re-edit request submitted"}
-
-@api_router.put("/training-applications/{application_id}/allow-re-edit")
-async def allow_training_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
-    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
-    if not is_admin:
-        raise HTTPException(status_code=403, detail="Only admins can approve re-edits")
-    
-    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Training application not found")
-    
-    approved = body.get("approved", True)
-    now = datetime.now(timezone.utc).isoformat()
-    update = {
-        "re_edit_approved": approved,
-        "re_edit_responded_at": now,
-        "re_edit_responded_by": current_user["id"],
-        "updated_at": now,
-    }
-    if not approved:
-        update["re_edit_requested"] = False
-    
-    await db.training_applications.update_one({"id": application_id}, {"$set": update})
-    
-    notif = {
-        "id": generate_uuid(),
-        "user_id": application["user_id"],
-        "type": "status_change",
-        "title": "Re-edit Request " + ("Approved" if approved else "Denied"),
-        "message": f"Your training application re-edit request has been {'approved. You can now edit your application.' if approved else 'denied.'}",
-        "reference_id": application_id,
-        "reference_type": "application",
-        "is_read": False,
-        "created_at": now,
-    }
-    await db.notifications.insert_one({**notif})
-    
-    return {"message": f"Re-edit {'approved' if approved else 'denied'}"}
-
-# ============== APPLICATION EXPENSES ROUTES ==============
-
-@api_router.post("/applications/{application_id}/expenses")
-async def add_bursary_application_expenses(application_id: str, expenses_data: dict, current_user: dict = Depends(get_current_user)):
-    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Application not found")
-    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
-    if application["user_id"] != current_user["id"] and not is_admin:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    now = datetime.now(timezone.utc).isoformat()
-    additional_expenses = {
-        "flights": expenses_data.get("flights", 0),
-        "flights_notes": expenses_data.get("flights_notes", ""),
-        "accommodation": expenses_data.get("accommodation", 0),
-        "accommodation_notes": expenses_data.get("accommodation_notes", ""),
-        "car_hire_or_shuttle": expenses_data.get("car_hire_or_shuttle", 0),
-        "car_hire_or_shuttle_notes": expenses_data.get("car_hire_or_shuttle_notes", ""),
-        "catering": expenses_data.get("catering", 0),
-        "catering_notes": expenses_data.get("catering_notes", ""),
-    }
-    
-    await db.applications.update_one(
-        {"id": application_id},
-        {"$set": {"additional_expenses": additional_expenses, "updated_at": now}}
-    )
-    return {"message": "Expenses added successfully", "additional_expenses": additional_expenses}
-
-@api_router.post("/training-applications/{application_id}/expenses")
-async def add_training_application_expenses(application_id: str, expenses_data: dict, current_user: dict = Depends(get_current_user)):
-    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
-    if not application:
-        raise HTTPException(status_code=404, detail="Training application not found")
-    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
-    if application["user_id"] != current_user["id"] and not is_admin:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    now = datetime.now(timezone.utc).isoformat()
-    additional_expenses = {
-        "flights": expenses_data.get("flights", 0),
-        "flights_notes": expenses_data.get("flights_notes", ""),
-        "accommodation": expenses_data.get("accommodation", 0),
-        "accommodation_notes": expenses_data.get("accommodation_notes", ""),
-        "car_hire_or_shuttle": expenses_data.get("car_hire_or_shuttle", 0),
-        "car_hire_or_shuttle_notes": expenses_data.get("car_hire_or_shuttle_notes", ""),
-        "catering": expenses_data.get("catering", 0),
-        "catering_notes": expenses_data.get("catering_notes", ""),
-    }
-    
-    await db.training_applications.update_one(
-        {"id": application_id},
-        {"$set": {"additional_expenses": additional_expenses, "updated_at": now}}
-    )
-    return {"message": "Expenses added successfully", "additional_expenses": additional_expenses}
-
+# Moved to routers/applications.py
 
 # ============== BBBEE ROUTES ==============
 
@@ -4952,8 +4218,12 @@ async def _create_message_notifications(conversation, sender_id, sender_name, co
 # Include extracted routers
 from routers.reports import router as reports_router
 from routers.notifications import router as notifications_router
+from routers.auth import router as auth_router
+from routers.applications import router as applications_router
 app.include_router(reports_router)
 app.include_router(notifications_router)
+app.include_router(auth_router)
+app.include_router(applications_router)
 
 app.include_router(api_router)
 
