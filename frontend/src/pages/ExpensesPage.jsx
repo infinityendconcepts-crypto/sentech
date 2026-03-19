@@ -563,7 +563,7 @@ const ApplicationExpensesTab = ({ expenses, loading, type, formatCurrency, forma
         <Card className="bg-white border-slate-200 border-2 border-primary/20">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600 font-medium">Combined Total</p>
+              <p className="text-sm text-slate-600 font-medium">Total Expenses</p>
               <p className="text-2xl font-bold text-slate-900" data-testid={`${type}-combined-total`}>{formatCurrency(grandCombined)}</p>
             </div>
             <div className="p-3 bg-amber-100 rounded-full"><TrendingUp className="w-6 h-6 text-amber-600" /></div>
@@ -638,7 +638,7 @@ const ApplicationExpensesTab = ({ expenses, loading, type, formatCurrency, forma
                 <TableHead>Car Hire</TableHead>
                 <TableHead>Catering</TableHead>
                 <TableHead>Add. Expenses</TableHead>
-                <TableHead className="text-right">Combined Total</TableHead>
+                <TableHead className="text-right">Total Expenses</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
