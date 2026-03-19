@@ -533,6 +533,7 @@ const ApplicationExpensesTab = ({ expenses, loading, type, formatCurrency, forma
 
   const grandTotal = filtered.reduce((sum, e) => sum + (e.total || 0), 0);
   const grandRequested = filtered.reduce((sum, e) => sum + (e.requested_amount || 0), 0);
+  const grandCombined = grandRequested + grandTotal;
 
   if (loading) {
     return <Card className="bg-white border-slate-200"><CardContent className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" /></CardContent></Card>;
@@ -540,7 +541,7 @@ const ApplicationExpensesTab = ({ expenses, loading, type, formatCurrency, forma
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-white border-slate-200">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
@@ -553,10 +554,19 @@ const ApplicationExpensesTab = ({ expenses, loading, type, formatCurrency, forma
         <Card className="bg-white border-slate-200">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">Total {type === 'bursary' ? 'Bursary' : 'Training'} Expenses</p>
+              <p className="text-sm text-slate-600">Additional Expenses</p>
               <p className="text-2xl font-bold text-slate-900" data-testid={`${type}-expenses-total`}>{formatCurrency(grandTotal)}</p>
             </div>
             <div className="p-3 bg-emerald-100 rounded-full"><Receipt className="w-6 h-6 text-emerald-600" /></div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white border-slate-200 border-2 border-primary/20">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-600 font-medium">Combined Total</p>
+              <p className="text-2xl font-bold text-slate-900" data-testid={`${type}-combined-total`}>{formatCurrency(grandCombined)}</p>
+            </div>
+            <div className="p-3 bg-amber-100 rounded-full"><TrendingUp className="w-6 h-6 text-amber-600" /></div>
           </CardContent>
         </Card>
         <Card className="bg-white border-slate-200">
@@ -627,13 +637,14 @@ const ApplicationExpensesTab = ({ expenses, loading, type, formatCurrency, forma
                 <TableHead>Accommodation</TableHead>
                 <TableHead>Car Hire</TableHead>
                 <TableHead>Catering</TableHead>
-                <TableHead className="text-right">Total Expenses</TableHead>
+                <TableHead>Add. Expenses</TableHead>
+                <TableHead className="text-right">Combined Total</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={type === 'training' ? 9 : 8} className="text-center py-8">
+                  <TableCell colSpan={type === 'training' ? 11 : 10} className="text-center py-8">
                     <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                     <p className="text-slate-600">No {type} application expenses found</p>
                     <p className="text-xs text-slate-400 mt-1">Use "Submit Expense" to add expenses to an application</p>
@@ -658,7 +669,8 @@ const ApplicationExpensesTab = ({ expenses, loading, type, formatCurrency, forma
                         {item.expenses?.[`${key}_notes`] && <p className="text-xs text-slate-400 truncate max-w-[120px]">{item.expenses[`${key}_notes`]}</p>}
                       </TableCell>
                     ))}
-                    <TableCell className="text-right font-semibold">{formatCurrency(item.total)}</TableCell>
+                    <TableCell className="font-semibold">{formatCurrency(item.total)}</TableCell>
+                    <TableCell className="text-right font-bold">{formatCurrency((item.requested_amount || 0) + (item.total || 0))}</TableCell>
                   </TableRow>
                 ))
               )}
@@ -669,7 +681,8 @@ const ApplicationExpensesTab = ({ expenses, loading, type, formatCurrency, forma
                   {expenseCategories.map(({ key }) => (
                     <TableCell key={key}>{formatCurrency(filtered.reduce((s, e) => s + (e.expenses?.[key] || 0), 0))}</TableCell>
                   ))}
-                  <TableCell className="text-right">{formatCurrency(grandTotal)}</TableCell>
+                  <TableCell>{formatCurrency(grandTotal)}</TableCell>
+                  <TableCell className="text-right font-bold">{formatCurrency(grandCombined)}</TableCell>
                 </TableRow>
               )}
             </TableBody>
