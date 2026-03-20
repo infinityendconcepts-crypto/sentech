@@ -43,6 +43,7 @@ const navigation = [
   { name: 'Meetings',      href: '/meetings',     icon: Calendar, rbacModule: 'meetings' },
   { name: 'Events',        href: '/events',       icon: CalendarDays, rbacModule: 'events' },
   { name: 'Messages',      href: '/messages',     icon: MessageSquare, rbacModule: 'messages' },
+  { name: 'Notes',          href: '/notes',        icon: StickyNote },
   { name: 'MICTSETA Docs', href: '/files',        icon: FolderOpen, rbacModule: 'documents' },
   { name: 'Tickets',       href: '/tickets',      icon: Ticket, rbacModule: 'tickets' },
   { name: 'Notifications', href: '/notifications', icon: Bell, rbacModule: 'notifications' },
