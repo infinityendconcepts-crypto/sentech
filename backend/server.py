@@ -2321,6 +2321,7 @@ async def get_tasks(
     end_date: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
     query = {}
     if status:
         query["status"] = status
@@ -2330,6 +2331,13 @@ async def get_tasks(
         query["assigned_to"] = assigned_to
     if project_id:
         query["project_id"] = project_id
+    # Employees only see tasks assigned to them
+    if not is_admin:
+        query["$or"] = [
+            {"assigned_to": current_user["id"]},
+            {"assigned_users.user_id": current_user["id"]},
+            {"created_by": current_user["id"]},
+        ]
     
     tasks = await db.tasks.find(query, {"_id": 0}).to_list(1000)
     return tasks
@@ -2402,10 +2410,52 @@ async def update_task(task_id: str, update_data: TaskUpdate, current_user: dict 
 
 @api_router.delete("/tasks/{task_id}")
 async def delete_task(task_id: str, current_user: dict = Depends(get_current_user)):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can delete tasks")
     result = await db.tasks.delete_one({"id": task_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted successfully"}
+
+@api_router.post("/tasks/{task_id}/assign")
+async def assign_users_to_task(task_id: str, body: dict, current_user: dict = Depends(get_current_user)):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can assign users")
+    task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    user_ids = body.get("user_ids", [])
+    existing = task.get("assigned_users", [])
+    existing_ids = {u["user_id"] for u in existing}
+    new_assignments = []
+    for uid in user_ids:
+        if uid in existing_ids:
+            continue
+        user = await db.users.find_one({"id": uid}, {"_id": 0, "full_name": 1, "email": 1})
+        if user:
+            new_assignments.append({
+                "user_id": uid,
+                "full_name": user.get("full_name", ""),
+                "email": user.get("email", ""),
+                "assigned_at": datetime.now(timezone.utc).isoformat(),
+                "assigned_by": current_user["id"],
+            })
+    all_assigned = existing + new_assignments
+    await db.tasks.update_one({"id": task_id}, {"$set": {"assigned_users": all_assigned, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    return {"message": f"Assigned {len(new_assignments)} user(s)", "assigned_users": all_assigned}
+
+@api_router.delete("/tasks/{task_id}/assign/{user_id}")
+async def unassign_user_from_task(task_id: str, user_id: str, current_user: dict = Depends(get_current_user)):
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if not is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can unassign users")
+    task = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    await db.tasks.update_one({"id": task_id}, {"$pull": {"assigned_users": {"user_id": user_id}}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}})
+    return {"message": "User unassigned"}
 
 # ============== PROJECTS ROUTES ==============
 

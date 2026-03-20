@@ -226,7 +226,7 @@ const TrainingTrackPage = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: isAdmin ? 8 : 99999,
       },
     })
   );
@@ -612,7 +612,7 @@ const TrainingTrackPage = () => {
             <GraduationCap className="w-8 h-8 text-primary" />
             Training Track
           </h2>
-          <p className="text-slate-600 mt-1">Manage training modules and track progress</p>
+          <p className="text-slate-600 mt-1">{isAdmin ? 'Manage training modules and track progress' : 'View your assigned training modules'}</p>
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>
@@ -633,10 +633,12 @@ const TrainingTrackPage = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button className="gap-2" onClick={() => setAddModuleDialog(true)} data-testid="add-module-btn">
-            <Plus className="w-4 h-4" />
-            Add Training Module
-          </Button>
+          {isAdmin && (
+            <Button className="gap-2" onClick={() => setAddModuleDialog(true)} data-testid="add-module-btn">
+              <Plus className="w-4 h-4" />
+              Add Training Module
+            </Button>
+          )}
         </div>
       </div>
 
@@ -838,6 +840,19 @@ const TrainingTrackPage = () => {
                           </div>
                         </div>
                       )}
+
+                      {/* Assigned Users Display */}
+                      {module.assigned_users?.length > 0 && (
+                        <div className="ml-7 mt-2 flex items-center gap-1 flex-wrap">
+                          <UsersIcon className="w-3 h-3 text-slate-400" />
+                          {module.assigned_users.slice(0, 3).map((au, i) => (
+                            <span key={au.user_id || i} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{au.full_name || au.email}</span>
+                          ))}
+                          {module.assigned_users.length > 3 && (
+                            <span className="text-xs text-slate-400">+{module.assigned_users.length - 3} more</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -866,23 +881,25 @@ const TrainingTrackPage = () => {
                           <Image className="w-4 h-4 mr-2" />
                           Images
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(module.id, 'todo')}>
-                          <Circle className="w-4 h-4 mr-2" />
-                          Mark as To Do
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(module.id, 'in_progress')}>
-                          <Clock className="w-4 h-4 mr-2" />
-                          Mark as In Progress
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleStatusChange(module.id, 'completed')}>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Mark as Completed
-                        </DropdownMenuItem>
                         {isAdmin && (
-                          <DropdownMenuItem onClick={() => handleDeleteModule(module.id)} className="text-red-600">
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete Module
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuItem onClick={() => handleStatusChange(module.id, 'todo')}>
+                              <Circle className="w-4 h-4 mr-2" />
+                              Mark as To Do
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(module.id, 'in_progress')}>
+                              <Clock className="w-4 h-4 mr-2" />
+                              Mark as In Progress
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(module.id, 'completed')}>
+                              <CheckCircle className="w-4 h-4 mr-2" />
+                              Mark as Completed
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteModule(module.id)} className="text-red-600">
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete Module
+                            </DropdownMenuItem>
+                          </>
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
