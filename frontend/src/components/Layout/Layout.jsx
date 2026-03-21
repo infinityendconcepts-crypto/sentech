@@ -38,7 +38,7 @@ const navigation = [
   { name: 'Dashboard',     href: '/dashboard',   icon: LayoutDashboard, rbacModule: 'dashboard' },
   { name: 'Bursary Applications',  href: '/applications', icon: FileText, rbacModule: 'applications' },
   { name: 'Training Applications', href: '/training-applications', icon: GraduationCap, rbacModule: 'training_applications' },
-  { name: 'Personal Dev Plan', href: '/pdp',      icon: TrendingUp, rbacModule: 'pdp' },
+  { name: 'Personal Dev Plan', href: '/pdp',      icon: TrendingUp },
   { name: 'Training Track',href: '/tasks',        icon: CheckSquare, rbacModule: 'tasks' },
   { name: 'Meetings',      href: '/meetings',     icon: Calendar, rbacModule: 'meetings' },
   { name: 'Events',        href: '/events',       icon: CalendarDays, rbacModule: 'events' },
