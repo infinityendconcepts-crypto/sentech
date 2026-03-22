@@ -50,7 +50,7 @@ const navigation = [
   { name: 'Division Groups', href: '/division-groups',  icon: UsersRound, rbacModule: 'division_groups' },
   { name: 'Help & Support',href: '/help',         icon: HelpCircle },
   // ── Admin only ──
-  { name: 'Sponsors',   href: '/sponsors',   icon: Users,        adminOnly: true },
+  // { name: 'Sponsors',   href: '/sponsors',   icon: Users,        adminOnly: true },
   { name: 'BBBEE',      href: '/bbbee',      icon: Award,        adminOnly: true },
   { name: 'Expenses',   href: '/expenses',   icon: Receipt,      adminOnly: true, rbacModule: 'expenses' },
   { name: 'Reports',    href: '/reports',    icon: BarChart3,    adminOnly: true, rbacModule: 'reports' },
