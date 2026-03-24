@@ -74,7 +74,7 @@ const MessagesPage = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await usersAPI.getAll();
+      const response = await messagesAPI.getContactableUsers();
       setUsers(response.data.filter(u => u.id !== user?.id));
     } catch (error) {
       console.error('Failed to fetch users:', error);

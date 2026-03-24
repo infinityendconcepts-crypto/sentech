@@ -11,6 +11,30 @@ from routers import (
 
 router = APIRouter(prefix="/api", tags=["applications"])
 
+
+async def can_approve_application(current_user: dict, applicant_user_id: str) -> bool:
+    """Check if current user can approve: admin, super_admin, or division/subgroup head of applicant"""
+    if is_admin_user(current_user):
+        return True
+    # Check if current user is the division leader or subgroup leader of the applicant
+    applicant = await db.users.find_one({"id": applicant_user_id}, {"_id": 0, "division": 1, "department": 1})
+    if not applicant:
+        return False
+    division = applicant.get("division", "")
+    if division:
+        # Check division leader
+        config = await db.division_group_configs.find_one({"division_name": division}, {"_id": 0})
+        if config and config.get("leader_id") == current_user["id"]:
+            return True
+        # Check subgroup leader
+        subgroups = await db.subgroups.find({"division_name": division}, {"_id": 0}).to_list(100)
+        for sg in subgroups:
+            if sg.get("leader_id") == current_user["id"]:
+                member_ids = [m.get("user_id") for m in sg.get("members", [])]
+                if applicant_user_id in member_ids:
+                    return True
+    return False
+
 # --- Pydantic Models ---
 
 class ApplicationCreate(BaseModel):
@@ -103,7 +127,8 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
     admin = is_admin_user(current_user)
-    if application["user_id"] != current_user["id"] and not admin:
+    is_head = await can_approve_application(current_user, application["user_id"])
+    if application["user_id"] != current_user["id"] and not admin and not is_head:
         raise HTTPException(status_code=403, detail="Access denied")
     # 24hr edit window enforcement
     if not admin and application["user_id"] == current_user["id"]:
@@ -282,7 +307,8 @@ async def update_training_application(application_id: str, update_data: Training
     if not application:
         raise HTTPException(status_code=404, detail="Training application not found")
     admin = is_admin_user(current_user)
-    if application["user_id"] != current_user["id"] and not admin:
+    is_head = await can_approve_application(current_user, application["user_id"])
+    if application["user_id"] != current_user["id"] and not admin and not is_head:
         raise HTTPException(status_code=403, detail="Access denied")
     if not admin and application["user_id"] == current_user["id"]:
         submitted_at = application.get("submitted_at")
@@ -304,11 +330,11 @@ async def update_training_application(application_id: str, update_data: Training
 
 @router.put("/training-applications/{application_id}/status")
 async def update_training_application_status(application_id: str, status_data: dict, current_user: dict = Depends(get_current_user)):
-    if not is_admin_user(current_user):
-        raise HTTPException(status_code=403, detail="Only admins can update application status")
     application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Training application not found")
+    if not is_admin_user(current_user) and not await can_approve_application(current_user, application["user_id"]):
+        raise HTTPException(status_code=403, detail="Only admins or division/subgroup heads can update application status")
     update_dict = {"status": status_data.get("status"), "updated_at": datetime.now(timezone.utc).isoformat()}
     if status_data.get("status_note"):
         update_dict["status_note"] = status_data.get("status_note")

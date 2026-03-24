@@ -41,6 +41,7 @@ async def get_users(
     status: Optional[str] = None,
     department: Optional[str] = None,
     search: Optional[str] = None,
+    unassigned: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
@@ -57,6 +58,8 @@ async def get_users(
             {"full_name": {"$regex": search, "$options": "i"}},
             {"email": {"$regex": search, "$options": "i"}},
         ]
+    if unassigned == "true":
+        query["$and"] = query.get("$and", []) + [{"$or": [{"division": {"$in": [None, ""]}}, {"division": {"$exists": False}}]}]
     users = await db.users.find(query, {"_id": 0, "password_hash": 0}).to_list(1000)
     return users
 

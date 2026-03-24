@@ -66,6 +66,7 @@ const UsersPage = () => {
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterGender, setFilterGender] = useState('all');
+  const [filterAssignment, setFilterAssignment] = useState('all');
 
   const [viewDialog, setViewDialog] = useState(false);
   const [editDialog, setEditDialog] = useState(false);
@@ -230,7 +231,9 @@ const UsersPage = () => {
     const matchStatus = filterStatus === 'all' ||
       (filterStatus === 'active' ? u.is_active !== false : u.is_active === false);
     const matchGender = filterGender === 'all' || u.gender?.toLowerCase() === filterGender.toLowerCase();
-    return matchSearch && matchDepartment && matchRole && matchStatus && matchGender;
+    const matchAssignment = filterAssignment === 'all' ||
+      (filterAssignment === 'unassigned' ? (!u.division || u.division === '') : (!!u.division && u.division !== ''));
+    return matchSearch && matchDepartment && matchRole && matchStatus && matchGender && matchAssignment;
   });
 
   const handleToggleStatus = async (userId, isActive) => {
@@ -341,6 +344,7 @@ const UsersPage = () => {
     setFilterRole('all');
     setFilterStatus('all');
     setFilterGender('all');
+    setFilterAssignment('all');
     setCurrentPage(1);
   };
 
@@ -380,7 +384,7 @@ const UsersPage = () => {
     }
   };
 
-  const hasActiveFilters = search || filterDepartment !== 'all' || filterRole !== 'all' || filterStatus !== 'all' || filterGender !== 'all';
+  const hasActiveFilters = search || filterDepartment !== 'all' || filterRole !== 'all' || filterStatus !== 'all' || filterGender !== 'all' || filterAssignment !== 'all';
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
@@ -389,7 +393,7 @@ const UsersPage = () => {
   const allPageSelected = pageUserIds.length > 0 && pageUserIds.every(id => selectedIds.includes(id));
 
   // Reset page when filters change
-  useEffect(() => { setCurrentPage(1); }, [search, filterDepartment, filterRole, filterStatus, filterGender, pageSize]);
+  useEffect(() => { setCurrentPage(1); }, [search, filterDepartment, filterRole, filterStatus, filterGender, filterAssignment, pageSize]);
 
   // Get unique values for stats
   const uniqueDepartmentsInUsers = [...new Set(users.map(u => u.department).filter(Boolean))].sort();
@@ -486,6 +490,16 @@ const UsersPage = () => {
                   <SelectItem value="all">All Gender</SelectItem>
                   <SelectItem value="male">Male</SelectItem>
                   <SelectItem value="female">Female</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterAssignment} onValueChange={setFilterAssignment}>
+                <SelectTrigger className="w-36" data-testid="filter-assignment">
+                  <SelectValue placeholder="Assignment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  <SelectItem value="assigned">Assigned</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -619,7 +633,7 @@ const UsersPage = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {paginatedUsers.map(u => (
-                    <tr key={u.id} className={`hover:bg-slate-50 transition-colors ${selectedIds.includes(u.id) ? 'bg-primary/5' : ''}`} data-testid={`user-row-${u.id}`}>
+                    <tr key={u.id} className={`hover:bg-slate-50 transition-colors ${selectedIds.includes(u.id) ? 'bg-primary/5' : ''} ${!u.division || u.division === '' ? 'bg-amber-50/60' : ''}`} data-testid={`user-row-${u.id}`}>
                       {isAdmin && (
                         <td className="px-4 py-3">
                           {u.id !== currentUser?.id && (

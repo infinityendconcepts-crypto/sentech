@@ -129,6 +129,7 @@ export const messagesAPI = {
   getMessages: (conversationId, limit = 50) => api.get(`/messages/conversations/${conversationId}/messages`, { params: { limit } }),
   sendMessage: (conversationId, data) => api.post(`/messages/conversations/${conversationId}/messages`, data),
   getUnreadCount: () => api.get('/messages/unread/count'),
+  getContactableUsers: () => api.get('/messages/contactable-users'),
 };
 
 export const expensesAPI = {

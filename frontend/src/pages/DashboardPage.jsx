@@ -54,7 +54,7 @@ const timeAgo = (dateStr) => {
 };
 
 const DashboardPage = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isEmployee } = useAuth();
   const [stats, setStats] = useState(null);
   const [activities, setActivities] = useState([]);
   const [reportSummary, setReportSummary] = useState(null);
@@ -94,56 +94,35 @@ const DashboardPage = () => {
     );
   }
 
-  const statCards = [
-    {
-      title: 'Total Applications',
-      value: stats?.total_applications || 0,
-      icon: FileText,
-      color: 'bg-blue-500',
-      link: '/applications',
-    },
-    {
-      title: 'Pending Applications',
-      value: stats?.pending_applications || 0,
-      icon: Clock,
-      color: 'bg-amber-500',
-      link: '/applications',
-    },
-    {
-      title: 'Approved Applications',
-      value: stats?.approved_applications || 0,
-      icon: CheckCircle2,
-      color: 'bg-emerald-500',
-      link: '/applications',
-    },
-    {
-      title: 'Training Applications',
-      value: stats?.training_applications || 0,
-      icon: GraduationCap,
-      color: 'bg-purple-500',
-      link: '/training-applications',
-    },
-    {
-      title: 'Open Tickets',
-      value: stats?.open_tickets || 0,
-      icon: Ticket,
-      color: 'bg-rose-500',
-      link: '/tickets',
-    },
-    {
-      title: 'Unread Notifications',
-      value: stats?.unread_notifications || 0,
-      icon: Bell,
-      color: 'bg-indigo-500',
-      link: '/notifications',
-    },
+  const adminStatCards = [
+    { title: 'Total Applications', value: stats?.total_applications || 0, icon: FileText, color: 'bg-blue-500', link: '/applications' },
+    { title: 'Pending Applications', value: stats?.pending_applications || 0, icon: Clock, color: 'bg-amber-500', link: '/applications' },
+    { title: 'Approved Applications', value: stats?.approved_applications || 0, icon: CheckCircle2, color: 'bg-emerald-500', link: '/applications' },
+    { title: 'Training Applications', value: stats?.training_applications || 0, icon: GraduationCap, color: 'bg-purple-500', link: '/training-applications' },
+    { title: 'Open Tickets', value: stats?.open_tickets || 0, icon: Ticket, color: 'bg-rose-500', link: '/tickets' },
+    { title: 'Unread Notifications', value: stats?.unread_notifications || 0, icon: Bell, color: 'bg-indigo-500', link: '/notifications' },
   ];
+
+  const employeeStatCards = [
+    { title: 'My Applications', value: stats?.total_applications || 0, icon: FileText, color: 'bg-blue-500', link: '/applications' },
+    { title: 'Pending', value: stats?.pending_applications || 0, icon: Clock, color: 'bg-amber-500', link: '/applications' },
+    { title: 'Approved', value: stats?.approved_applications || 0, icon: CheckCircle2, color: 'bg-emerald-500', link: '/applications' },
+    { title: 'My Training', value: stats?.training_applications || 0, icon: GraduationCap, color: 'bg-purple-500', link: '/training-applications' },
+    { title: 'My Tickets', value: stats?.open_tickets || 0, icon: Ticket, color: 'bg-rose-500', link: '/tickets' },
+    { title: 'Notifications', value: stats?.unread_notifications || 0, icon: Bell, color: 'bg-indigo-500', link: '/notifications' },
+  ];
+
+  const statCards = isEmployee ? employeeStatCards : adminStatCards;
 
   return (
     <div className="space-y-8" data-testid="dashboard-page">
       <div>
-        <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">Dashboard Overview</h2>
-        <p className="text-slate-600 mt-1">Welcome to your bursary management dashboard</p>
+        <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">
+          {isEmployee ? 'My Dashboard' : 'Dashboard Overview'}
+        </h2>
+        <p className="text-slate-600 mt-1">
+          {isEmployee ? 'Your personal bursary and training overview' : 'Welcome to your bursary management dashboard'}
+        </p>
       </div>
 
       {/* Stat Cards */}
@@ -342,33 +321,67 @@ const DashboardPage = () => {
                   </span>
                 </Button>
               </Link>
-              <Link to="/training-applications">
-                <Button variant="outline" className="w-full justify-start gap-2 h-auto py-4" data-testid="quick-training-apps">
-                  <GraduationCap className="w-4 h-4" />
-                  <span className="text-left">
-                    <span className="block text-sm font-medium">Training Apps</span>
-                    <span className="block text-xs text-slate-600">View training</span>
-                  </span>
-                </Button>
-              </Link>
-              <Link to="/bbbee">
-                <Button variant="outline" className="w-full justify-start gap-2 h-auto py-4" data-testid="quick-bbbee">
-                  <Award className="w-4 h-4" />
-                  <span className="text-left">
-                    <span className="block text-sm font-medium">BBBEE Records</span>
-                    <span className="block text-xs text-slate-600">View compliance</span>
-                  </span>
-                </Button>
-              </Link>
-              <Link to="/reports">
-                <Button variant="outline" className="w-full justify-start gap-2 h-auto py-4" data-testid="quick-reports">
-                  <TrendingUp className="w-4 h-4" />
-                  <span className="text-left">
-                    <span className="block text-sm font-medium">Reports</span>
-                    <span className="block text-xs text-slate-600">Generate reports</span>
-                  </span>
-                </Button>
-              </Link>
+              {isEmployee ? (
+                <>
+                  <Link to="/tickets">
+                    <Button variant="outline" className="w-full justify-start gap-2 h-auto py-4" data-testid="quick-new-ticket">
+                      <Ticket className="w-4 h-4" />
+                      <span className="text-left">
+                        <span className="block text-sm font-medium">New Ticket</span>
+                        <span className="block text-xs text-slate-600">Submit a request</span>
+                      </span>
+                    </Button>
+                  </Link>
+                  <Link to="/notes">
+                    <Button variant="outline" className="w-full justify-start gap-2 h-auto py-4" data-testid="quick-new-note">
+                      <AlertCircle className="w-4 h-4" />
+                      <span className="text-left">
+                        <span className="block text-sm font-medium">New Note</span>
+                        <span className="block text-xs text-slate-600">Create a note</span>
+                      </span>
+                    </Button>
+                  </Link>
+                  <Link to="/messages">
+                    <Button variant="outline" className="w-full justify-start gap-2 h-auto py-4" data-testid="quick-new-message">
+                      <Bell className="w-4 h-4" />
+                      <span className="text-left">
+                        <span className="block text-sm font-medium">New Message</span>
+                        <span className="block text-xs text-slate-600">Send a message</span>
+                      </span>
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/training-applications">
+                    <Button variant="outline" className="w-full justify-start gap-2 h-auto py-4" data-testid="quick-training-apps">
+                      <GraduationCap className="w-4 h-4" />
+                      <span className="text-left">
+                        <span className="block text-sm font-medium">Training Apps</span>
+                        <span className="block text-xs text-slate-600">View training</span>
+                      </span>
+                    </Button>
+                  </Link>
+                  <Link to="/bbbee">
+                    <Button variant="outline" className="w-full justify-start gap-2 h-auto py-4" data-testid="quick-bbbee">
+                      <Award className="w-4 h-4" />
+                      <span className="text-left">
+                        <span className="block text-sm font-medium">BBBEE Records</span>
+                        <span className="block text-xs text-slate-600">View compliance</span>
+                      </span>
+                    </Button>
+                  </Link>
+                  <Link to="/reports">
+                    <Button variant="outline" className="w-full justify-start gap-2 h-auto py-4" data-testid="quick-reports">
+                      <TrendingUp className="w-4 h-4" />
+                      <span className="text-left">
+                        <span className="block text-sm font-medium">Reports</span>
+                        <span className="block text-xs text-slate-600">Generate reports</span>
+                      </span>
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>

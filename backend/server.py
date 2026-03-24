@@ -1641,6 +1641,31 @@ async def get_unread_count(current_user: dict = Depends(get_current_user)):
     total = sum(conv.get("unread_count", {}).get(current_user["id"], 0) for conv in conversations)
     return {"unread_count": total}
 
+@api_router.get("/messages/contactable-users")
+async def get_contactable_users(current_user: dict = Depends(get_current_user)):
+    """Returns users that the current user can message - admins see all, employees see division/subgroup members"""
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    if is_admin:
+        users = await db.users.find({"is_active": True, "id": {"$ne": current_user["id"]}}, {"_id": 0, "password_hash": 0}).to_list(1000)
+        return users
+    user_division = current_user.get("division", "")
+    contactable_ids = set()
+    if user_division:
+        div_users = await db.users.find({"division": user_division, "is_active": True}, {"_id": 0, "id": 1}).to_list(1000)
+        contactable_ids.update(u["id"] for u in div_users)
+        subgroups = await db.subgroups.find({"division_name": user_division}, {"_id": 0}).to_list(100)
+        for sg in subgroups:
+            member_ids = [m.get("user_id") for m in sg.get("members", [])]
+            if current_user["id"] in member_ids:
+                contactable_ids.update(member_ids)
+            if sg.get("leader_id"):
+                contactable_ids.add(sg["leader_id"])
+    contactable_ids.discard(current_user["id"])
+    if not contactable_ids:
+        return []
+    users = await db.users.find({"id": {"$in": list(contactable_ids)}, "is_active": True}, {"_id": 0, "password_hash": 0}).to_list(1000)
+    return users
+
 # ============== EXPENSES ROUTES ==============
 
 @api_router.get("/expenses")
@@ -1977,7 +2002,7 @@ async def get_tickets(
     category: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
-    if "admin" in current_user.get("roles", []) or "support" in current_user.get("roles", []):
+    if "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", []) or "support" in current_user.get("roles", []):
         query = {}
     else:
         query = {"created_by": current_user["id"]}
@@ -2013,7 +2038,7 @@ async def get_ticket(ticket_id: str, current_user: dict = Depends(get_current_us
         raise HTTPException(status_code=404, detail="Ticket not found")
     
     if ticket["created_by"] != current_user["id"]:
-        if "admin" not in current_user.get("roles", []) and "support" not in current_user.get("roles", []):
+        if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []) and "support" not in current_user.get("roles", []):
             raise HTTPException(status_code=403, detail="Access denied")
     
     return ticket
@@ -2038,7 +2063,7 @@ async def update_ticket(ticket_id: str, update_data: TicketUpdate, current_user:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
     if ticket["created_by"] != current_user["id"]:
-        if "admin" not in current_user.get("roles", []) and "support" not in current_user.get("roles", []):
+        if "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []) and "support" not in current_user.get("roles", []):
             raise HTTPException(status_code=403, detail="Access denied")
     
     update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
@@ -2075,7 +2100,7 @@ async def delete_ticket(ticket_id: str, current_user: dict = Depends(get_current
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
-    if ticket["created_by"] != current_user["id"] and "admin" not in current_user.get("roles", []):
+    if ticket["created_by"] != current_user["id"] and "admin" not in current_user.get("roles", []) and "super_admin" not in current_user.get("roles", []):
         raise HTTPException(status_code=403, detail="Access denied")
     
     await db.tickets.delete_one({"id": ticket_id})
@@ -2088,7 +2113,7 @@ async def get_ticket_comments(ticket_id: str, current_user: dict = Depends(get_c
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
-    is_admin_or_support = "admin" in current_user.get("roles", []) or "support" in current_user.get("roles", [])
+    is_admin_or_support = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", []) or "support" in current_user.get("roles", [])
     if ticket["created_by"] != current_user["id"] and not is_admin_or_support:
         raise HTTPException(status_code=403, detail="Access denied")
     

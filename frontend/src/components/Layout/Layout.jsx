@@ -35,18 +35,18 @@ import {
 // adminOnly: true = visible only to admins
 // rbacModule: key matching RBAC permissions system
 const navigation = [
-  { name: 'Dashboard',     href: '/dashboard',   icon: LayoutDashboard, rbacModule: 'dashboard' },
+  { name: 'Dashboard',     href: '/dashboard',   icon: LayoutDashboard },
   { name: 'Bursary Applications',  href: '/applications', icon: FileText, rbacModule: 'applications' },
   { name: 'Training Applications', href: '/training-applications', icon: GraduationCap, rbacModule: 'training_applications' },
-  { name: 'Personal Dev Plan', href: '/pdp',      icon: TrendingUp },
+  { name: 'Personal Dev Plan', href: '/pdp',      icon: TrendingUp, employeeOnly: true },
   { name: 'Training Track',href: '/tasks',        icon: CheckSquare, rbacModule: 'tasks' },
   { name: 'Meetings',      href: '/meetings',     icon: Calendar, rbacModule: 'meetings' },
   { name: 'Events',        href: '/events',       icon: CalendarDays, rbacModule: 'events' },
-  { name: 'Messages',      href: '/messages',     icon: MessageSquare, rbacModule: 'messages' },
+  { name: 'Messages',      href: '/messages',     icon: MessageSquare },
   { name: 'Notes',          href: '/notes',        icon: StickyNote },
   { name: 'MICTSETA Docs', href: '/files',        icon: FolderOpen, rbacModule: 'documents' },
   { name: 'Tickets',       href: '/tickets',      icon: Ticket, rbacModule: 'tickets' },
-  { name: 'Notifications', href: '/notifications', icon: Bell, rbacModule: 'notifications' },
+  { name: 'Notifications', href: '/notifications', icon: Bell },
   { name: 'Division Groups', href: '/division-groups',  icon: UsersRound, rbacModule: 'division_groups' },
   { name: 'Help & Support',href: '/help',         icon: HelpCircle },
   // ── Admin only ──
@@ -55,7 +55,7 @@ const navigation = [
   { name: 'Expenses',   href: '/expenses',   icon: Receipt,      adminOnly: true, rbacModule: 'expenses' },
   { name: 'Reports',    href: '/reports',    icon: BarChart3,    adminOnly: true, rbacModule: 'reports' },
   { name: 'Users',      href: '/users',      icon: Users,        adminOnly: true, rbacModule: 'users' },
-  { name: 'Settings',   href: '/settings',   icon: Settings,     adminOnly: true, rbacModule: 'settings' },
+  { name: 'Settings',   href: '/settings',   icon: Settings,     superAdminOnly: true },
 ];
 
 const Layout = () => {
@@ -64,21 +64,29 @@ const Layout = () => {
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
   const { user, logout, isAdmin } = useAuth();
+  const isSuperAdmin = user?.roles?.includes('super_admin') ?? false;
+  const isEmployee = !isAdmin;
 
   // Get user's permissions from their roles
   const userPermissions = user?.role_permissions || {};
+
+  // Modules that employees can access by default (they see their own data)
+  const employeeAccessibleModules = ['applications', 'training_applications', 'tasks', 'tickets'];
 
   // Check if user has at least read access to a module
   const hasModuleAccess = (rbacModule) => {
     if (!rbacModule) return true; // no RBAC restriction = always visible
     if (isAdmin) return true; // admins see everything
+    if (employeeAccessibleModules.includes(rbacModule)) return true;
     const perms = userPermissions[rbacModule] || [];
     return perms.includes('read') || perms.length > 0;
   };
 
   // Filter navigation based on role and RBAC permissions
   const visibleNav = navigation.filter(item => {
+    if (item.superAdminOnly && !isSuperAdmin) return false;
     if (item.adminOnly && !isAdmin) return false;
+    if (item.employeeOnly && isAdmin) return false;
     if (item.rbacModule && !hasModuleAccess(item.rbacModule)) return false;
     return true;
   });
