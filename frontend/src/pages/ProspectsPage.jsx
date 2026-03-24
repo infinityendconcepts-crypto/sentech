@@ -32,7 +32,7 @@ import {
 import { prospectsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DndContext, DragOverlay, closestCenter, PointerSensor, useSensor, useSensors, useDroppable, useDraggable } from '@dnd-kit/core';
 import {
   Plus,
   Search,
@@ -49,6 +49,62 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 
+const DraggableProspectCard = ({ prospect, sources, getInterestColor, handleDeleteProspect }) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: prospect.id });
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0.4 : 1,
+    touchAction: 'none',
+  };
+
+  return (
+    <Card ref={setNodeRef} style={style} {...attributes} {...listeners}
+      className={`bg-white border-slate-200 cursor-grab active:cursor-grabbing ${isDragging ? 'shadow-lg' : ''}`}
+    >
+      <CardContent className="p-3">
+        <div className="flex items-start justify-between mb-2">
+          <h4 className="font-medium text-sm text-slate-900 truncate">{prospect.name}</h4>
+          <Badge className={`text-xs ${getInterestColor(prospect.interest_level)}`}>{prospect.interest_level}</Badge>
+        </div>
+        {prospect.company && (
+          <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
+            <Building className="w-3 h-3" />{prospect.company}
+          </div>
+        )}
+        {prospect.email && (
+          <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
+            <Mail className="w-3 h-3" /><span className="truncate">{prospect.email}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between mt-2 pt-2 border-t">
+          <Badge variant="outline" className="text-xs">{sources.find(s => s.value === prospect.source)?.label}</Badge>
+          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-rose-600"
+            onClick={(e) => { e.stopPropagation(); handleDeleteProspect(prospect.id); }}>
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const DroppableColumn = ({ id, children, label, count }) => {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-sm text-slate-700">{label}</h3>
+        <Badge variant="secondary" className="text-xs">{count}</Badge>
+      </div>
+      <div ref={setNodeRef}
+        className={`space-y-2 min-h-[400px] p-2 rounded-lg transition-colors ${isOver ? 'bg-primary/5' : 'bg-slate-50'}`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
 const ProspectsPage = () => {
   const { user } = useAuth();
   const [prospects, setProspects] = useState([]);
@@ -56,6 +112,7 @@ const ProspectsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState('kanban');
+  const [activeProspect, setActiveProspect] = useState(null);
   const [newProspectDialog, setNewProspectDialog] = useState(false);
   const [newProspect, setNewProspect] = useState({
     name: '',
@@ -152,13 +209,23 @@ const ProspectsPage = () => {
     }
   };
 
-  const onDragEnd = (result) => {
-    if (!result.destination) return;
-    
-    const prospectId = result.draggableId;
-    const newStatus = result.destination.droppableId;
-    
-    handleUpdateStatus(prospectId, newStatus);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  const handleDragStart = (event) => {
+    const prospectId = event.active.id;
+    setActiveProspect(prospects.find(p => p.id === prospectId) || null);
+  };
+
+  const handleDragEnd = (event) => {
+    setActiveProspect(null);
+    const { active, over } = event;
+    if (!over) return;
+    const prospectId = active.id;
+    const newStatus = over.id;
+    const prospect = prospects.find(p => p.id === prospectId);
+    if (prospect && prospect.status !== newStatus && statuses.some(s => s.value === newStatus)) {
+      handleUpdateStatus(prospectId, newStatus);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -350,83 +417,37 @@ const ProspectsPage = () => {
 
       {/* Kanban View */}
       {viewMode === 'kanban' && (
-        <DragDropContext onDragEnd={onDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="grid grid-cols-6 gap-4">
             {statuses.map((status) => (
-              <div key={status.value}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-sm text-slate-700">{status.label}</h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {getProspectsByStatus(status.value).length}
-                  </Badge>
-                </div>
-                <Droppable droppableId={status.value}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`space-y-2 min-h-[400px] p-2 rounded-lg transition-colors ${
-                        snapshot.isDraggingOver ? 'bg-primary/5' : 'bg-slate-50'
-                      }`}
-                    >
-                      {getProspectsByStatus(status.value).map((prospect, index) => (
-                        <Draggable key={prospect.id} draggableId={prospect.id} index={index}>
-                          {(provided, snapshot) => (
-                            <Card
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className={`bg-white border-slate-200 ${
-                                snapshot.isDragging ? 'shadow-lg' : ''
-                              }`}
-                            >
-                              <CardContent className="p-3">
-                                <div className="flex items-start justify-between mb-2">
-                                  <h4 className="font-medium text-sm text-slate-900 truncate">
-                                    {prospect.name}
-                                  </h4>
-                                  <Badge className={`text-xs ${getInterestColor(prospect.interest_level)}`}>
-                                    {prospect.interest_level}
-                                  </Badge>
-                                </div>
-                                {prospect.company && (
-                                  <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
-                                    <Building className="w-3 h-3" />
-                                    {prospect.company}
-                                  </div>
-                                )}
-                                {prospect.email && (
-                                  <div className="flex items-center gap-1 text-xs text-slate-500 mb-1">
-                                    <Mail className="w-3 h-3" />
-                                    <span className="truncate">{prospect.email}</span>
-                                  </div>
-                                )}
-                                <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                                  <Badge variant="outline" className="text-xs">
-                                    {sources.find(s => s.value === prospect.source)?.label}
-                                  </Badge>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 text-rose-600"
-                                    onClick={() => handleDeleteProspect(prospect.id)}
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
+              <DroppableColumn key={status.value} id={status.value} label={status.label} count={getProspectsByStatus(status.value).length}>
+                {getProspectsByStatus(status.value).map((prospect) => (
+                  <DraggableProspectCard
+                    key={prospect.id}
+                    prospect={prospect}
+                    sources={sources}
+                    getInterestColor={getInterestColor}
+                    handleDeleteProspect={handleDeleteProspect}
+                  />
+                ))}
+              </DroppableColumn>
             ))}
           </div>
-        </DragDropContext>
+          <DragOverlay>
+            {activeProspect ? (
+              <Card className="bg-white border-primary shadow-xl w-48">
+                <CardContent className="p-3">
+                  <h4 className="font-medium text-sm text-slate-900 truncate">{activeProspect.name}</h4>
+                  {activeProspect.company && (
+                    <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
+                      <Building className="w-3 h-3" />{activeProspect.company}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {/* List View */}

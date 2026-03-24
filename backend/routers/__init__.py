@@ -1,14 +1,16 @@
 """Shared dependencies for all routers - db, auth, helpers"""
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
 import uuid
 import os
+import io
 import logging
 import asyncio
 from dotenv import load_dotenv
@@ -101,3 +103,50 @@ async def send_email_notification(to_email: str, subject: str, body_text: str):
         logger.info(f"[EMAIL SENT] To: {to_email} | Subject: {subject}")
     except Exception as e:
         logger.error(f"[EMAIL FAILED] To: {to_email} | Error: {e}")
+
+def generate_excel(data: list, title: str = "Export") -> io.BytesIO:
+    """Generate an Excel file from a list of dicts"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = title[:31]
+
+    if not data:
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return output
+
+    headers = list(data[0].keys())
+    header_fill = PatternFill(start_color="0056B3", end_color="0056B3", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+
+    for col_idx, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx, value=header.replace("_", " ").title())
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    alt_fill = PatternFill(start_color="E8F0FE", end_color="E8F0FE", fill_type="solid")
+    for row_idx, row_data in enumerate(data, 2):
+        for col_idx, header in enumerate(headers, 1):
+            val = row_data.get(header, "")
+            if isinstance(val, list):
+                val = ", ".join(str(v) for v in val)
+            elif isinstance(val, dict):
+                val = str(val)
+            cell = ws.cell(row=row_idx, column=col_idx, value=val)
+            if row_idx % 2 == 0:
+                cell.fill = alt_fill
+
+    for col_idx, header in enumerate(headers, 1):
+        max_len = max(len(str(header)), max((len(str(row_data.get(header, ""))) for row_data in data), default=0))
+        ws.column_dimensions[get_column_letter(col_idx)].width = min(max_len + 4, 50)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
