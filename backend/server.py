@@ -2886,8 +2886,20 @@ async def get_division_groups(current_user: dict = Depends(get_current_user)):
         # For non-admin: skip divisions they don't head
         if not is_admin and not user_is_head_of_division and not user_is_head_of_subgroup:
             continue
-        # Exclude subgroup members from main member list
-        main_members = [u for u in all_div_members if u["id"] not in subgroup_member_ids]
+        # If subgroup head (not division head): only show their subgroup(s)
+        if not is_admin and not user_is_head_of_division and user_is_head_of_subgroup:
+            div_subgroups = [sg for sg in div_subgroups if sg.get("leader_id") == uid]
+            # Recalculate members for filtered subgroups only
+            filtered_member_ids = set()
+            for sg in div_subgroups:
+                for mid in sg.get("member_user_ids", []):
+                    filtered_member_ids.add(mid)
+            main_members = []
+            member_count = len(filtered_member_ids)
+        else:
+            # Exclude subgroup members from main member list
+            main_members = [u for u in all_div_members if u["id"] not in subgroup_member_ids]
+            member_count = len(all_div_members)
         groups.append({
             "division_id": div["id"],
             "division_name": div_name,
@@ -2895,7 +2907,7 @@ async def get_division_groups(current_user: dict = Depends(get_current_user)):
             "leader_id": config.get("leader_id"),
             "leader": user_map.get(config.get("leader_id")),
             "members": main_members,
-            "member_count": len(all_div_members),
+            "member_count": member_count,
             "subgroups": div_subgroups,
         })
     
