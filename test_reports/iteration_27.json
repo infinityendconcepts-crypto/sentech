@@ -1,0 +1,158 @@
+{
+  "summary": "Iteration 27 testing completed: All 26 backend API tests passed (100%), all frontend UI tests passed. Features tested: Multi-select divisions/departments/races with comma-separated values, age_min/age_max range filters, combined demographic filters, per-chart export (POST /api/reports/export-chart), export-filtered with multi-select params, edge cases (empty strings, whitespace handling).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_multiselect_reports.py",
+    "/app/test_reports/pytest/multiselect_reports_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_multiselect_reports.py"
+  ],
+  "success_rate": {
+    "backend": "100% (26/26 passed)",
+    "frontend": "100%"
+  },
+  "features_verified": {
+    "backend_api": {
+      "multiselect_divisions_single": {
+        "endpoint": "GET /api/reports/interactive-data?divisions=Managed+Infrastructure+Business",
+        "result": "PASS - Single division in comma-separated format works correctly"
+      },
+      "multiselect_divisions_multiple": {
+        "endpoint": "GET /api/reports/interactive-data?divisions=Managed+Infrastructure+Business,Technology",
+        "result": "PASS - Multiple comma-separated divisions filter correctly"
+      },
+      "multiselect_departments": {
+        "endpoint": "GET /api/reports/interactive-data?departments=Bloemfontein+Operations,Cape+Town+Operations",
+        "result": "PASS - Multiple comma-separated departments filter correctly"
+      },
+      "races_filter_available": {
+        "endpoint": "GET /api/reports/interactive-data",
+        "result": "PASS - 6 race options available in filters.races"
+      },
+      "multiselect_races": {
+        "endpoint": "GET /api/reports/interactive-data?races=Race1,Race2",
+        "result": "PASS - Multiple comma-separated races filter correctly"
+      },
+      "age_min_filter": {
+        "endpoint": "GET /api/reports/interactive-data?age_min=25",
+        "result": "PASS - Age minimum filter works"
+      },
+      "age_max_filter": {
+        "endpoint": "GET /api/reports/interactive-data?age_max=45",
+        "result": "PASS - Age maximum filter works"
+      },
+      "age_range_filter": {
+        "endpoint": "GET /api/reports/interactive-data?age_min=25&age_max=45",
+        "result": "PASS - Combined age range filter works"
+      },
+      "combined_all_demographic_filters": {
+        "endpoint": "GET /api/reports/interactive-data?divisions=MIB,Tech&races=Race1&age_min=25&age_max=60",
+        "result": "PASS - All demographic filters combined work correctly"
+      },
+      "edge_case_empty_string": {
+        "endpoint": "GET /api/reports/interactive-data?divisions=",
+        "result": "PASS - Empty string returns all users (no filter applied)"
+      },
+      "edge_case_whitespace": {
+        "endpoint": "GET /api/reports/interactive-data?divisions=MIB+,+Technology",
+        "result": "PASS - Whitespace in comma-separated values handled correctly"
+      },
+      "export_filtered_multiselect": {
+        "endpoint": "GET /api/reports/export-filtered?divisions=MIB,Technology",
+        "result": "PASS - Export with multi-select divisions returns valid XLSX"
+      },
+      "export_filtered_with_races": {
+        "endpoint": "GET /api/reports/export-filtered?races=Race1",
+        "result": "PASS - Export with races filter returns valid XLSX"
+      },
+      "export_filtered_with_age_range": {
+        "endpoint": "GET /api/reports/export-filtered?age_min=25&age_max=45",
+        "result": "PASS - Export with age range returns valid XLSX"
+      },
+      "export_chart_success": {
+        "endpoint": "POST /api/reports/export-chart",
+        "result": "PASS - Returns XLSX file with chart data"
+      },
+      "export_chart_empty_data_400": {
+        "endpoint": "POST /api/reports/export-chart with empty data",
+        "result": "PASS - Returns 400 error with 'No data to export' message"
+      },
+      "export_chart_missing_data_400": {
+        "endpoint": "POST /api/reports/export-chart with missing data field",
+        "result": "PASS - Returns 400 error"
+      }
+    },
+    "frontend_ui": {
+      "reports_page_loads": {
+        "test": "Navigate to /reports",
+        "result": "PASS - Reports page loads with all components"
+      },
+      "multiselect_divisions_dropdown": {
+        "test": "Check Divisions multi-select dropdown",
+        "result": "PASS - 19 division options available, can select multiple"
+      },
+      "multiselect_departments_dropdown": {
+        "test": "Check Departments multi-select dropdown",
+        "result": "PASS - Departments multi-select button present"
+      },
+      "multiselect_races_dropdown": {
+        "test": "Check Races multi-select dropdown",
+        "result": "PASS - 6 race options available"
+      },
+      "age_min_input": {
+        "test": "Check Age Min input field",
+        "result": "PASS - Input field present and functional"
+      },
+      "age_max_input": {
+        "test": "Check Age Max input field",
+        "result": "PASS - Input field present and functional"
+      },
+      "filter_badges": {
+        "test": "Check active filter badges",
+        "result": "PASS - Filter badges appear with X to remove (e.g., 'Age >= 25', 'Age <= 45')"
+      },
+      "per_chart_export_buttons": {
+        "test": "Check per-chart export buttons",
+        "result": "PASS - 6 per-chart export buttons found (Download icon on each chart card)"
+      },
+      "chart_type_toggles": {
+        "test": "Check chart type toggle buttons",
+        "result": "PASS - 36 chart type buttons found (6 types × 6 charts)"
+      },
+      "export_bar": {
+        "test": "Check export bar",
+        "result": "PASS - Export bar with All Data, Users, Applications, Expenses, Tickets buttons"
+      },
+      "clear_all_filters": {
+        "test": "Click Clear all filters",
+        "result": "PASS - All filters cleared including age inputs"
+      },
+      "tab_navigation": {
+        "test": "Navigate through tabs",
+        "result": "PASS - Demographics, Applications, Expenses, Tickets tabs all work"
+      }
+    }
+  },
+  "test_credentials": {
+    "super_admin": {"email": "jane.smith@uct.ac.za", "password": "securepass123"}
+  },
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  },
+  "seed_data_creation": "No test data created - used existing data (387 users, 5 bursary apps, 1 training app, 7 tickets, R 10,300.00 expenses, 19 divisions, 6 races)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 27 verified all multi-select demographic filtering features: 1) Multi-select divisions/departments/races work with comma-separated values sent to backend, 2) Backend correctly splits comma-separated strings into lists for MongoDB $in queries, 3) Age min/max range filters work correctly, 4) Combined demographic filters (divisions + races + age range) work together, 5) POST /api/reports/export-chart endpoint works for per-chart export, returns 400 for empty data, 6) GET /api/reports/export-filtered supports all multi-select params, 7) Frontend has MultiSelect component with Popover + Checkbox for multi-value selection, 8) Filter badges show active filters with X to remove, 9) Clear all filters resets all multi-select arrays and age inputs. Data context: 387 users, 19 divisions, 6 races available for filtering."
+}
