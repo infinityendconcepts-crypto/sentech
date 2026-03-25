@@ -1,102 +1,70 @@
 # Sentech Bursary Management System - PRD
 
 ## Original Problem Statement
-Build a comprehensive bursary management system named "Sentech" using React, FastAPI, and MongoDB with modules for managing applications, users, divisions, projects, meetings, and more, with a role-based access control (RBAC) system.
+Build a comprehensive bursary management system named "Sentech" using React, FastAPI, and MongoDB. The system features modules for managing applications, users, divisions, projects, meetings, tickets, and interactive reports, governed by a strict and granular Role-Based Access Control (RBAC) system involving super_admins, admins, division/subgroup heads, and standard employees.
 
 ## Architecture
-- **Frontend:** React + Shadcn UI + Tailwind CSS + Recharts
-- **Backend:** FastAPI (Python)
-- **Database:** MongoDB (via Motor async driver)
-- **Auth:** JWT-based with Microsoft SSO support (MSAL)
-- **DnD:** @dnd-kit/core (standardized across all kanban boards)
+- **Frontend**: React + Tailwind + Shadcn UI
+- **Backend**: FastAPI + MongoDB (Motor async driver)
+- **Auth**: JWT-based with RBAC (super_admin, admin, head, student/employee)
 
-## User Roles
-- `super_admin` — Full access, including Settings page
-- `admin` — Most management features, excluding Settings
-- `employee` — Personal dashboard, applications, training, tickets, notes, messages (restricted to division)
-- `support` — Ticket management access
-
-## Key Modules
-1. **Bursary Applications** — Full lifecycle management
-2. **Training Applications** — Training-specific fields
-3. **Expenses** — Tabbed interface (Bursary, Training, Standalone)
-4. **Training Track** — Kanban board with employee RBAC
-5. **Tickets** — Auto-routing & escalation system
-6. **Messages** — Conversations, group messaging, contactable-user restrictions
-7. **Notes** — Personal notes with folder organization
-8. **PDP** — Employee-only feature
-9. **Division Groups** — Division/subgroup management
-10. **Users** — Admin user management with assignment filter
-11. **Settings** — Super admin only
-12. **Reports & Analytics** — Interactive charts with demographic filtering
-
-## Ticket Routing & Escalation System
-| Category | Routed To | Assigned To |
-|---|---|---|
-| Training Application | Subgroup/Division Head | Specific head user |
-| Bursary Application | Subgroup/Division Head | Specific head user |
-| HR Query | Admin pool | None (all admins see it) |
-| Technical Support | Admin pool | None (all admins/super_admins see it) |
-
-Heads can escalate Training/Bursary tickets to HR Query or Technical Support.
-
-## Interactive Reports System (NEW)
-- **Filters**: Division, Department/Subgroup, Application Status, Date From, Date To
-- **Chart Types**: Pie, Bar, Horizontal Bar, Line, Area, Donut (switchable per chart)
-- **Tabs**: Demographics, Applications, Expenses, Tickets
-- **Export**: Filtered Excel with multi-sheet output (Users, Bursary, Training, Expenses, Tickets)
-- **Zoom**: Click to enlarge any chart in a modal
-- **Udemy Link**: External link to udemy.com
-
-## Backend Router Architecture
+### Backend Structure (Post-Refactoring - March 2026)
 ```
 /app/backend/
-├── server.py            (~3226 lines)
-├── routers/
-│   ├── __init__.py      (shared deps, auth, helpers, generate_excel)
-│   ├── applications.py  (bursary & training CRUD, approval workflow)
-│   ├── auth.py          (login, register, JWT, Microsoft SSO)
-│   ├── users.py         (user CRUD, division assignment)
-│   ├── messages.py      (conversations, messages, contactable-users)
-│   ├── expenses.py      (expenses CRUD, export, stats)
-│   ├── tickets.py       (tickets CRUD, comments, auto-routing, escalation)
-│   ├── reports.py       (interactive data, filtered export, dashboard stats)
-│   └── notifications.py (notifications CRUD)
+  server.py          # 71 lines - App init, CORS, router registration, shutdown
+  schemas.py         # 1093 lines - All Pydantic models
+  routers/
+    __init__.py      # Shared deps: db, auth, helpers (generate_excel/pdf, send_email)
+    auth.py          # Login, register, password setup
+    users.py         # Users CRUD, CSV import, profile
+    applications.py  # Bursary & training apps, settings, period settings, lock/unlock
+    messages.py      # Conversations, DMs
+    expenses.py      # Expense tracking
+    tickets.py       # Support tickets
+    reports.py       # Dashboard stats, interactive reports, chart export
+    notifications.py # Notifications CRUD
+    teams.py         # Teams CRUD + members
+    meetings.py      # Meetings CRUD + calendar events
+    notes.py         # Notes + folders + sharing
+    files.py         # Files + folders + upload
+    tasks.py         # Tasks CRUD + assign + export (Excel/PDF)
+    projects.py      # Projects + Clients + Leads + Prospects + Sponsors
+    events.py        # Events CRUD
+    pdp.py           # Personal Development Plans
+    divisions.py     # Divisions, Departments, Division Groups, Subgroups, Temp Leaders
+    settings.py      # System Settings, Roles, Dashboard Prefs, FAQs, BBBEE, Report Export
 ```
 
-## What's Been Implemented (All Verified & Tested)
-- Full application lifecycle (bursary + training)
-- RBAC: super_admin/admin/employee differentiation
-- Employee-specific dashboard, messaging restrictions, ticket access
-- Application approval by division/subgroup heads
-- Ticket routing (auto-assign to heads or admin pool) + escalation
-- Expenses page with tabbed interface
-- Data import: 261 users, 29 subgroups in MIB division
-- Backend refactoring Parts 1-3 (8 router files extracted)
-- ProspectsPage DnD migration to @dnd-kit
-- Interactive Reports: 5 filters, 6 chart types, 4 tabs, filtered Excel export, Udemy link
-- Advanced demographic filters: multi-select Divisions/Departments/Races, Age min/max (tested iteration 27)
-- Per-chart Excel export on all chart cards
-- Cleaned pie/donut chart labels for visual clarity (Mar 2026)
-- Notification bell dropdown (last 5 clickable notifications + View More) in header (Mar 2026)
-- Application Lock/Unlock system with batch unlock for admins (Mar 2026)
-- Clickable notifications navigating to application edit pages (Mar 2026)
-- Closed period enforcement: New Application button greyed out/unclickable (Mar 2026)
-- Department Head RBAC: Users page filtered to subgroup, Division Groups filtered to own division, Period Settings access, Lock/Unlock access (Mar 2026)
-- Events page read-only for non-admin users (Mar 2026)
-- `is_head` field added to login response and AuthContext (Mar 2026)
+## Implemented Features
+- Full user management with CSV bulk import
+- Bursary & Training application workflows with multi-step forms
+- Application lock/unlock system for admins/heads
+- Period settings enforcement (disabling new apps when closed)
+- Notification system with clickable navigation to specific items
+- Interactive reports with demographic filters, multi-select, and chart export
+- Division Groups with subgroups, leaders, temp leaders
+- RBAC: Heads see only their division/subgroup data
+- Events, Meetings, Notes, Files, Tasks, Projects, PDP modules
+- Ticket system with comments and assignments
+- Real-time messaging system
+- Settings management (SMTP, company info, roles)
 
-### Test Credentials
-- **Super Admin:** jane.smith@uct.ac.za / securepass123
-- **Admin:** test.admin@sentech.co.za / password
-- **Employee (Technology):** test.employee@sentech.co.za / password
-- **Employee (MIB):** mokoenam@sentech.co.za / password
-- **Subgroup Head (MIB):** mothibik@sentech.co.za / password
+## Completed in This Session (March 25, 2026)
+- **Backend Refactoring Complete**: server.py reduced from 3248 lines to 71 lines
+- All routes extracted into 18 modular router files
+- All Pydantic models moved to schemas.py
+- 49/49 backend tests passed (100% success rate)
 
-## Prioritized Backlog
-### P1
-- Continue server.py refactoring: Extract notes, settings, events, files, tasks, projects, leads, BBBEE, PDP, divisions routes
-### P2
-- Refactor file uploads to chunked multipart
-- Audit log for admin actions
-- Scheduled auto-export weekly XLSX reports
+## P2 Backlog
+1. **Refactor File Uploads**: Replace base64 submissions with chunked multipart
+2. **Audit Log Feature**: Track all admin/super_admin actions
+3. **Scheduled Auto-Export**: Background job for weekly XLSX summary reports
+
+## Test Credentials
+- Super Admin: jane.smith@uct.ac.za / securepass123
+- Admin: test.admin@sentech.co.za / password
+- Employee: test.employee@sentech.co.za / password
+- Head (MIB): mothibik@sentech.co.za / password
+
+## Mocked Services
+- Email delivery (SMTP) is simulated, not actually sent
