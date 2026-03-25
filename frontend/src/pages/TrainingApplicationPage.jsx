@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { trainingApplicationsAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { CheckCircle2, ChevronLeft, ChevronRight, FileText, User, Briefcase, GraduationCap, Upload, Eye, Search, AlertTriangle, Lock } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, FileText, User, Briefcase, GraduationCap, Upload, Eye, Search, AlertTriangle, Lock, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -48,6 +48,9 @@ const TrainingApplicationPage = () => {
   const isEditing = !!id;
   const { user } = useAuth();
   const [applicationLocked, setApplicationLocked] = useState(false);
+  const [appIsLocked, setAppIsLocked] = useState(false);
+  const [appStatus, setAppStatus] = useState('draft');
+  const isAdmin = user?.roles?.some(r => ['super_admin', 'admin'].includes(r));
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [loadingApplication, setLoadingApplication] = useState(false);
@@ -119,6 +122,8 @@ const TrainingApplicationPage = () => {
       trainingApplicationsAPI.getOne(id)
         .then(response => {
           const app = response.data;
+          setAppStatus(app.status || 'draft');
+          setAppIsLocked(!!app.is_locked);
           if (app.is_locked && app.status !== 'draft' && !user?.roles?.some(r => ['super_admin','admin'].includes(r))) {
             setApplicationLocked(true);
           }
@@ -152,6 +157,22 @@ const TrainingApplicationPage = () => {
         });
     }
   }, [id, isEditing]);
+
+  const handleToggleLock = async () => {
+    try {
+      if (appIsLocked) {
+        await trainingApplicationsAPI.unlock(id);
+        setAppIsLocked(false);
+        setApplicationLocked(false);
+        toast.success('Application unlocked — applicant notified');
+      } else {
+        await trainingApplicationsAPI.lock(id);
+        setAppIsLocked(true);
+        toast.success('Application locked');
+      }
+    } catch { toast.error('Failed to update lock status'); }
+  };
+
 
   const updateField = (section, field, value) => {
     setFormData(prev => ({
@@ -237,7 +258,28 @@ const TrainingApplicationPage = () => {
 
   return (
     <div className="space-y-6" data-testid="training-application-page">
-      {applicationLocked && (
+      {/* Admin/Head lock control bar */}
+      {isEditing && isAdmin && appStatus !== 'draft' && (
+        <div className={`flex items-center justify-between p-4 rounded-lg border ${appIsLocked ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'}`} data-testid="admin-lock-bar">
+          <div className="flex items-center gap-3">
+            {appIsLocked ? <Lock className="w-5 h-5 text-rose-600" /> : <Unlock className="w-5 h-5 text-emerald-600" />}
+            <div>
+              <p className={`text-sm font-semibold ${appIsLocked ? 'text-rose-800' : 'text-emerald-800'}`}>
+                {appIsLocked ? 'Application is locked' : 'Application is unlocked'}
+              </p>
+              <p className={`text-xs ${appIsLocked ? 'text-rose-600' : 'text-emerald-600'}`}>
+                {appIsLocked ? 'Employee cannot edit. Click unlock to allow editing.' : 'Employee can edit this application.'}
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" className={`gap-1.5 ${appIsLocked ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-100' : 'text-rose-700 border-rose-300 hover:bg-rose-100'}`}
+            onClick={handleToggleLock} data-testid="toggle-lock-btn">
+            {appIsLocked ? <><Unlock className="w-4 h-4" /> Unlock</> : <><Lock className="w-4 h-4" /> Lock</>}
+          </Button>
+        </div>
+      )}
+      {/* Employee lock warning */}
+      {applicationLocked && !isAdmin && (
         <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-lg" data-testid="locked-banner">
           <Lock className="w-5 h-5 text-rose-600 shrink-0" />
           <div>

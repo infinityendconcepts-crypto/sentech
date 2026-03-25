@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { eventsAPI } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
 import {
   Plus,
@@ -58,6 +59,8 @@ const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const getEventTypeInfo = (type) => EVENT_TYPES.find(t => t.value === type) || EVENT_TYPES[0];
 
 const EventsPage = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.roles?.some(r => ['super_admin', 'admin'].includes(r));
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('month'); // month | list
@@ -204,10 +207,12 @@ const EventsPage = () => {
           <Button variant="outline" onClick={() => setView(v => v === 'month' ? 'list' : 'month')}>
             {view === 'month' ? 'List View' : 'Calendar View'}
           </Button>
-          <Button onClick={openCreate} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Event
-          </Button>
+          {isAdmin && (
+            <Button onClick={openCreate} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Add Event
+            </Button>
+          )}
         </div>
       </div>
 
@@ -305,9 +310,11 @@ const EventsPage = () => {
               <div className="text-center py-16">
                 <CalendarDays className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                 <p className="text-slate-500">No upcoming events</p>
-                <Button onClick={openCreate} className="mt-4 gap-2" variant="outline">
-                  <Plus className="w-4 h-4" /> Add Event
-                </Button>
+                {isAdmin && (
+                  <Button onClick={openCreate} className="mt-4 gap-2" variant="outline">
+                    <Plus className="w-4 h-4" /> Add Event
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
@@ -330,12 +337,16 @@ const EventsPage = () => {
                         {evt.description && <p className="text-xs text-slate-400 mt-0.5 truncate">{evt.description}</p>}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(evt)}>
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => setDeleteConfirm(evt.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {isAdmin && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(evt)}>
+                              <Edit2 className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600" onClick={() => setDeleteConfirm(evt.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -378,12 +389,16 @@ const EventsPage = () => {
               <Badge variant="outline" className="capitalize">{selectedEvent.event_type}</Badge>
             </div>
             <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => { setSelectedEvent(null); openEdit(selectedEvent); }}>
-                <Edit2 className="w-4 h-4 mr-2" /> Edit
-              </Button>
-              <Button variant="destructive" onClick={() => { setDeleteConfirm(selectedEvent.id); setSelectedEvent(null); }}>
-                <Trash2 className="w-4 h-4 mr-2" /> Delete
-              </Button>
+              {isAdmin && (
+                <>
+                  <Button variant="outline" onClick={() => { setSelectedEvent(null); openEdit(selectedEvent); }}>
+                    <Edit2 className="w-4 h-4 mr-2" /> Edit
+                  </Button>
+                  <Button variant="destructive" onClick={() => { setDeleteConfirm(selectedEvent.id); setSelectedEvent(null); }}>
+                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
