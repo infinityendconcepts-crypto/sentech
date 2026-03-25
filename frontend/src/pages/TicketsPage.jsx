@@ -34,10 +34,12 @@ import {
   MessageSquare,
   Send,
   Filter,
+  ArrowUpRight,
+  User,
 } from 'lucide-react';
 
 const TicketsPage = () => {
-  const { user } = useAuth();
+  const { user, isAdmin, isSuperAdmin } = useAuth();
   const [tickets, setTickets] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,17 +54,23 @@ const TicketsPage = () => {
   const [newTicket, setNewTicket] = useState({
     title: '',
     description: '',
-    category: 'technical_support',
+    category: 'training_application',
     priority: 'medium',
   });
 
-  const isAdmin = user?.roles?.includes('admin') || user?.roles?.includes('support');
+  const isAdminUser = isAdmin || isSuperAdmin || user?.roles?.includes('support');
 
   const categories = [
-    { value: 'technical_support', label: 'Technical Support' },
+    { value: 'training_application', label: 'Training Application' },
+    { value: 'bursary_application', label: 'Bursary Application' },
     { value: 'hr_query', label: 'HR Query' },
-    { value: 'bursary_query', label: 'Bursary Query' },
-    { value: 'other', label: 'Other' },
+    { value: 'technical_support', label: 'Technical Support' },
+  ];
+
+  // Escalation categories (for heads to re-route tickets)
+  const escalationCategories = [
+    { value: 'hr_query', label: 'Escalate to HR Query (Admin)' },
+    { value: 'technical_support', label: 'Escalate to Technical Support (Admin)' },
   ];
 
   const priorities = [
@@ -122,7 +130,7 @@ const TicketsPage = () => {
       await ticketsAPI.create(newTicket);
       toast.success('Ticket created successfully');
       setNewTicketDialog(false);
-      setNewTicket({ title: '', description: '', category: 'technical_support', priority: 'medium' });
+      setNewTicket({ title: '', description: '', category: 'training_application', priority: 'medium' });
       fetchTickets();
       fetchStats();
     } catch (error) {
@@ -141,6 +149,21 @@ const TicketsPage = () => {
       }
     } catch (error) {
       toast.error('Failed to update ticket');
+    }
+  };
+
+  const handleEscalateTicket = async (ticketId, newCategory) => {
+    try {
+      await ticketsAPI.update(ticketId, { category: newCategory });
+      toast.success(`Ticket escalated to ${categories.find(c => c.value === newCategory)?.label}`);
+      fetchTickets();
+      fetchStats();
+      if (selectedTicket?.id === ticketId) {
+        setSelectedTicket({ ...selectedTicket, category: newCategory, routed_to: 'admins' });
+        fetchComments(ticketId);
+      }
+    } catch (error) {
+      toast.error('Failed to escalate ticket');
     }
   };
 
@@ -414,25 +437,58 @@ const TicketsPage = () => {
                     <p className="text-sm text-slate-600 line-clamp-2 mb-3">{ticket.description}</p>
                     <div className="flex items-center gap-4 text-xs text-slate-500">
                       <span>#{ticket.id.slice(0, 8)}</span>
-                      <span>{categories.find(c => c.value === ticket.category)?.label}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {categories.find(c => c.value === ticket.category)?.label || ticket.category}
+                      </Badge>
+                      {ticket.assigned_to_name && (
+                        <span className="flex items-center gap-1 text-blue-600">
+                          <User className="w-3 h-3" />
+                          Assigned to: {ticket.assigned_to_name}
+                        </span>
+                      )}
+                      {ticket.routed_to === 'admins' && !ticket.assigned_to_name && (
+                        <span className="text-indigo-600 font-medium">Routed to Admins</span>
+                      )}
+                      {ticket.escalated_from && (
+                        <span className="flex items-center gap-1 text-amber-600">
+                          <ArrowUpRight className="w-3 h-3" />
+                          Escalated
+                        </span>
+                      )}
                       <span>Created: {formatDate(ticket.created_at)}</span>
                     </div>
                   </div>
-                  {isAdmin && (
-                    <Select
-                      value={ticket.status}
-                      onValueChange={(value) => handleUpdateStatus(ticket.id, value)}
-                    >
-                      <SelectTrigger className="w-36" onClick={(e) => e.stopPropagation()}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {statuses.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    {/* Escalation for assigned heads (non-admin, assigned_to = current user) */}
+                    {ticket.assigned_to === user?.id && !isAdminUser &&
+                      (ticket.category === 'training_application' || ticket.category === 'bursary_application') && (
+                      <Select onValueChange={(value) => handleEscalateTicket(ticket.id, value)}>
+                        <SelectTrigger className="w-44 text-xs h-8" data-testid={`escalate-ticket-${ticket.id}`}>
+                          <SelectValue placeholder="Escalate..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {escalationCategories.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {isAdminUser && (
+                      <Select
+                        value={ticket.status}
+                        onValueChange={(value) => handleUpdateStatus(ticket.id, value)}
+                      >
+                        <SelectTrigger className="w-36">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statuses.map((s) => (
+                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -454,14 +510,59 @@ const TicketsPage = () => {
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Badge className={getPriorityColor(selectedTicket.priority)}>
                     {selectedTicket.priority}
                   </Badge>
                   <Badge variant="outline">
-                    {categories.find(c => c.value === selectedTicket.category)?.label}
+                    {categories.find(c => c.value === selectedTicket.category)?.label || selectedTicket.category}
                   </Badge>
+                  {selectedTicket.assigned_to_name && (
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <User className="w-3 h-3" />
+                      {selectedTicket.assigned_to_name}
+                    </Badge>
+                  )}
+                  {selectedTicket.routed_to === 'admins' && !selectedTicket.assigned_to_name && (
+                    <Badge className="bg-indigo-100 text-indigo-700">Routed to Admins</Badge>
+                  )}
+                  {selectedTicket.escalated_from && (
+                    <Badge className="bg-amber-100 text-amber-700 flex items-center gap-1">
+                      <ArrowUpRight className="w-3 h-3" />
+                      Escalated from {categories.find(c => c.value === selectedTicket.escalated_from)?.label || selectedTicket.escalated_from}
+                    </Badge>
+                  )}
                 </div>
+
+                {/* Escalation controls for assigned head */}
+                {selectedTicket.assigned_to === user?.id && !isAdminUser &&
+                  (selectedTicket.category === 'training_application' || selectedTicket.category === 'bursary_application') && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-sm text-amber-800 mb-2 font-medium flex items-center gap-1">
+                      <ArrowUpRight className="w-4 h-4" />
+                      Escalate this ticket
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEscalateTicket(selectedTicket.id, 'hr_query')}
+                        data-testid="escalate-to-hr"
+                      >
+                        HR Query
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEscalateTicket(selectedTicket.id, 'technical_support')}
+                        data-testid="escalate-to-tech"
+                      >
+                        Technical Support
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-slate-50 rounded-lg p-4">
                   <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedTicket.description}</p>
                 </div>

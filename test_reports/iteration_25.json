@@ -1,0 +1,128 @@
+{
+  "summary": "Iteration 25 testing completed: All 12 backend API tests passed (100%), all frontend UI tests passed. Features tested: Ticket routing and escalation system - training_application/bursary_application auto-assigns to subgroup head, hr_query/technical_support routes to admins, escalation (category change) re-routes ticket and creates system comment, notifications created for assigned head or admins.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Ticket Dialog",
+        "issues": ["Missing `aria-describedby` warning in console for DialogContent - minor accessibility improvement (same as iteration 24)"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ticket_routing_escalation.py",
+    "/app/test_reports/pytest/ticket_routing_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_ticket_routing_escalation.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 passed)",
+    "frontend": "100%"
+  },
+  "features_verified": {
+    "ticket_auto_routing": {
+      "training_application": {
+        "test": "POST /api/tickets with category='training_application' by MIB employee (mokoenam@sentech.co.za)",
+        "result": "PASS - Auto-assigned to subgroup head (Kgomotso Tsholofetso Mothibi, mothibik@sentech.co.za)",
+        "assigned_to": "378ba860-327e-4135-89f8-b81df86bc35f",
+        "routed_to": "head"
+      },
+      "bursary_application": {
+        "test": "POST /api/tickets with category='bursary_application' by MIB employee",
+        "result": "PASS - Auto-assigned to subgroup head",
+        "routed_to": "head"
+      },
+      "hr_query": {
+        "test": "POST /api/tickets with category='hr_query'",
+        "result": "PASS - No specific assignee, routed_to='admins'",
+        "assigned_to": null,
+        "routed_to": "admins"
+      },
+      "technical_support": {
+        "test": "POST /api/tickets with category='technical_support'",
+        "result": "PASS - No specific assignee, routed_to='admins'",
+        "assigned_to": null,
+        "routed_to": "admins"
+      }
+    },
+    "subgroup_head_visibility": {
+      "test": "GET /api/tickets as subgroup head (mothibik@sentech.co.za)",
+      "result": "PASS - Subgroup head sees tickets assigned to them"
+    },
+    "ticket_escalation": {
+      "escalation_to_hr_query": {
+        "test": "PUT /api/tickets/{id} with category='hr_query' (from training_application)",
+        "result": "PASS - Ticket re-routed to admins, assigned_to cleared, escalated_from set"
+      },
+      "escalation_to_technical_support": {
+        "test": "PUT /api/tickets/{id} with category='technical_support' (from bursary_application)",
+        "result": "PASS - Ticket re-routed to admins, escalated_from set"
+      },
+      "escalation_system_comment": {
+        "test": "Check comments after escalation",
+        "result": "PASS - System comment created: 'Escalated ticket from \"Training Application\" to \"HR Query\"'"
+      }
+    },
+    "notifications": {
+      "notification_for_assigned_head": {
+        "test": "Check notifications for subgroup head after training/bursary ticket creation",
+        "result": "PASS - Notification created with type='ticket_assigned', title='New Training Application Ticket'"
+      },
+      "notification_for_admins_hr_query": {
+        "test": "Check notifications for admins after hr_query ticket creation",
+        "result": "PASS - Notification created for admins with title='New HR Query Ticket'"
+      },
+      "notification_for_admins_technical_support": {
+        "test": "Check notifications for admins after technical_support ticket creation",
+        "result": "PASS - Notification created for admins with title='New Technical Support Ticket'"
+      }
+    },
+    "admin_ticket_visibility": {
+      "test": "GET /api/tickets as admin",
+      "result": "PASS - Admin sees all tickets including escalated ones with proper routing info"
+    },
+    "frontend_ui": {
+      "category_order": {
+        "test": "Check category dropdown order in New Ticket dialog",
+        "result": "PASS - Training Application is first/default category"
+      },
+      "ticket_card_routing_display": {
+        "test": "Check ticket card shows routing info",
+        "result": "PASS - Shows 'Assigned to: [name]', 'Routed to Admins', 'Escalated' badge"
+      },
+      "escalation_dropdown_for_head": {
+        "test": "Check escalation dropdown visible for assigned head on training/bursary tickets",
+        "result": "PASS - 'Escalate...' dropdown visible on ticket card"
+      },
+      "escalation_controls_in_dialog": {
+        "test": "Check escalation buttons in ticket detail dialog for assigned head",
+        "result": "PASS - 'Escalate this ticket' section with 'HR Query' and 'Technical Support' buttons visible"
+      },
+      "admin_status_dropdown": {
+        "test": "Check admin can change ticket status",
+        "result": "PASS - Status dropdown visible for admin on all tickets"
+      }
+    }
+  },
+  "test_credentials": {
+    "super_admin": {"email": "jane.smith@uct.ac.za", "password": "securepass123"},
+    "admin": {"email": "test.admin@sentech.co.za", "password": "password"},
+    "mib_employee": {"email": "mokoenam@sentech.co.za", "password": "password", "division": "Managed Infrastructure Business", "department": "Bloemfontein Operations"},
+    "subgroup_head": {"email": "mothibik@sentech.co.za", "password": "password", "id": "378ba860-327e-4135-89f8-b81df86bc35f", "name": "Kgomotso Tsholofetso Mothibi"}
+  },
+  "mocked_apis": {
+    "SMTP_email_notifications": "MOCKED - Logs to console instead of sending real emails"
+  },
+  "seed_data_creation": "Test tickets created and deleted during tests (TEST_ prefixed). Existing escalated ticket (deabe51d) was already in system from manual testing.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All iteration 25 ticket routing/escalation features verified working: 1) Training/Bursary Application tickets auto-assign to subgroup head based on creator's division/department - uses subgroups collection to find leader_id, 2) HR Query/Technical Support tickets route to admins pool (no specific assignee), 3) Escalation (category change from training/bursary to hr_query/technical_support) re-routes ticket to admins, clears assigned_to, sets escalated_from field, and creates system comment, 4) Notifications created for assigned head (training/bursary) or all admins (hr_query/technical_support), 5) Frontend shows proper routing info: 'Assigned to: [name]', 'Routed to Admins', 'Escalated' badge, 6) Escalation controls only visible for non-admin users who are assigned to training/bursary tickets, 7) Categories ordered: Training Application (first/default), Bursary Application, HR Query, Technical Support."
+}
