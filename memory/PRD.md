@@ -78,6 +78,10 @@ Heads can escalate Training/Bursary tickets to HR Query or Technical Support.
 - Advanced demographic filters: multi-select Divisions/Departments/Races, Age min/max (tested iteration 27)
 - Per-chart Excel export on all chart cards
 - Cleaned pie/donut chart labels for visual clarity (Mar 2026)
+- Notification bell dropdown (last 5 clickable notifications + View More) in header (Mar 2026)
+- Application Lock/Unlock system with batch unlock for admins (Mar 2026)
+- Clickable notifications navigating to application edit pages (Mar 2026)
+- Closed period enforcement: New Application button greyed out/unclickable (Mar 2026)
 
 ### Test Credentials
 - **Super Admin:** jane.smith@uct.ac.za / securepass123

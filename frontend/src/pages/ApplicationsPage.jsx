@@ -353,11 +353,17 @@ const ApplicationsPage = () => {
               <Settings2 className="w-4 h-4" /> Period Settings
             </Button>
           )}
-          <Link to="/applications/new">
-            <Button className="gap-2" disabled={isSubmissionClosed() && !isAdmin} data-testid="new-application-btn">
+          {isSubmissionClosed() && !isAdmin ? (
+            <Button className="gap-2 opacity-50 cursor-not-allowed" disabled data-testid="new-application-btn">
               <Plus className="w-4 h-4" /> New Application
             </Button>
-          </Link>
+          ) : (
+            <Link to="/applications/new">
+              <Button className="gap-2" data-testid="new-application-btn">
+                <Plus className="w-4 h-4" /> New Application
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -420,7 +426,7 @@ const ApplicationsPage = () => {
             <p className="text-slate-600 mb-4">
               {searchQuery ? 'Try adjusting your search criteria' : 'Start by creating your first application'}
             </p>
-            {!searchQuery && (
+            {!searchQuery && !(isSubmissionClosed() && !isAdmin) && (
               <Link to="/applications/new">
                 <Button className="gap-2">
                   <Plus className="w-4 h-4" />
