@@ -130,33 +130,28 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
     is_head = await can_approve_application(current_user, application["user_id"])
     if application["user_id"] != current_user["id"] and not admin and not is_head:
         raise HTTPException(status_code=403, detail="Access denied")
-    # 24hr edit window enforcement
-    if not admin and application["user_id"] == current_user["id"]:
-        submitted_at = application.get("submitted_at")
-        if submitted_at and application.get("status") not in ["draft"]:
-            submitted_time = datetime.fromisoformat(submitted_at.replace("Z", "+00:00")) if isinstance(submitted_at, str) else submitted_at
-            now = datetime.now(timezone.utc)
-            if (now - submitted_time).total_seconds() > 86400:
-                if not application.get("re_edit_approved"):
-                    raise HTTPException(status_code=403, detail="Edit window expired. Please request re-edit from your profile page.")
+    # Lock enforcement for employees
+    if not admin and not is_head and application["user_id"] == current_user["id"]:
+        if application.get("is_locked") and application.get("status") not in ["draft"]:
+            raise HTTPException(status_code=403, detail="Application is locked. An admin or group leader must unlock it before you can edit.")
     update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     if update_data.status in ["pending", "submitted"]:
         update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
-    if application.get("re_edit_approved"):
-        update_dict["re_edit_approved"] = False
-        update_dict["re_edit_requested"] = False
+        update_dict["is_locked"] = True
     await db.applications.update_one({"id": application_id}, {"$set": update_dict})
-    updated_app = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    # Lock application when submitted/status changed from draft
+    if update_data.status and update_data.status != "draft":
+        await db.applications.update_one({"id": application_id}, {"$set": {"is_locked": True}})
     if update_data.status and update_data.status != application.get("status") and application["user_id"] != current_user["id"]:
         notif = {
             "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
             "title": "Application Status Updated", "message": f"Your bursary application status changed to: {update_data.status}",
-            "reference_id": application_id, "reference_type": "application", "is_read": False,
+            "reference_id": application_id, "reference_type": "bursary_application", "is_read": False,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         await db.notifications.insert_one({**notif})
-    return updated_app
+    return await db.applications.find_one({"id": application_id}, {"_id": 0})
 
 @router.post("/applications/{application_id}/request-re-edit")
 async def request_bursary_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
@@ -178,7 +173,7 @@ async def request_bursary_re_edit(application_id: str, body: dict = {}, current_
             "id": generate_uuid(), "user_id": admin["id"], "type": "status_change",
             "title": "Re-edit Request: Bursary Application",
             "message": f"{current_user.get('full_name', 'A user')} has requested to re-edit their bursary application",
-            "reference_id": application_id, "reference_type": "application", "is_read": False, "created_at": now,
+            "reference_id": application_id, "reference_type": "bursary_application", "is_read": False, "created_at": now,
         }
         await db.notifications.insert_one({**notif})
         await send_email_notification(
@@ -206,10 +201,65 @@ async def allow_bursary_re_edit(application_id: str, body: dict = {}, current_us
         "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
         "title": "Re-edit Request " + ("Approved" if approved else "Denied"),
         "message": f"Your bursary application re-edit request has been {'approved. You can now edit your application.' if approved else 'denied.'}",
-        "reference_id": application_id, "reference_type": "application", "is_read": False, "created_at": now,
+        "reference_id": application_id, "reference_type": "bursary_application", "is_read": False, "created_at": now,
     }
     await db.notifications.insert_one({**notif})
     return {"message": f"Re-edit {'approved' if approved else 'denied'}"}
+
+@router.put("/applications/{application_id}/lock")
+async def lock_bursary_application(application_id: str, current_user: dict = Depends(get_current_user)):
+    """Lock a bursary application (admin/head only)."""
+    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if not is_admin_user(current_user) and not await can_approve_application(current_user, application["user_id"]):
+        raise HTTPException(status_code=403, detail="Only admins or group leaders can lock applications")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.applications.update_one({"id": application_id}, {"$set": {"is_locked": True, "locked_at": now, "locked_by": current_user["id"], "updated_at": now}})
+    return {"message": "Application locked"}
+
+
+@router.put("/applications/{application_id}/unlock")
+async def unlock_bursary_application(application_id: str, current_user: dict = Depends(get_current_user)):
+    """Unlock a bursary application and notify the applicant."""
+    application = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    if not is_admin_user(current_user) and not await can_approve_application(current_user, application["user_id"]):
+        raise HTTPException(status_code=403, detail="Only admins or group leaders can unlock applications")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.applications.update_one({"id": application_id}, {"$set": {"is_locked": False, "unlocked_at": now, "unlocked_by": current_user["id"], "updated_at": now}})
+    notif = {
+        "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
+        "title": "Bursary Application Unlocked",
+        "message": "Your bursary application has been unlocked for editing by an admin.",
+        "reference_id": application_id, "reference_type": "bursary_application", "is_read": False, "created_at": now,
+    }
+    await db.notifications.insert_one({**notif})
+    return {"message": "Application unlocked"}
+
+
+@router.post("/applications/batch-unlock")
+async def batch_unlock_bursary_applications(body: dict, current_user: dict = Depends(get_current_user)):
+    """Batch unlock bursary applications."""
+    if not is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail="Only admins can batch unlock")
+    ids = body.get("application_ids", [])
+    if not ids:
+        raise HTTPException(status_code=400, detail="No applications selected")
+    now = datetime.now(timezone.utc).isoformat()
+    result = await db.applications.update_many({"id": {"$in": ids}}, {"$set": {"is_locked": False, "unlocked_at": now, "unlocked_by": current_user["id"], "updated_at": now}})
+    apps = await db.applications.find({"id": {"$in": ids}}, {"_id": 0, "id": 1, "user_id": 1}).to_list(len(ids))
+    for app in apps:
+        notif = {
+            "id": generate_uuid(), "user_id": app["user_id"], "type": "status_change",
+            "title": "Bursary Application Unlocked",
+            "message": "Your bursary application has been unlocked for editing by an admin.",
+            "reference_id": app["id"], "reference_type": "bursary_application", "is_read": False, "created_at": now,
+        }
+        await db.notifications.insert_one({**notif})
+    return {"message": f"Unlocked {result.modified_count} application(s)", "count": result.modified_count}
+
 
 @router.delete("/applications/{application_id}")
 async def delete_application(application_id: str, current_user: dict = Depends(get_current_user)):
@@ -310,21 +360,15 @@ async def update_training_application(application_id: str, update_data: Training
     is_head = await can_approve_application(current_user, application["user_id"])
     if application["user_id"] != current_user["id"] and not admin and not is_head:
         raise HTTPException(status_code=403, detail="Access denied")
-    if not admin and application["user_id"] == current_user["id"]:
-        submitted_at = application.get("submitted_at")
-        if submitted_at and application.get("status") not in ["draft"]:
-            submitted_time = datetime.fromisoformat(submitted_at.replace("Z", "+00:00")) if isinstance(submitted_at, str) else submitted_at
-            now = datetime.now(timezone.utc)
-            if (now - submitted_time).total_seconds() > 86400:
-                if not application.get("re_edit_approved"):
-                    raise HTTPException(status_code=403, detail="Edit window expired. Please request re-edit from your profile page.")
+    # Lock enforcement for employees
+    if not admin and not is_head and application["user_id"] == current_user["id"]:
+        if application.get("is_locked") and application.get("status") not in ["draft"]:
+            raise HTTPException(status_code=403, detail="Application is locked. An admin or group leader must unlock it before you can edit.")
     update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     if update_data.status in ["pending", "submitted"]:
         update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
-    if application.get("re_edit_approved"):
-        update_dict["re_edit_approved"] = False
-        update_dict["re_edit_requested"] = False
+        update_dict["is_locked"] = True
     await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
     return await db.training_applications.find_one({"id": application_id}, {"_id": 0})
 
@@ -341,12 +385,14 @@ async def update_training_application_status(application_id: str, status_data: d
     await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
     updated_app = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
     new_status = status_data.get("status")
+    if new_status and new_status != "draft":
+        await db.training_applications.update_one({"id": application_id}, {"$set": {"is_locked": True}})
     if new_status and new_status != application.get("status") and application["user_id"] != current_user["id"]:
         notif = {
             "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
             "title": "Training Application Status Updated",
             "message": f"Your training application status changed to: {new_status}",
-            "reference_id": application_id, "reference_type": "application", "is_read": False,
+            "reference_id": application_id, "reference_type": "training_application", "is_read": False,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
         await db.notifications.insert_one({**notif})
@@ -372,6 +418,61 @@ async def batch_delete_training_applications(body: dict, current_user: dict = De
     result = await db.training_applications.delete_many({"id": {"$in": ids}})
     return {"message": f"Deleted {result.deleted_count} application(s)", "count": result.deleted_count}
 
+
+@router.put("/training-applications/{application_id}/lock")
+async def lock_training_application(application_id: str, current_user: dict = Depends(get_current_user)):
+    """Lock a training application (admin/head only)."""
+    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Training application not found")
+    if not is_admin_user(current_user) and not await can_approve_application(current_user, application["user_id"]):
+        raise HTTPException(status_code=403, detail="Only admins or group leaders can lock applications")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.training_applications.update_one({"id": application_id}, {"$set": {"is_locked": True, "locked_at": now, "locked_by": current_user["id"], "updated_at": now}})
+    return {"message": "Training application locked"}
+
+
+@router.put("/training-applications/{application_id}/unlock")
+async def unlock_training_application(application_id: str, current_user: dict = Depends(get_current_user)):
+    """Unlock a training application and notify the applicant."""
+    application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
+    if not application:
+        raise HTTPException(status_code=404, detail="Training application not found")
+    if not is_admin_user(current_user) and not await can_approve_application(current_user, application["user_id"]):
+        raise HTTPException(status_code=403, detail="Only admins or group leaders can unlock applications")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.training_applications.update_one({"id": application_id}, {"$set": {"is_locked": False, "unlocked_at": now, "unlocked_by": current_user["id"], "updated_at": now}})
+    notif = {
+        "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
+        "title": "Training Application Unlocked",
+        "message": "Your training application has been unlocked for editing by an admin.",
+        "reference_id": application_id, "reference_type": "training_application", "is_read": False, "created_at": now,
+    }
+    await db.notifications.insert_one({**notif})
+    return {"message": "Training application unlocked"}
+
+
+@router.post("/training-applications/batch-unlock")
+async def batch_unlock_training_applications(body: dict, current_user: dict = Depends(get_current_user)):
+    """Batch unlock training applications."""
+    if not is_admin_user(current_user):
+        raise HTTPException(status_code=403, detail="Only admins can batch unlock")
+    ids = body.get("application_ids", [])
+    if not ids:
+        raise HTTPException(status_code=400, detail="No applications selected")
+    now = datetime.now(timezone.utc).isoformat()
+    result = await db.training_applications.update_many({"id": {"$in": ids}}, {"$set": {"is_locked": False, "unlocked_at": now, "unlocked_by": current_user["id"], "updated_at": now}})
+    apps = await db.training_applications.find({"id": {"$in": ids}}, {"_id": 0, "id": 1, "user_id": 1}).to_list(len(ids))
+    for app in apps:
+        notif = {
+            "id": generate_uuid(), "user_id": app["user_id"], "type": "status_change",
+            "title": "Training Application Unlocked",
+            "message": "Your training application has been unlocked for editing by an admin.",
+            "reference_id": app["id"], "reference_type": "training_application", "is_read": False, "created_at": now,
+        }
+        await db.notifications.insert_one({**notif})
+    return {"message": f"Unlocked {result.modified_count} application(s)", "count": result.modified_count}
+
 @router.post("/training-applications/{application_id}/request-re-edit")
 async def request_training_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
     application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
@@ -392,7 +493,7 @@ async def request_training_re_edit(application_id: str, body: dict = {}, current
             "id": generate_uuid(), "user_id": admin["id"], "type": "status_change",
             "title": "Re-edit Request: Training Application",
             "message": f"{current_user.get('full_name', 'A user')} has requested to re-edit their training application",
-            "reference_id": application_id, "reference_type": "application", "is_read": False, "created_at": now,
+            "reference_id": application_id, "reference_type": "training_application", "is_read": False, "created_at": now,
         }
         await db.notifications.insert_one({**notif})
     return {"message": "Re-edit request submitted"}
@@ -414,7 +515,7 @@ async def allow_training_re_edit(application_id: str, body: dict = {}, current_u
         "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
         "title": "Re-edit Request " + ("Approved" if approved else "Denied"),
         "message": f"Your training application re-edit request has been {'approved. You can now edit your application.' if approved else 'denied.'}",
-        "reference_id": application_id, "reference_type": "application", "is_read": False, "created_at": now,
+        "reference_id": application_id, "reference_type": "training_application", "is_read": False, "created_at": now,
     }
     await db.notifications.insert_one({**notif})
     return {"message": f"Re-edit {'approved' if approved else 'denied'}"}

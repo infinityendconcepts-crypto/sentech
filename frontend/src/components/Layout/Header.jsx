@@ -9,37 +9,62 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Search, Bell, Plus, CheckSquare, StickyNote,
   Calendar, Ticket, MessageSquare, DollarSign,
-  ChevronRight,
+  ChevronRight, FileText, Clock, ArrowRight,
 } from 'lucide-react';
 
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard' },
-  { name: 'Bursary Applications', href: '/applications' },
-  { name: 'Training Applications', href: '/training-applications' },
-  { name: 'Personal Dev Plan', href: '/pdp' },
-  { name: 'Training Track', href: '/tasks' },
-  { name: 'Meetings', href: '/meetings' },
-  { name: 'Events', href: '/events' },
-  { name: 'Notes', href: '/notes' },
-  { name: 'Messages', href: '/messages' },
-  { name: 'MICTSETA Docs', href: '/files' },
-  { name: 'Tickets', href: '/tickets' },
-  { name: 'Division Groups', href: '/division-groups' },
-  { name: 'Notifications', href: '/notifications' },
-  { name: 'Help & Support', href: '/help' },
-  { name: 'Sponsors', href: '/sponsors' },
-  { name: 'BBBEE', href: '/bbbee' },
-  { name: 'Projects', href: '/projects' },
-  { name: 'Expenses', href: '/expenses' },
-  { name: 'Reports', href: '/reports' },
-  { name: 'Users', href: '/users' },
-  { name: 'Settings', href: '/settings' },
-  { name: 'Profile', href: '/profile' },
-];
+const pageNames = {
+  '/dashboard': 'Dashboard', '/applications': 'Bursary Applications',
+  '/training-applications': 'Training Applications', '/pdp': 'Personal Dev Plan',
+  '/tasks': 'Training Track', '/meetings': 'Meetings', '/events': 'Events',
+  '/notes': 'Notes', '/messages': 'Messages', '/files': 'MICTSETA Docs',
+  '/tickets': 'Tickets', '/division-groups': 'Division Groups',
+  '/notifications': 'Notifications', '/help': 'Help & Support',
+  '/sponsors': 'Sponsors', '/bbbee': 'BBBEE', '/projects': 'Projects',
+  '/expenses': 'Expenses', '/reports': 'Reports', '/users': 'Users',
+  '/settings': 'Settings', '/profile': 'Profile',
+};
 
-const NOTIF_SOUND_URL = 'data:audio/wav;base64,UklGRlQFAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YTAFAACAgICAgICAgICAgICAgICAgICA/4CAgP+AgID/gICA/4CAgP+AgH+Af39+f35+fn5+fn5/f3+AgICBgYGCgoKDg4ODg4ODgoKBgYCAgH9/fn5+fn5+f3+AgIGBgoKDg4SEhISEhIODgoKBgH9/fn19fX19fn5/gIGBgoODhIWFhYWFhYSEg4KBgH9+fX19fX5+f4CBgoOEhYaGhoaGhoWFhIOCgX9+fXx8fH1+f4CBg4SFhoeHh4eHh4aFhIOCgH5+fXx8fH1+gIGDhIaHiIiIiIiIh4aFg4KAfn18fHx9fn+BgoSGh4iJiYmJiYiHhoSDgX9+fXx8fX5/gYOEhoiJioqKioqJiIeGhIJ/fn18fH1+gIGDhYeJioqLi4uKiomHhoSCgH5+fXx9foCAgoSGiImLi4yMi4uKiIeGg4GAfn18fX5/gIKEhoiKi4yMjIyLioiHhYOBf359fX1+gIGDhYeJi4yNjY2Mi4qIh4WDgX9+fX19foCAgoSHiYuMjY2NjYyLiYeGg4F/fn19fX6AgIKFh4mLjI6Ojo2Mi4mHhYOBf359fX5+gIGDhYiKjI2Ojo6NjIuJh4WDgX9+fX1+f4CChIaJi4yOj4+OjYyKiIaDgX9+fX1+f4GChIeJi42Oj4+PjoyLiYeFg4F/fn19fn+AgYOFiIqMjo+Pj46NjImHhYOBf359fn5/gIKEhomLjY6Pj4+OjYuJh4WDgX9+fn5+f4GCg4aIioyOj5CPjo2LiYeFg4F/fn5+fn+AgoOFiIqMjo+Qj46NjImHhYKAf35+fn5/gIKEhomLjY+QkI+OjYuJh4WCgH9+fn5+f4GChIeJi42Pj5CPjo2LiYeFgoB/fn5+fn+BgoSGiYuNj5CQj46NjImHhYKAf35+fn9/gYKEhomLjY+QkI+OjYuJh4WCgH9+fn5/f4GCg4aIioyOkJCPjo2LiYeEgoB/fn5+f3+BgoSGiIqNj5CQj46Ni4mHhYKAf35+fn9/gIKEhoiKjY+QkI+OjYuJh4WCgH9+fn5/gICCg4aIioyOkJCPjo2LiYeEgoB/fn5+f4CAgYOFh4mLjY+Qj4+OjIqIhYOBf35+fn9/gIGDhYeJi42Pj4+PjYuJh4WCgH9+fn5/f4CBg4WIiouNj4+Pjo2LiYeEgoB/fn5+f3+AgYOFh4mLjY+Pj46NjImHhIKAf35+fn9/gIGDhYeJi42Pj4+OjYuJh4SCgH9+fn5/f4CBg4WHiYuNj4+Pjo2LiYeFgn9+fn5+f3+AgYOFh4mLjY+Pjo6Ni4mHhYKAfn5+fn9/gIGDhYeJi42Pj46OjYuJh4WCgH9+fn5/f4CBg4WHiYuNj4+OjY2LiYeFgn9+fn5+f3+AgYOFh4mLjY6Ojo2LiYeFgn9+fn5+f3+AgYOFh4mLjI6OjY2LiYeFgn9+fn5+f3+AgYKEhoiKjI2OjY2LiYeFgn9/fn5+f3+AgYKEhoiKjI2NjYyLiYeFgn9/fn5+f3+AgYKEhoiKjI2NjYyKiIeFgn9/fn5+f3+AgYKEhoiKjI2NjIyKiIeFgn9/fn5+f4CAgYKEhoiKjI2NjIuKiIaEgn9/fn5+f4CAgYKEhoiKi42MjIuKiIaEgn+Afn5+f4CAgYKEhoiKi4yMjIuKiIaEgoB/fn5+f4CAgIKEhoeJi4yMi4uKiIaEgoB/f35+f4CAgIKDhoeJi4uMi4uKiIaDgYB/f35/f4CAgIKDhoeJiouMi4uJiIaDgYB/f35/f4B/gIKDhoeJiouMi4qJh4aDgYB/f39/f4B/gIKDhYeJiouLi4qJh4aDgYB/f39/f4CAgIKDhYeJiouLiomJh4aDgYB/f39/f4CAgIKDhYeJiouLiomIh4WDgYB/f39/f4CAgIKDhYeJiouLiomIhoWDgYB/f39/f4CAgIGDhYeIiouLiomIhoWDgYCAf39/f4CAgIGDhYeIiouKiomIhoWDgYCAf39/f4CA';
+const NOTIF_SOUND_URL = 'data:audio/wav;base64,UklGRlQFAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YTAFAACAgICAgICAgICAgICAgICAgICA';
+
+const ICON_MAP = {
+  new_message: MessageSquare, meeting_invite: Calendar, ticket_response: Ticket,
+  status_change: FileText, team_update: CheckSquare, system: Bell,
+};
+const COLOR_MAP = {
+  new_message: 'text-blue-600 bg-blue-50', meeting_invite: 'text-purple-600 bg-purple-50',
+  ticket_response: 'text-orange-600 bg-orange-50', status_change: 'text-emerald-600 bg-emerald-50',
+  team_update: 'text-violet-600 bg-violet-50', system: 'text-slate-600 bg-slate-100',
+};
+
+function getTimeAgo(date) {
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
+}
+
+function getNotifRoute(notif) {
+  if (notif.reference_type === 'bursary_application' && notif.reference_id)
+    return `/applications/${notif.reference_id}/edit`;
+  if (notif.reference_type === 'training_application' && notif.reference_id)
+    return `/training-applications/${notif.reference_id}/edit`;
+  if (notif.reference_type === 'application' && notif.reference_id)
+    return `/applications/${notif.reference_id}/edit`;
+  if (notif.reference_type === 'conversation') return '/messages';
+  if (notif.reference_type === 'meeting') return '/meetings';
+  if (notif.reference_type === 'ticket') return '/tickets';
+  return '/notifications';
+}
 
 const Header = () => {
   const location = useLocation();
@@ -48,20 +73,27 @@ const Header = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [recentNotifs, setRecentNotifs] = useState([]);
+  const [bellOpen, setBellOpen] = useState(false);
   const prevCountRef = useRef(0);
   const audioRef = useRef(null);
 
-  const currentPage = navigation.find((item) => item.href === location.pathname)?.name || 'Dashboard';
+  const currentPage = pageNames[location.pathname] || 'Dashboard';
 
   const fetchUnreadCount = useCallback(async () => {
     try {
       const res = await notificationsAPI.getUnreadCount();
       const newCount = res.data.unread_count || 0;
-      if (newCount > prevCountRef.current && prevCountRef.current >= 0) {
-        playNotificationSound();
-      }
+      if (newCount > prevCountRef.current && prevCountRef.current >= 0) playNotificationSound();
       prevCountRef.current = newCount;
       setUnreadCount(newCount);
+    } catch {}
+  }, []);
+
+  const fetchRecentNotifs = useCallback(async () => {
+    try {
+      const res = await notificationsAPI.getRecent();
+      setRecentNotifs(res.data || []);
     } catch {}
   }, []);
 
@@ -71,15 +103,26 @@ const Header = () => {
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
 
+  useEffect(() => {
+    if (bellOpen) fetchRecentNotifs();
+  }, [bellOpen, fetchRecentNotifs]);
+
   const playNotificationSound = () => {
     try {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(NOTIF_SOUND_URL);
-        audioRef.current.volume = 0.3;
-      }
+      if (!audioRef.current) { audioRef.current = new Audio(NOTIF_SOUND_URL); audioRef.current.volume = 0.3; }
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(() => {});
     } catch {}
+  };
+
+  const handleNotifClick = async (notif) => {
+    if (!notif.is_read) {
+      try { await notificationsAPI.markRead(notif.id); } catch {}
+      setRecentNotifs(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+    setBellOpen(false);
+    navigate(getNotifRoute(notif));
   };
 
   const quickAddItems = [
@@ -92,10 +135,7 @@ const Header = () => {
   ];
 
   const handleSearch = (e) => {
-    if (e.key === 'Enter' && searchQuery.trim()) {
-      setSearchOpen(false);
-      setSearchQuery('');
-    }
+    if (e.key === 'Enter' && searchQuery.trim()) { setSearchOpen(false); setSearchQuery(''); }
   };
 
   return (
@@ -132,19 +172,65 @@ const Header = () => {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Notifications Bell */}
-        <div className="relative">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/notifications')} data-testid="header-notifications-btn">
-            <Bell className="w-5 h-5 text-slate-600" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse" data-testid="notification-badge">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </Button>
-        </div>
+        {/* Notifications Bell with Dropdown */}
+        <Popover open={bellOpen} onOpenChange={setBellOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative" data-testid="header-notifications-btn">
+              <Bell className="w-5 h-5 text-slate-600" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse" data-testid="notification-badge">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-80 p-0 bg-white" data-testid="notification-dropdown">
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
+              {unreadCount > 0 && (
+                <span className="text-xs font-medium text-rose-500">{unreadCount} unread</span>
+              )}
+            </div>
+            <div className="max-h-72 overflow-y-auto">
+              {recentNotifs.length === 0 ? (
+                <div className="p-6 text-center">
+                  <Bell className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+                  <p className="text-xs text-slate-400">No notifications yet</p>
+                </div>
+              ) : (
+                recentNotifs.map(notif => {
+                  const Icon = ICON_MAP[notif.type] || Bell;
+                  const colorCls = COLOR_MAP[notif.type] || COLOR_MAP.system;
+                  return (
+                    <button key={notif.id}
+                      className={`w-full text-left flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 ${!notif.is_read ? 'bg-blue-50/30' : ''}`}
+                      onClick={() => handleNotifClick(notif)} data-testid={`notif-dropdown-${notif.id}`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${colorCls}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className={`text-xs leading-tight ${!notif.is_read ? 'font-semibold text-slate-900' : 'text-slate-700'} truncate`}>{notif.title}</p>
+                          {!notif.is_read && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />}
+                        </div>
+                        <p className="text-[11px] text-slate-500 truncate mt-0.5">{notif.message}</p>
+                        <p className="text-[10px] text-slate-400 flex items-center gap-1 mt-1"><Clock className="w-2.5 h-2.5" />{getTimeAgo(new Date(notif.created_at))}</p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            <div className="border-t border-slate-100 px-4 py-2">
+              <Button variant="ghost" className="w-full text-xs text-primary justify-center gap-1 h-8"
+                onClick={() => { setBellOpen(false); navigate('/notifications'); }} data-testid="notif-view-more">
+                View all notifications <ArrowRight className="w-3 h-3" />
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
 
-        {/* User Avatar → Profile */}
+        {/* User Avatar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 ml-1 cursor-pointer rounded-full hover:bg-slate-100 px-2 py-1 transition-colors" data-testid="header-avatar-btn">

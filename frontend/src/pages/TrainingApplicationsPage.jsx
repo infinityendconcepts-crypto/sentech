@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { trainingApplicationsAPI, applicationsAPI } from '../services/api';
-import { FileText, Plus, Search, Clock, CheckCircle2, XCircle, Edit, Eye, AlertCircle, Loader2, User, Briefcase, GraduationCap, Upload, Calendar, Building, X, Receipt, Plane, Hotel, Car, UtensilsCrossed, Trash2, CheckSquare, Square, Settings2 } from 'lucide-react';
+import { FileText, Plus, Search, Clock, CheckCircle2, XCircle, Edit, Eye, AlertCircle, Loader2, User, Briefcase, GraduationCap, Upload, Calendar, Building, X, Receipt, Plane, Hotel, Car, UtensilsCrossed, Trash2, CheckSquare, Square, Settings2, Lock, Unlock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -105,6 +105,26 @@ const TrainingApplicationsPage = () => {
       fetchApplications();
     } catch { toast.error('Batch delete failed'); }
     finally { setBatchDeleting(false); }
+  };
+
+  const handleLock = async (id) => {
+    try { await trainingApplicationsAPI.lock(id); toast.success('Application locked'); fetchApplications(); }
+    catch { toast.error('Failed to lock'); }
+  };
+
+  const handleUnlock = async (id) => {
+    try { await trainingApplicationsAPI.unlock(id); toast.success('Application unlocked — applicant notified'); fetchApplications(); }
+    catch { toast.error('Failed to unlock'); }
+  };
+
+  const handleBatchUnlock = async () => {
+    if (!selectedIds.length) return;
+    try {
+      await trainingApplicationsAPI.batchUnlock(selectedIds);
+      toast.success(`Unlocked ${selectedIds.length} application(s)`);
+      setSelectedIds([]);
+      fetchApplications();
+    } catch { toast.error('Batch unlock failed'); }
   };
 
   const toggleSelect = (id) => {
@@ -317,6 +337,9 @@ const TrainingApplicationsPage = () => {
             <span className="text-sm font-medium">{selectedIds.length} selected</span>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="text-emerald-600 border-emerald-200" onClick={handleBatchUnlock} data-testid="batch-unlock-training-btn">
+              <Unlock className="w-3.5 h-3.5 mr-1" /> Unlock Selected
+            </Button>
             <Button variant="outline" size="sm" className="text-red-600 border-red-200" onClick={handleBatchDelete} disabled={batchDeleting} data-testid="batch-delete-training-btn">
               <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete Selected
             </Button>
@@ -398,6 +421,16 @@ const TrainingApplicationsPage = () => {
                                   <Receipt className="w-3 h-3" /> Expenses Added
                                 </Badge>
                               )}
+                              {application.is_locked && application.status !== 'draft' && (
+                                <Badge className="bg-rose-50 text-rose-600 border-rose-200 gap-1 text-xs" data-testid={`lock-badge-training-${application.id}`}>
+                                  <Lock className="w-3 h-3" /> Locked
+                                </Badge>
+                              )}
+                              {!application.is_locked && application.status !== 'draft' && (
+                                <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200 gap-1 text-xs" data-testid={`unlock-badge-training-${application.id}`}>
+                                  <Unlock className="w-3 h-3" /> Unlocked
+                                </Badge>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -423,17 +456,40 @@ const TrainingApplicationsPage = () => {
                             </Button>
                           </Link>
                         )}
+                        {isAdmin && application.status !== 'draft' && (
+                          application.is_locked ? (
+                            <Button variant="outline" size="sm" className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => handleUnlock(application.id)} data-testid={`unlock-training-${application.id}`}>
+                              <Unlock className="w-4 h-4" /> Unlock
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" className="gap-1 text-rose-600 border-rose-200 hover:bg-rose-50" onClick={() => handleLock(application.id)} data-testid={`lock-training-${application.id}`}>
+                              <Lock className="w-4 h-4" /> Lock
+                            </Button>
+                          )
+                        )}
                         {isAdmin && (
                           <Button variant="outline" size="sm" className="gap-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleDeleteApp(application.id)} data-testid={`delete-training-${application.id}`}>
                             <Trash2 className="w-4 h-4" /> Delete
                           </Button>
                         )}
-                        {!isAdmin && (application.status === 'draft' || application.status === 'pending') && (
+                        {!isAdmin && application.status === 'draft' && (
                           <Link to={`/training-applications/${application.id}/edit`}>
                             <Button size="sm" className="gap-2" data-testid={`edit-application-${application.id}`}>
                               <Edit className="w-4 h-4" /> Edit
                             </Button>
                           </Link>
+                        )}
+                        {!isAdmin && application.status !== 'draft' && !application.is_locked && (
+                          <Link to={`/training-applications/${application.id}/edit`}>
+                            <Button size="sm" className="gap-2" data-testid={`edit-application-${application.id}`}>
+                              <Edit className="w-4 h-4" /> Edit
+                            </Button>
+                          </Link>
+                        )}
+                        {!isAdmin && application.status !== 'draft' && application.is_locked && (
+                          <Button size="sm" variant="outline" disabled className="gap-2 opacity-60" data-testid={`locked-edit-training-${application.id}`}>
+                            <Lock className="w-4 h-4" /> Locked
+                          </Button>
                         )}
                       </div>
                     </div>

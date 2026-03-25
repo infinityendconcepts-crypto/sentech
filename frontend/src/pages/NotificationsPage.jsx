@@ -59,10 +59,12 @@ const NotificationsPage = () => {
 
   const handleClick = (notif) => {
     if (!notif.is_read) handleMarkRead(notif.id);
-    if (notif.reference_type === 'conversation') navigate('/messages');
+    if (notif.reference_type === 'bursary_application' && notif.reference_id) navigate(`/applications/${notif.reference_id}/edit`);
+    else if (notif.reference_type === 'training_application' && notif.reference_id) navigate(`/training-applications/${notif.reference_id}/edit`);
+    else if (notif.reference_type === 'application' && notif.reference_id) navigate(`/applications/${notif.reference_id}/edit`);
+    else if (notif.reference_type === 'conversation') navigate('/messages');
     else if (notif.reference_type === 'meeting') navigate('/meetings');
     else if (notif.reference_type === 'ticket') navigate('/tickets');
-    else if (notif.reference_type === 'application') navigate('/applications');
   };
 
   const filtered = filter === 'all' ? notifications : filter === 'unread' ? notifications.filter(n => !n.is_read) : notifications.filter(n => n.type === filter);

@@ -69,6 +69,15 @@ async def delete_notification(notification_id: str, current_user: dict = Depends
     return {"message": "Notification deleted"}
 
 
+@router.get("/notifications/recent")
+async def get_recent_notifications(current_user: dict = Depends(get_current_user)):
+    """Return the 5 most recent notifications for the bell dropdown."""
+    notifications = await db.notifications.find(
+        {"user_id": current_user["id"]}, {"_id": 0}
+    ).sort("created_at", -1).limit(5).to_list(5)
+    return notifications
+
+
 @router.get("/notifications/unread-count")
 async def get_unread_count(current_user: dict = Depends(get_current_user)):
     count = await db.notifications.count_documents({"user_id": current_user["id"], "is_read": False})

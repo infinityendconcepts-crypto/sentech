@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { applicationsAPI } from '../services/api';
-import { CheckCircle2, ChevronLeft, ChevronRight, FileText, User, Briefcase, GraduationCap, Upload, Eye, Search } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { CheckCircle2, ChevronLeft, ChevronRight, FileText, User, Briefcase, GraduationCap, Upload, Eye, Search, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -45,6 +46,7 @@ const steps = [
 const NewApplicationPage = () => {
   const { id } = useParams();
   const isEditing = !!id;
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [loadingApplication, setLoadingApplication] = useState(false);
@@ -95,6 +97,8 @@ const NewApplicationPage = () => {
     m.toLowerCase().includes(municipalitySearch.toLowerCase())
   );
 
+  const [applicationLocked, setApplicationLocked] = useState(false);
+
   // Load existing application data when editing
   useEffect(() => {
     if (isEditing) {
@@ -102,6 +106,9 @@ const NewApplicationPage = () => {
       applicationsAPI.getOne(id)
         .then(response => {
           const app = response.data;
+          if (app.is_locked && app.status !== 'draft' && !user?.roles?.some(r => ['super_admin','admin'].includes(r))) {
+            setApplicationLocked(true);
+          }
           setFormData({
             personal_info: app.personal_info || {
               surname: '', name: '', id_number: '', race: '', gender: '', disability: '', disability_description: '', medical_certificate: '', district_municipality: ''
@@ -233,6 +240,15 @@ const NewApplicationPage = () => {
 
   return (
     <div className="space-y-6" data-testid="new-application-page">
+      {applicationLocked && (
+        <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-lg" data-testid="locked-banner">
+          <Lock className="w-5 h-5 text-rose-600 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-rose-800">This application is locked</p>
+            <p className="text-xs text-rose-600">An admin or group leader must unlock it before you can make changes.</p>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-heading font-bold tracking-tight text-slate-900">
