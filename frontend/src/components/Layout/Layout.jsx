@@ -73,7 +73,7 @@ const Layout = () => {
   const userPermissions = user?.role_permissions || {};
 
   // Modules that employees can access by default (they see their own data)
-  const employeeAccessibleModules = ['applications', 'training_applications', 'tasks', 'tickets'];
+  const employeeAccessibleModules = ['applications', 'training_applications', 'tasks', 'tickets', 'documents'];
 
   // Check if user has at least read access to a module
   const hasModuleAccess = (rbacModule) => {
