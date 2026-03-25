@@ -3,13 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, timezone
 from typing import Optional
 from . import db, get_current_user, generate_uuid
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from server import (Project, ProjectCreate, ProjectUpdate, Client, ClientCreate,
-                    Lead, LeadCreate, LeadUpdate, Prospect, ProspectCreate, ProspectUpdate,
-                    Sponsor, SponsorCreate, SponsorUpdate, SponsorContact, SponsorContactCreate)
+from schemas import (Project, ProjectCreate, ProjectUpdate, Client, ClientCreate,
+                     Lead, LeadCreate, LeadUpdate, Prospect, ProspectCreate, ProspectUpdate,
+                     Sponsor, SponsorCreate, SponsorUpdate, SponsorContact, SponsorContactCreate)
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["projects"])
 
 # ── Projects ──
 

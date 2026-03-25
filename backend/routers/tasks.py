@@ -3,12 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from datetime import datetime, timezone
 from typing import Optional
-from . import db, get_current_user, generate_uuid, generate_excel
-import sys, os, io
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from server import Task, TaskCreate, TaskUpdate, generate_pdf
+from . import db, get_current_user, generate_uuid, generate_excel, generate_pdf
+import io
+from schemas import Task, TaskCreate, TaskUpdate
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["tasks"])
 
 
 @router.get("/tasks")
@@ -39,6 +38,57 @@ async def get_tasks(
         ]
     tasks = await db.tasks.find(query, {"_id": 0}).to_list(1000)
     return tasks
+
+
+@router.get("/tasks/export/excel")
+async def export_tasks_excel(
+    status: Optional[str] = None, priority: Optional[str] = None,
+    date_from: Optional[str] = None, date_to: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    if priority:
+        query["priority"] = priority
+    tasks = await db.tasks.find(query, {"_id": 0}).to_list(10000)
+    if date_from:
+        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] >= date_from]
+    if date_to:
+        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] <= date_to + "T23:59:59"]
+    export_data = [{"Title": t.get("title", ""), "Status": t.get("status", "").replace("_", " ").title(),
+        "Priority": t.get("priority", "").title(), "Assignee": t.get("assignee_name", ""),
+        "Project": t.get("project_name", ""), "Due Date": t.get("due_date", "")[:10] if t.get("due_date") else "",
+        "Progress": f"{t.get('progress', 0)}%", "Tags": ", ".join(t.get("tags", []))} for t in tasks]
+    excel_stream = generate_excel(export_data, title="Tasks")
+    return StreamingResponse(iter([excel_stream.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=tasks_export.xlsx"})
+
+
+@router.get("/tasks/export/pdf")
+async def export_tasks_pdf(
+    status: Optional[str] = None, priority: Optional[str] = None,
+    date_from: Optional[str] = None, date_to: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    query = {}
+    if status:
+        query["status"] = status
+    if priority:
+        query["priority"] = priority
+    tasks = await db.tasks.find(query, {"_id": 0}).to_list(10000)
+    if date_from:
+        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] >= date_from]
+    if date_to:
+        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] <= date_to + "T23:59:59"]
+    export_data = [{"Title": t.get("title", ""), "Status": t.get("status", "").replace("_", " ").title(),
+        "Priority": t.get("priority", "").title(), "Assignee": t.get("assignee_name", ""),
+        "Due Date": t.get("due_date", "")[:10] if t.get("due_date") else "",
+        "Progress": f"{t.get('progress', 0)}%"} for t in tasks]
+    pdf_stream = generate_pdf(export_data, title="Tasks Report")
+    return StreamingResponse(iter([pdf_stream.getvalue()]), media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=tasks_export.pdf"})
 
 
 @router.get("/tasks/{task_id}")
@@ -141,54 +191,3 @@ async def unassign_user_from_task(task_id: str, user_id: str, current_user: dict
         raise HTTPException(status_code=404, detail="Task not found")
     await db.tasks.update_one({"id": task_id}, {"$pull": {"assigned_users": {"user_id": user_id}}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}})
     return {"message": "User unassigned"}
-
-
-@router.get("/tasks/export/excel")
-async def export_tasks_excel(
-    status: Optional[str] = None, priority: Optional[str] = None,
-    date_from: Optional[str] = None, date_to: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
-):
-    query = {}
-    if status:
-        query["status"] = status
-    if priority:
-        query["priority"] = priority
-    tasks = await db.tasks.find(query, {"_id": 0}).to_list(10000)
-    if date_from:
-        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] >= date_from]
-    if date_to:
-        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] <= date_to + "T23:59:59"]
-    export_data = [{"Title": t.get("title", ""), "Status": t.get("status", "").replace("_", " ").title(),
-        "Priority": t.get("priority", "").title(), "Assignee": t.get("assignee_name", ""),
-        "Project": t.get("project_name", ""), "Due Date": t.get("due_date", "")[:10] if t.get("due_date") else "",
-        "Progress": f"{t.get('progress', 0)}%", "Tags": ", ".join(t.get("tags", []))} for t in tasks]
-    excel_stream = generate_excel(export_data, title="Tasks")
-    return StreamingResponse(iter([excel_stream.getvalue()]),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=tasks_export.xlsx"})
-
-
-@router.get("/tasks/export/pdf")
-async def export_tasks_pdf(
-    status: Optional[str] = None, priority: Optional[str] = None,
-    date_from: Optional[str] = None, date_to: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
-):
-    query = {}
-    if status:
-        query["status"] = status
-    if priority:
-        query["priority"] = priority
-    tasks = await db.tasks.find(query, {"_id": 0}).to_list(10000)
-    if date_from:
-        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] >= date_from]
-    if date_to:
-        tasks = [t for t in tasks if t.get("due_date") and t["due_date"] <= date_to + "T23:59:59"]
-    export_data = [{"Title": t.get("title", ""), "Status": t.get("status", "").replace("_", " ").title(),
-        "Priority": t.get("priority", "").title(), "Assignee": t.get("assignee_name", ""),
-        "Due Date": t.get("due_date", "")[:10] if t.get("due_date") else "",
-        "Progress": f"{t.get('progress', 0)}%"} for t in tasks]
-    pdf_stream = generate_pdf(export_data, title="Tasks Report")
-    return StreamingResponse(iter([pdf_stream.getvalue()]), media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=tasks_export.pdf"})

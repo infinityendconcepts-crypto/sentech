@@ -3,11 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, timezone
 from typing import Optional
 from . import db, get_current_user, generate_uuid
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from server import Event, EventCreate, EventUpdate
+from schemas import Event, EventCreate, EventUpdate
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["events"])
 
 
 @router.get("/events")
@@ -24,9 +22,9 @@ async def get_events(
         query["start_date"] = {"$gte": start_date}
     if end_date:
         if "start_date" in query:
-            query["start_date"]["$lte"] = end_date + "T23:59:59"
+            query["start_date"]["$lte"] = end_date
         else:
-            query["start_date"] = {"$lte": end_date + "T23:59:59"}
+            query["start_date"] = {"$lte": end_date}
     events = await db.events.find(query, {"_id": 0}).sort("start_date", 1).to_list(1000)
     return events
 
@@ -41,7 +39,11 @@ async def get_event(event_id: str, current_user: dict = Depends(get_current_user
 
 @router.post("/events")
 async def create_event(event_data: EventCreate, current_user: dict = Depends(get_current_user)):
-    event = Event(**event_data.model_dump(), created_by=current_user["id"])
+    event = Event(
+        **event_data.model_dump(),
+        created_by=current_user["id"],
+        created_by_name=current_user.get("full_name", "")
+    )
     event_dict = event.model_dump()
     event_dict['created_at'] = event_dict['created_at'].isoformat()
     event_dict['updated_at'] = event_dict['updated_at'].isoformat()
@@ -57,7 +59,8 @@ async def update_event(event_id: str, update_data: EventUpdate, current_user: di
     update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     await db.events.update_one({"id": event_id}, {"$set": update_dict})
-    return {"message": "Event updated successfully"}
+    updated = await db.events.find_one({"id": event_id}, {"_id": 0})
+    return updated
 
 
 @router.delete("/events/{event_id}")

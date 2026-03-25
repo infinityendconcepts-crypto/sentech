@@ -3,11 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, timezone
 from typing import Optional
 from . import db, get_current_user, generate_uuid
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from server import Meeting, MeetingCreate, MeetingUpdate
+from schemas import Meeting, MeetingCreate, MeetingUpdate
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["meetings"])
 
 
 @router.get("/meetings")
@@ -46,7 +44,6 @@ async def create_meeting(meeting_data: MeetingCreate, current_user: dict = Depen
     meeting_dict['updated_at'] = meeting_dict['updated_at'].isoformat()
     await db.meetings.insert_one({**meeting_dict})
 
-    # Auto-create event for this meeting
     event_dict = {
         "id": generate_uuid(),
         "title": meeting_dict.get("title", "Meeting"),
@@ -66,7 +63,6 @@ async def create_meeting(meeting_data: MeetingCreate, current_user: dict = Depen
     }
     await db.events.insert_one({**event_dict})
 
-    # Notify attendees
     for attendee_id in meeting_dict.get("attendee_ids", []):
         if attendee_id != current_user["id"]:
             notif = {

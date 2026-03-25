@@ -150,3 +150,66 @@ def generate_excel(data: list, title: str = "Export") -> io.BytesIO:
     wb.save(output)
     output.seek(0)
     return output
+
+
+def generate_pdf(data: list, title: str = "Export") -> io.BytesIO:
+    """Generate a PDF file from a list of dicts"""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+
+    output = io.BytesIO()
+    doc = SimpleDocTemplate(output, pagesize=A4, rightMargin=0.5*inch, leftMargin=0.5*inch,
+                            topMargin=0.5*inch, bottomMargin=0.5*inch, title=title)
+    elements = []
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle('title', parent=styles['Heading1'], fontSize=16,
+                                  textColor=colors.HexColor('#0056B3'), spaceAfter=12, alignment=1)
+    elements.append(Paragraph(title, title_style))
+    elements.append(Spacer(1, 0.1*inch))
+    meta = f"<font size=9>Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')} &nbsp;&nbsp; Total: {len(data)} records</font>"
+    elements.append(Paragraph(meta, styles['Normal']))
+    elements.append(Spacer(1, 0.15*inch))
+
+    if not data:
+        elements.append(Paragraph("No data available.", styles['Normal']))
+        doc.build(elements)
+        output.seek(0)
+        return output
+
+    headers = list(data[0].keys())
+    display_headers = [h.replace("_", " ").title() for h in headers]
+    table_data = [display_headers]
+    for row in data:
+        r = []
+        for h in headers:
+            val = row.get(h, "")
+            if isinstance(val, list):
+                val = ", ".join(str(v) for v in val)
+            elif isinstance(val, dict):
+                val = str(val)
+            r.append(str(val)[:80])
+        table_data.append(r)
+
+    col_width = (A4[0] - inch) / len(headers)
+    table = Table(table_data, colWidths=[col_width]*len(headers), repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0056B3')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 9),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#E8F0FE')]),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('PADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(table)
+    doc.build(elements)
+    output.seek(0)
+    return output

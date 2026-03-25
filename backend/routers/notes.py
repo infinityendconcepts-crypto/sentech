@@ -3,11 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, timezone
 from typing import Optional, List
 from . import db, get_current_user, generate_uuid
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from server import Note, NoteCreate, NoteUpdate, NoteFolder, NoteFolderCreate
+from schemas import Note, NoteCreate, NoteUpdate, NoteFolder, NoteFolderCreate
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["notes"])
 
 
 @router.get("/notes")

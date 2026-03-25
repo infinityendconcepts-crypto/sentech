@@ -2,11 +2,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, timezone
 from . import db, get_current_user, generate_uuid
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from server import Team, TeamCreate, TeamUpdate
+from schemas import Team, TeamCreate, TeamUpdate
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["teams"])
 
 
 @router.get("/teams")

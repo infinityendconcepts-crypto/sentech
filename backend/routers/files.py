@@ -3,11 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from datetime import datetime, timezone
 from typing import Optional, List
 from . import db, get_current_user, generate_uuid
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from server import FileModel, FileCreate, FileUpdate, Folder, FolderCreate
+from schemas import FileModel, FileCreate, FileUpdate, Folder, FolderCreate
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["files"])
 
 
 @router.get("/files")
