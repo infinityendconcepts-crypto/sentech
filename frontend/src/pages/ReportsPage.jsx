@@ -86,8 +86,7 @@ const UniversalChart = ({ data, chartType, height = 300 }) => {
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
         <Pie data={data} cx="50%" cy="50%" innerRadius={inner}
-          outerRadius={height > 400 ? 170 : 100} labelLine={false}
-          label={({ name, value }) => `${(name || '').length > 14 ? name.slice(0, 14) + '..' : name} (${typeof value === 'number' && value > 999 ? (value / 1000).toFixed(1) + 'k' : value})`}
+          outerRadius={height > 400 ? 170 : 100}
           dataKey="value" nameKey="name">
           {data.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
         </Pie>

@@ -75,6 +75,9 @@ Heads can escalate Training/Bursary tickets to HR Query or Technical Support.
 - Backend refactoring Parts 1-3 (8 router files extracted)
 - ProspectsPage DnD migration to @dnd-kit
 - Interactive Reports: 5 filters, 6 chart types, 4 tabs, filtered Excel export, Udemy link
+- Advanced demographic filters: multi-select Divisions/Departments/Races, Age min/max (tested iteration 27)
+- Per-chart Excel export on all chart cards
+- Cleaned pie/donut chart labels for visual clarity (Mar 2026)
 
 ### Test Credentials
 - **Super Admin:** jane.smith@uct.ac.za / securepass123
