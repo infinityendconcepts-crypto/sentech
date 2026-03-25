@@ -2848,6 +2848,8 @@ async def delete_department(dept_id: str, current_user: dict = Depends(get_curre
 
 @api_router.get("/division-groups")
 async def get_division_groups(current_user: dict = Depends(get_current_user)):
+    is_admin = is_admin_user(current_user)
+    uid = current_user["id"]
     divisions = await db.divisions.find({}, {"_id": 0}).to_list(100)
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     group_configs = await db.division_groups.find({}, {"_id": 0}).to_list(100)
@@ -2864,8 +2866,10 @@ async def get_division_groups(current_user: dict = Depends(get_current_user)):
         # Collect all user IDs that are in any subgroup of this division
         subgroup_member_ids = set()
         now_str = datetime.now(timezone.utc).isoformat()
+        user_is_head_of_division = config.get("leader_id") == uid
+        user_is_head_of_subgroup = False
         for sg in div_subgroups:
-            sg["members"] = [user_map[uid] for uid in sg.get("member_user_ids", []) if uid in user_map]
+            sg["members"] = [user_map[mid] for mid in sg.get("member_user_ids", []) if mid in user_map]
             sg["leader"] = user_map.get(sg.get("leader_id"))
             # Resolve temp leader
             temp_end = sg.get("temp_leader_end")
@@ -2875,8 +2879,13 @@ async def get_division_groups(current_user: dict = Depends(get_current_user)):
             else:
                 sg["temp_leader"] = None
                 sg["temp_leader_active"] = False
-            for uid in sg.get("member_user_ids", []):
-                subgroup_member_ids.add(uid)
+            for mid in sg.get("member_user_ids", []):
+                subgroup_member_ids.add(mid)
+            if sg.get("leader_id") == uid:
+                user_is_head_of_subgroup = True
+        # For non-admin: skip divisions they don't head
+        if not is_admin and not user_is_head_of_division and not user_is_head_of_subgroup:
+            continue
         # Exclude subgroup members from main member list
         main_members = [u for u in all_div_members if u["id"] not in subgroup_member_ids]
         groups.append({
@@ -3202,6 +3211,7 @@ from routers.users import router as users_router
 from routers.messages import router as messages_router
 from routers.expenses import router as expenses_router
 from routers.tickets import router as tickets_router
+from routers import is_admin_user
 app.include_router(reports_router)
 app.include_router(notifications_router)
 app.include_router(auth_router)

@@ -163,6 +163,19 @@ async def login(credentials: UserLogin):
                     role_permissions[module] = []
                 role_permissions[module] = list(set(role_permissions[module] + perms))
     user_response["role_permissions"] = role_permissions
+    # Check head status
+    uid = user["id"]
+    is_head = False
+    division = user.get("division", "")
+    if division:
+        config = await db.division_groups.find_one({"division_name": division}, {"_id": 0})
+        if config and config.get("leader_id") == uid:
+            is_head = True
+        if not is_head:
+            sg_count = await db.subgroups.count_documents({"division_name": division, "leader_id": uid})
+            if sg_count > 0:
+                is_head = True
+    user_response["is_head"] = is_head
     return TokenResponse(access_token=access_token, user=user_response)
 
 

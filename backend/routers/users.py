@@ -35,6 +35,31 @@ class UserUpdate(BaseModel):
 
 # --- User CRUD ---
 
+async def _get_head_member_ids(current_user: dict):
+    """Return list of user IDs the head manages, or None if not a head."""
+    uid = current_user["id"]
+    member_ids = set()
+    division = current_user.get("division", "")
+    if not division:
+        return None
+    # Check if division leader
+    config = await db.division_groups.find_one({"division_name": division}, {"_id": 0})
+    if config and config.get("leader_id") == uid:
+        # Division leader: return all users in this division
+        divusers = await db.users.find({"division": division}, {"_id": 0, "id": 1}).to_list(1000)
+        return [u["id"] for u in divusers]
+    # Check if subgroup leader
+    subgroups = await db.subgroups.find({"division_name": division}, {"_id": 0}).to_list(100)
+    for sg in subgroups:
+        if sg.get("leader_id") == uid:
+            for mid in sg.get("member_user_ids", []):
+                member_ids.add(mid)
+    if member_ids:
+        member_ids.add(uid)  # include self
+        return list(member_ids)
+    return None
+
+
 @router.get("/users")
 async def get_users(
     role: Optional[str] = None,
@@ -44,7 +69,16 @@ async def get_users(
     unassigned: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
+    # Determine if user is a head (not admin) — restrict to their division/subgroup members
+    head_filter_ids = None
+    if not is_admin_user(current_user):
+        head_filter_ids = await _get_head_member_ids(current_user)
+        if head_filter_ids is None:
+            return []  # Not admin, not head → no access
+
     query = {}
+    if head_filter_ids is not None:
+        query["id"] = {"$in": head_filter_ids}
     if status == "active":
         query["is_active"] = True
     elif status == "inactive":
@@ -69,6 +103,20 @@ async def get_my_profile(current_user: dict = Depends(get_current_user)):
     user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    # Attach head status
+    uid = current_user["id"]
+    is_head = False
+    division = user.get("division", "")
+    if division:
+        config = await db.division_groups.find_one({"division_name": division}, {"_id": 0})
+        if config and config.get("leader_id") == uid:
+            is_head = True
+        if not is_head:
+            subgroups = await db.subgroups.find({"division_name": division, "leader_id": uid}, {"_id": 0}).to_list(10)
+            if subgroups:
+                is_head = True
+    user["is_head"] = is_head
+    return user
     return user
 
 

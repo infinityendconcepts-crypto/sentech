@@ -9,7 +9,7 @@ import { ShieldOff } from 'lucide-react';
  * @prop {string} redirectTo   - where to redirect on failure (default: /dashboard)
  */
 const RoleProtectedRoute = ({ requiredRole = 'admin', redirectTo = '/dashboard' }) => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, isHead } = useAuth();
 
   if (loading) {
     return (
@@ -19,7 +19,7 @@ const RoleProtectedRoute = ({ requiredRole = 'admin', redirectTo = '/dashboard' 
     );
   }
 
-  if (requiredRole === 'admin' && !isAdmin) {
+  if (requiredRole === 'admin' && !isAdmin && !isHead) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">

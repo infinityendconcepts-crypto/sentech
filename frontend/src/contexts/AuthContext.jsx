@@ -53,6 +53,7 @@ export const AuthProvider = ({ children }) => {
     isSuperAdmin: user?.roles?.includes('super_admin') ?? false,
     isEmployee: (!user?.roles?.includes('admin') && !user?.roles?.includes('super_admin')) ?? true,
     isStudent: !(user?.roles?.includes('admin') || user?.roles?.includes('super_admin')),
+    isHead: !!user?.is_head,
     login,
     logout,
   };

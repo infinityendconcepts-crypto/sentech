@@ -32,7 +32,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 const ApplicationsPage = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isHead } = useAuth();
+  const isAdminOrHead = isAdmin || isHead;
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -348,12 +349,12 @@ const ApplicationsPage = () => {
           <p className="text-slate-600 mt-1">Manage and track bursary applications</p>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && (
+          {isAdminOrHead && (
             <Button variant="outline" className="gap-2" onClick={() => { setSettingsForm(appSettings || {}); setSettingsDialog(true); }} data-testid="app-settings-btn">
               <Settings2 className="w-4 h-4" /> Period Settings
             </Button>
           )}
-          {isSubmissionClosed() && !isAdmin ? (
+          {isSubmissionClosed() && !isAdminOrHead ? (
             <Button className="gap-2 opacity-50 cursor-not-allowed" disabled data-testid="new-application-btn">
               <Plus className="w-4 h-4" /> New Application
             </Button>
@@ -379,7 +380,7 @@ const ApplicationsPage = () => {
       )}
 
       {/* Batch Actions */}
-      {selectedIds.length > 0 && isAdmin && (
+      {selectedIds.length > 0 && isAdminOrHead && (
         <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/20 rounded-lg">
           <div className="flex items-center gap-2">
             <CheckSquare className="w-5 h-5 text-primary" />
@@ -426,7 +427,7 @@ const ApplicationsPage = () => {
             <p className="text-slate-600 mb-4">
               {searchQuery ? 'Try adjusting your search criteria' : 'Start by creating your first application'}
             </p>
-            {!searchQuery && !(isSubmissionClosed() && !isAdmin) && (
+            {!searchQuery && !(isSubmissionClosed() && !isAdminOrHead) && (
               <Link to="/applications/new">
                 <Button className="gap-2">
                   <Plus className="w-4 h-4" />
@@ -449,7 +450,7 @@ const ApplicationsPage = () => {
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-start gap-3">
-                          {isAdmin && (
+                          {isAdminOrHead && (
                             <button onClick={(e) => { e.stopPropagation(); toggleSelect(application.id); }} className="mt-1 flex-shrink-0" data-testid={`select-app-${application.id}`}>
                               {selectedIds.includes(application.id) ? <CheckSquare className="w-5 h-5 text-primary" /> : <Square className="w-5 h-5 text-slate-400" />}
                             </button>
@@ -516,7 +517,7 @@ const ApplicationsPage = () => {
                             {application.additional_expenses ? 'Edit Expenses' : 'Add Expenses'}
                           </Button>
                         )}
-                        {isAdmin && (
+                        {isAdminOrHead && (
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -528,14 +529,14 @@ const ApplicationsPage = () => {
                             Change Status
                           </Button>
                         )}
-                        {isAdmin && (
+                        {isAdminOrHead && (
                           <Link to={`/applications/${application.id}/edit`}>
                             <Button variant="outline" size="sm" className="gap-1" data-testid={`admin-edit-application-${application.id}`}>
                               <Edit className="w-4 h-4" /> Edit
                             </Button>
                           </Link>
                         )}
-                        {isAdmin && application.status !== 'draft' && (
+                        {isAdminOrHead && application.status !== 'draft' && (
                           application.is_locked ? (
                             <Button variant="outline" size="sm" className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => handleUnlock(application.id)} data-testid={`unlock-app-${application.id}`}>
                               <Unlock className="w-4 h-4" /> Unlock
@@ -551,21 +552,21 @@ const ApplicationsPage = () => {
                             <Trash2 className="w-4 h-4" /> Delete
                           </Button>
                         )}
-                        {!isAdmin && application.status === 'draft' && (
+                        {!isAdminOrHead && application.status === 'draft' && (
                           <Link to={`/applications/${application.id}/edit`}>
                             <Button size="sm" className="gap-2" data-testid={`edit-application-${application.id}`}>
                               <Edit className="w-4 h-4" /> Edit
                             </Button>
                           </Link>
                         )}
-                        {!isAdmin && application.status !== 'draft' && !application.is_locked && (
+                        {!isAdminOrHead && application.status !== 'draft' && !application.is_locked && (
                           <Link to={`/applications/${application.id}/edit`}>
                             <Button size="sm" className="gap-2" data-testid={`edit-application-${application.id}`}>
                               <Edit className="w-4 h-4" /> Edit
                             </Button>
                           </Link>
                         )}
-                        {!isAdmin && application.status !== 'draft' && application.is_locked && (
+                        {!isAdminOrHead && application.status !== 'draft' && application.is_locked && (
                           <Button size="sm" variant="outline" disabled className="gap-2 opacity-60" data-testid={`locked-edit-${application.id}`}>
                             <Lock className="w-4 h-4" /> Locked
                           </Button>

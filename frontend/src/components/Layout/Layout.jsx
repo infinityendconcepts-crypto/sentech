@@ -48,7 +48,7 @@ const navigation = [
   { name: 'MICTSETA Docs', href: '/files',        icon: FolderOpen, rbacModule: 'documents' },
   { name: 'Tickets',       href: '/tickets',      icon: Ticket, rbacModule: 'tickets' },
   { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Division Groups', href: '/division-groups',  icon: UsersRound, rbacModule: 'division_groups' },
+  { name: 'Division Groups', href: '/division-groups',  icon: UsersRound, adminOnly: true, rbacModule: 'division_groups' },
   { name: 'Help & Support',href: '/help',         icon: HelpCircle },
   { name: 'Udemy',        href: 'https://www.udemy.com', icon: GraduationCap, external: true },
   // ── Admin only ──
@@ -65,20 +65,24 @@ const Layout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isHead } = useAuth();
   const isSuperAdmin = user?.roles?.includes('super_admin') ?? false;
-  const isEmployee = !isAdmin;
+  const isAdminOrHead = isAdmin || isHead;
+  const isEmployee = !isAdmin && !isHead;
 
   // Get user's permissions from their roles
   const userPermissions = user?.role_permissions || {};
 
   // Modules that employees can access by default (they see their own data)
   const employeeAccessibleModules = ['applications', 'training_applications', 'tasks', 'tickets', 'documents'];
+  // Additional modules that heads can access
+  const headAccessibleModules = ['users', 'division_groups'];
 
   // Check if user has at least read access to a module
   const hasModuleAccess = (rbacModule) => {
-    if (!rbacModule) return true; // no RBAC restriction = always visible
-    if (isAdmin) return true; // admins see everything
+    if (!rbacModule) return true;
+    if (isAdmin) return true;
+    if (isHead && headAccessibleModules.includes(rbacModule)) return true;
     if (employeeAccessibleModules.includes(rbacModule)) return true;
     const perms = userPermissions[rbacModule] || [];
     return perms.includes('read') || perms.length > 0;
@@ -87,7 +91,7 @@ const Layout = () => {
   // Filter navigation based on role and RBAC permissions
   const visibleNav = navigation.filter(item => {
     if (item.superAdminOnly && !isSuperAdmin) return false;
-    if (item.adminOnly && !isAdmin) return false;
+    if (item.adminOnly && !isAdminOrHead) return false;
     if (item.employeeOnly && isAdmin) return false;
     if (item.rbacModule && !hasModuleAccess(item.rbacModule)) return false;
     return true;

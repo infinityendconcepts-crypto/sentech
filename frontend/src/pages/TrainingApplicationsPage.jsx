@@ -32,7 +32,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 const TrainingApplicationsPage = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isHead } = useAuth();
+  const isAdminOrHead = isAdmin || isHead;
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -305,12 +306,12 @@ const TrainingApplicationsPage = () => {
           <p className="text-slate-600 mt-1">Manage and track training applications</p>
         </div>
         <div className="flex items-center gap-2">
-          {isAdmin && (
+          {isAdminOrHead && (
             <Button variant="outline" className="gap-2" onClick={() => { setSettingsForm(appSettings || {}); setSettingsDialog(true); }} data-testid="training-app-settings-btn">
               <Settings2 className="w-4 h-4" /> Period Settings
             </Button>
           )}
-          {submissionClosed && !isAdmin ? (
+          {submissionClosed && !isAdminOrHead ? (
             <Button className="gap-2 opacity-50 cursor-not-allowed" disabled data-testid="new-training-application-btn">
               <Plus className="w-4 h-4" /> New Application
             </Button>
@@ -336,7 +337,7 @@ const TrainingApplicationsPage = () => {
       )}
 
       {/* Batch Actions */}
-      {selectedIds.length > 0 && isAdmin && (
+      {selectedIds.length > 0 && isAdminOrHead && (
         <div className="flex items-center justify-between p-3 bg-primary/5 border border-primary/20 rounded-lg" data-testid="training-batch-bar">
           <div className="flex items-center gap-2">
             <CheckSquare className="w-5 h-5 text-primary" />
@@ -379,7 +380,7 @@ const TrainingApplicationsPage = () => {
             <p className="text-slate-600">
               {searchQuery ? 'Try adjusting your search criteria' : 'Create your first training application'}
             </p>
-            {!searchQuery && !submissionClosed && (
+            {!searchQuery && !submissionClosed && !isAdminOrHead && (
               <Link to="/training-applications/new" className="inline-block mt-4">
                 <Button className="gap-2">
                   <Plus className="w-4 h-4" /> New Application
@@ -401,7 +402,7 @@ const TrainingApplicationsPage = () => {
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-start gap-3">
-                          {isAdmin && (
+                          {isAdminOrHead && (
                             <button onClick={(e) => { e.stopPropagation(); toggleSelect(application.id); }} className="mt-1 flex-shrink-0" data-testid={`select-training-app-${application.id}`}>
                               {selectedIds.includes(application.id) ? <CheckSquare className="w-5 h-5 text-primary" /> : <Square className="w-5 h-5 text-slate-400" />}
                             </button>
@@ -450,19 +451,19 @@ const TrainingApplicationsPage = () => {
                             <Receipt className="w-4 h-4" /> {application.additional_expenses ? 'Edit Expenses' : 'Add Expenses'}
                           </Button>
                         )}
-                        {isAdmin && (
+                        {isAdminOrHead && (
                           <Button variant="outline" size="sm" className="gap-1" onClick={() => openStatusDialog(application)} data-testid={`change-status-${application.id}`}>
                             <Edit className="w-4 h-4" /> Change Status
                           </Button>
                         )}
-                        {isAdmin && (
+                        {isAdminOrHead && (
                           <Link to={`/training-applications/${application.id}/edit`}>
                             <Button variant="outline" size="sm" className="gap-1" data-testid={`admin-edit-training-${application.id}`}>
                               <Edit className="w-4 h-4" /> Edit
                             </Button>
                           </Link>
                         )}
-                        {isAdmin && application.status !== 'draft' && (
+                        {isAdminOrHead && application.status !== 'draft' && (
                           application.is_locked ? (
                             <Button variant="outline" size="sm" className="gap-1 text-emerald-600 border-emerald-200 hover:bg-emerald-50" onClick={() => handleUnlock(application.id)} data-testid={`unlock-training-${application.id}`}>
                               <Unlock className="w-4 h-4" /> Unlock
@@ -478,21 +479,21 @@ const TrainingApplicationsPage = () => {
                             <Trash2 className="w-4 h-4" /> Delete
                           </Button>
                         )}
-                        {!isAdmin && application.status === 'draft' && (
+                        {!isAdminOrHead && application.status === 'draft' && (
                           <Link to={`/training-applications/${application.id}/edit`}>
                             <Button size="sm" className="gap-2" data-testid={`edit-application-${application.id}`}>
                               <Edit className="w-4 h-4" /> Edit
                             </Button>
                           </Link>
                         )}
-                        {!isAdmin && application.status !== 'draft' && !application.is_locked && (
+                        {!isAdminOrHead && application.status !== 'draft' && !application.is_locked && (
                           <Link to={`/training-applications/${application.id}/edit`}>
                             <Button size="sm" className="gap-2" data-testid={`edit-application-${application.id}`}>
                               <Edit className="w-4 h-4" /> Edit
                             </Button>
                           </Link>
                         )}
-                        {!isAdmin && application.status !== 'draft' && application.is_locked && (
+                        {!isAdminOrHead && application.status !== 'draft' && application.is_locked && (
                           <Button size="sm" variant="outline" disabled className="gap-2 opacity-60" data-testid={`locked-edit-training-${application.id}`}>
                             <Lock className="w-4 h-4" /> Locked
                           </Button>

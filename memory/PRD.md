@@ -82,6 +82,9 @@ Heads can escalate Training/Bursary tickets to HR Query or Technical Support.
 - Application Lock/Unlock system with batch unlock for admins (Mar 2026)
 - Clickable notifications navigating to application edit pages (Mar 2026)
 - Closed period enforcement: New Application button greyed out/unclickable (Mar 2026)
+- Department Head RBAC: Users page filtered to subgroup, Division Groups filtered to own division, Period Settings access, Lock/Unlock access (Mar 2026)
+- Events page read-only for non-admin users (Mar 2026)
+- `is_head` field added to login response and AuthContext (Mar 2026)
 
 ### Test Credentials
 - **Super Admin:** jane.smith@uct.ac.za / securepass123

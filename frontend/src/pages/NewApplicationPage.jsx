@@ -101,6 +101,7 @@ const NewApplicationPage = () => {
   const [appIsLocked, setAppIsLocked] = useState(false);
   const [appStatus, setAppStatus] = useState('draft');
   const isAdmin = user?.roles?.some(r => ['super_admin', 'admin'].includes(r));
+  const isAdminOrHead = isAdmin || !!user?.is_head;
 
   // Load existing application data when editing
   useEffect(() => {
@@ -262,7 +263,7 @@ const NewApplicationPage = () => {
   return (
     <div className="space-y-6" data-testid="new-application-page">
       {/* Admin/Head lock control bar */}
-      {isEditing && isAdmin && appStatus !== 'draft' && (
+      {isEditing && isAdminOrHead && appStatus !== 'draft' && (
         <div className={`flex items-center justify-between p-4 rounded-lg border ${appIsLocked ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'}`} data-testid="admin-lock-bar">
           <div className="flex items-center gap-3">
             {appIsLocked ? <Lock className="w-5 h-5 text-rose-600" /> : <Unlock className="w-5 h-5 text-emerald-600" />}
@@ -282,7 +283,7 @@ const NewApplicationPage = () => {
         </div>
       )}
       {/* Employee lock warning */}
-      {applicationLocked && !isAdmin && (
+      {applicationLocked && !isAdminOrHead && (
         <div className="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 rounded-lg" data-testid="locked-banner">
           <Lock className="w-5 h-5 text-rose-600 shrink-0" />
           <div>
