@@ -13,8 +13,14 @@ router = APIRouter(prefix="/api", tags=["reports"])
 @router.get("/reports/interactive-data")
 async def get_interactive_report_data(
     division: Optional[str] = None,
+    divisions: Optional[str] = None,
     subgroup: Optional[str] = None,
+    departments: Optional[str] = None,
     status: Optional[str] = None,
+    race: Optional[str] = None,
+    races: Optional[str] = None,
+    age_min: Optional[int] = None,
+    age_max: Optional[int] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
@@ -23,10 +29,41 @@ async def get_interactive_report_data(
 
     # ── Build user query ──
     user_query = {}
-    if division:
-        user_query["division"] = division
-    if subgroup:
-        user_query["department"] = subgroup
+    # Multi-value division filter
+    div_list = []
+    if divisions:
+        div_list = [d.strip() for d in divisions.split(",") if d.strip()]
+    elif division:
+        div_list = [division]
+    if div_list:
+        user_query["division"] = {"$in": div_list} if len(div_list) > 1 else div_list[0]
+
+    # Multi-value department filter
+    dept_list = []
+    if departments:
+        dept_list = [d.strip() for d in departments.split(",") if d.strip()]
+    elif subgroup:
+        dept_list = [subgroup]
+    if dept_list:
+        user_query["department"] = {"$in": dept_list} if len(dept_list) > 1 else dept_list[0]
+
+    # Multi-value race filter
+    race_list = []
+    if races:
+        race_list = [r.strip() for r in races.split(",") if r.strip()]
+    elif race:
+        race_list = [race]
+    if race_list:
+        user_query["race"] = {"$in": race_list} if len(race_list) > 1 else race_list[0]
+
+    # Age range filter
+    if age_min is not None or age_max is not None:
+        age_q = {}
+        if age_min is not None:
+            age_q["$gte"] = age_min
+        if age_max is not None:
+            age_q["$lte"] = age_max
+        user_query["age"] = age_q
 
     # ── Users data ──
     users = await db.users.find(user_query, {"_id": 0, "password_hash": 0}).to_list(10000)
@@ -36,6 +73,8 @@ async def get_interactive_report_data(
     div_counts = {}
     dept_counts = {}
     role_counts = {}
+    race_counts = {}
+    age_ranges = {"18-25": 0, "26-35": 0, "36-45": 0, "46-55": 0, "56-65": 0, "65+": 0, "Unknown": 0}
     active_count = 0
     inactive_count = 0
     for u in users:
@@ -45,6 +84,25 @@ async def get_interactive_report_data(
         dept_counts[dept] = dept_counts.get(dept, 0) + 1
         for r in u.get("roles", []):
             role_counts[r] = role_counts.get(r, 0) + 1
+        rc = u.get("race") or "Unspecified"
+        race_counts[rc] = race_counts.get(rc, 0) + 1
+        age = u.get("age")
+        if age is not None and isinstance(age, (int, float)):
+            age = int(age)
+            if age <= 25:
+                age_ranges["18-25"] += 1
+            elif age <= 35:
+                age_ranges["26-35"] += 1
+            elif age <= 45:
+                age_ranges["36-45"] += 1
+            elif age <= 55:
+                age_ranges["46-55"] += 1
+            elif age <= 65:
+                age_ranges["56-65"] += 1
+            else:
+                age_ranges["65+"] += 1
+        else:
+            age_ranges["Unknown"] += 1
         if u.get("is_active"):
             active_count += 1
         else:
@@ -52,7 +110,8 @@ async def get_interactive_report_data(
 
     # ── Build app query ──
     app_query = {}
-    if user_ids and (division or subgroup):
+    has_user_filter = bool(div_list or dept_list or race_list or age_min is not None or age_max is not None)
+    if user_ids and has_user_filter:
         app_query["user_id"] = {"$in": user_ids}
     if status:
         app_query["status"] = status
@@ -132,7 +191,7 @@ async def get_interactive_report_data(
 
     # ── Standalone expenses ──
     standalone_query = {}
-    if user_ids and (division or subgroup):
+    if user_ids and has_user_filter:
         standalone_query["submitted_by"] = {"$in": user_ids}
     if date_from:
         standalone_query.setdefault("date", {})["$gte"] = date_from
@@ -147,7 +206,7 @@ async def get_interactive_report_data(
 
     # ── Tickets ──
     ticket_query = {}
-    if user_ids and (division or subgroup):
+    if user_ids and has_user_filter:
         ticket_query["created_by"] = {"$in": user_ids}
     if date_from:
         ticket_query.setdefault("created_at", {})["$gte"] = date_from
@@ -165,21 +224,22 @@ async def get_interactive_report_data(
         p = t.get("priority", "medium")
         ticket_priority[p] = ticket_priority.get(p, 0) + 1
 
-    # ── Division & subgroup lists for filters ──
+    # ── Division, department, race lists for filters ──
     all_divisions = await db.users.distinct("division")
     all_divisions = [d for d in all_divisions if d]
-    all_departments = []
-    if division:
-        all_departments = await db.users.distinct("department", {"division": division})
-        all_departments = [d for d in all_departments if d]
+    if div_list:
+        all_departments = await db.users.distinct("department", {"division": {"$in": div_list}})
     else:
         all_departments = await db.users.distinct("department")
-        all_departments = [d for d in all_departments if d]
+    all_departments = [d for d in all_departments if d]
+    all_races = await db.users.distinct("race")
+    all_races = [r for r in all_races if r]
 
     return {
         "filters": {
             "divisions": sorted(all_divisions),
             "departments": sorted(all_departments),
+            "races": sorted(all_races),
         },
         "users": {
             "total": len(users),
@@ -188,6 +248,8 @@ async def get_interactive_report_data(
             "by_division": [{"name": k, "value": v} for k, v in sorted(div_counts.items(), key=lambda x: -x[1])],
             "by_department": [{"name": k, "value": v} for k, v in sorted(dept_counts.items(), key=lambda x: -x[1])],
             "by_role": [{"name": k, "value": v} for k, v in sorted(role_counts.items(), key=lambda x: -x[1])],
+            "by_race": [{"name": k, "value": v} for k, v in sorted(race_counts.items(), key=lambda x: -x[1])],
+            "by_age_range": [{"name": k, "value": v} for k, v in age_ranges.items() if v > 0],
         },
         "bursary_applications": {
             "total": len(bursary_apps),
@@ -219,22 +281,65 @@ async def get_interactive_report_data(
     }
 
 
+@router.post("/reports/export-chart")
+async def export_chart_data(
+    body: dict,
+    current_user: dict = Depends(get_current_user),
+):
+    """Export a single chart's data as XLSX"""
+    chart_title = body.get("title", "Chart Data")
+    chart_data = body.get("data", [])
+
+    if not chart_data:
+        raise HTTPException(status_code=400, detail="No data to export")
+
+    excel = generate_excel(chart_data, title=chart_title[:31])
+    fname = chart_title.replace(" ", "_").lower() + ".xlsx"
+
+    return StreamingResponse(
+        iter([excel.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={fname}"},
+    )
+
+
+
 @router.get("/reports/export-filtered")
 async def export_filtered_data(
     data_type: str = "all",
     division: Optional[str] = None,
+    divisions: Optional[str] = None,
     subgroup: Optional[str] = None,
+    departments: Optional[str] = None,
     status: Optional[str] = None,
+    race: Optional[str] = None,
+    races: Optional[str] = None,
+    age_min: Optional[int] = None,
+    age_max: Optional[int] = None,
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     current_user: dict = Depends(get_current_user),
 ):
     """Export filtered data as XLSX"""
     user_query = {}
-    if division:
-        user_query["division"] = division
-    if subgroup:
-        user_query["department"] = subgroup
+    div_list = [d.strip() for d in (divisions or "").split(",") if d.strip()] if divisions else ([division] if division else [])
+    dept_list = [d.strip() for d in (departments or "").split(",") if d.strip()] if departments else ([subgroup] if subgroup else [])
+    race_list = [r.strip() for r in (races or "").split(",") if r.strip()] if races else ([race] if race else [])
+    if div_list:
+        user_query["division"] = {"$in": div_list} if len(div_list) > 1 else div_list[0]
+    if dept_list:
+        user_query["department"] = {"$in": dept_list} if len(dept_list) > 1 else dept_list[0]
+    if race_list:
+        user_query["race"] = {"$in": race_list} if len(race_list) > 1 else race_list[0]
+    if age_min is not None or age_max is not None:
+        age_q = {}
+        if age_min is not None:
+            age_q["$gte"] = age_min
+        if age_max is not None:
+            age_q["$lte"] = age_max
+        user_query["age"] = age_q
+
+    has_user_filter = bool(div_list or dept_list or race_list or age_min is not None or age_max is not None)
 
     users = await db.users.find(user_query, {"_id": 0, "password_hash": 0}).to_list(10000)
     user_ids = [u["id"] for u in users]
@@ -275,13 +380,14 @@ async def export_filtered_data(
         ws = wb.create_sheet("Users")
         rows = [{"Name": u.get("full_name", ""), "Email": u.get("email", ""),
                  "Division": u.get("division", ""), "Department": u.get("department", ""),
+                 "Race": u.get("race", ""), "Age": u.get("age", ""),
                  "Roles": ", ".join(u.get("roles", [])), "Active": "Yes" if u.get("is_active") else "No"}
                 for u in users]
         write_sheet(ws, "Users", rows)
 
     if data_type in ("all", "applications"):
         app_q = {}
-        if user_ids and (division or subgroup):
+        if user_ids and has_user_filter:
             app_q["user_id"] = {"$in": user_ids}
         if status:
             app_q["status"] = status
@@ -336,7 +442,7 @@ async def export_filtered_data(
 
     if data_type in ("all", "expenses"):
         exp_q = {}
-        if user_ids and (division or subgroup):
+        if user_ids and has_user_filter:
             exp_q["submitted_by"] = {"$in": user_ids}
         if date_from:
             exp_q.setdefault("date", {})["$gte"] = date_from
@@ -352,7 +458,7 @@ async def export_filtered_data(
 
     if data_type in ("all", "tickets"):
         tkt_q = {}
-        if user_ids and (division or subgroup):
+        if user_ids and has_user_filter:
             tkt_q["created_by"] = {"$in": user_ids}
         if date_from:
             tkt_q.setdefault("created_at", {})["$gte"] = date_from

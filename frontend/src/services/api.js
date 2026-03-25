@@ -274,6 +274,7 @@ export const reportsAPI = {
   getDashboard: () => api.get('/reports/dashboard'),
   getInteractiveData: (params = {}) => api.get('/reports/interactive-data', { params }),
   exportFiltered: (params = {}) => api.get('/reports/export-filtered', { params, responseType: 'blob' }),
+  exportChart: (title, data) => api.post('/reports/export-chart', { title, data }, { responseType: 'blob' }),
   export: (reportType, format = 'json', params = {}) => api.get(`/reports/export/${reportType}`, { 
     params: { format, ...params },
     responseType: ['excel', 'pdf', 'csv'].includes(format) ? 'blob' : 'json'

@@ -1,198 +1,135 @@
-<analysis>**original_problem_statement:**
-The user wants to build a comprehensive bursary management system named Sentech using React, FastAPI, and MongoDB. The system needs modules for managing applications, users, divisions, projects, meetings, and more, with a role-based access control (RBAC) system.
+<analysis>**original_problem_statement**: 
+The user wants to build a comprehensive bursary management system named Sentech using React, FastAPI, and MongoDB. The system features modules for managing applications, users, divisions, projects, meetings, tickets, and interactive reports, governed by a strict Role-Based Access Control (RBAC) system involving super_admins, admins, division/subgroup heads, and employees.
 
-**PRODUCT REQUIREMENTS (Recent):**
-1.  **Application Approval Workflow:** Bursary and training applications can be approved by a , an , or the Head of the applicant's division or subgroup.
-2.  **Access Control:**
-    *   The  page should be visible only to the , not the standard .
-    *   The  (Personal Development Plan) page should only be seen by  users.
-    *   The  page should be hidden from the sidebar navigation.
-3.  **Employee Role Restrictions:**
-    *   **Dashboard:** Employees should see a dedicated dashboard showing information relevant only to them (e.g., their applications, assigned training).
-    *   **Messaging:** Employees can only send messages to members of their own division or subgroup.
-    *   **Training Track:** Employees can only view/comment on training modules assigned to them.
-4.  **User Management UI:**
-    *   On the  page, users not yet assigned to any division or subgroup should be highlighted with a different color.
-    *   A filter option to show only Unassigned users should be added.
-5.  **Data Import:**
-    *   Add a new division called Managed Infrastructure Business (MIB).
-    *   Import all users from the  sheet of the provided Final List 18 March.xlsx file.
-    *   Employees highlighted in yellow in the sheet should be set as the head of their respective subgroups (departments).
-    *   The reporting structure should be set up so that employees report to their subgroup head.
-6.  **Expenses Page:**
-    *   On the Expenses page, the Total Expenses calculation should be the sum of the Requested Amount from the application and any Additional Expenses submitted. The label for this combined value was renamed from Combined Total to Total Expenses.
-    *   The top summary section should calculate and display aggregate totals for *all* expenses across bursary, training, and standalone categories.
+**PRODUCT REQUIREMENTS (Recent)**:
+1. **Ticket Routing & Escalation**: Tickets must auto-route based on category: Technical Support/HR Queries go to admins/super_admins. Bursary/Training Application tickets go directly to the subgroup/division head of the applicant. Heads must have the ability to escalate tickets to admins.
+2. **Interactive Reporting**: A highly customizable reporting page with interactive charts (pie, bar, line, etc.). Must include demographic filtering (Race, Age range) and multi-select filtering (Divisions, Departments, Status, Dates).
+3. **Data Export**: The ability to export filtered data broadly, as well as export data directly from specific individual charts.
+4. **Navigation**: A direct external link to Udemy in the sidebar navigation.
 
-**User's preferred language**: English
+**User's preferred language**: English (INSTRUCT next agent to respond in English)
 
-**what currently exists?**
-The application is a feature-rich bursary management system. Significant progress was made in this session, including:
--   **Application Lifecycle:** A complete workflow for managing bursary and training applications is now in place, including admin controls for submission periods, batch deletion, and adding applications on behalf of users. The Edit button on the user profile page now correctly links to the respective application edit pages.
--   **Backend Refactoring:** A major refactoring of  was initiated. The , , and  routes have been extracted into their own dedicated router files in , significantly reducing the size of the main  file.
--   **Expenses Management:** The  has been completely rewritten. It now features three tabs (Bursary, Training, Standalone) and a new workflow for submitting additional expenses against specific applications. It includes advanced filtering and calculates a combined Total Expenses (requested + additional).
--   **Role-Based Access Control (RBAC):** RBAC has been significantly enhanced.
-    -   A distinction now exists between  and  roles in the frontend ( in ).
-    -   The  is now personalized for employees, restricting them to view/comment only on their assigned modules and disabling admin controls like drag-and-drop.
-    -   Sidebar visibility is now managed by , , and  flags.
--   **User & Division Management:** A new Managed Infrastructure Business division was created, and 261 users were imported from an XLSX file, automatically creating 29 subgroups, assigning heads, and setting up reporting structures. The  now highlights unassigned users and includes a filter for them.
+**what currently exists?** 
+A mature, feature-rich full-stack application. Significant progress was made in standardizing UI, refactoring backend architecture, and implementing complex business logic. The  drag-and-drop was fully migrated to .  was further decoupled by extracting , , and  into dedicated routers. An intelligent Ticket Routing & Escalation system was built. The  was completely overhauled to feature advanced Recharts visualizations, multi-select demographics filtering (Race, Age, Division, Department), and granular chart-level Excel exports. The Udemy link was integrated into the sidebar as an external anchor.
 
 **Last working item**:
--   **Last item agent was working:** The agent implemented a large set of features based on a single user request (message #345). This involved:
-    1.  Updating backend application approval logic to include division/subgroup heads.
-    2.  Restricting the  page to  only.
-    3.  Restricting the  page to  only.
-    4.  Implementing a new employee-specific dashboard view.
-    5.  Restricting employee messaging to only users within their own division/subgroup.
-    6.  Highlighting unassigned users on the  and adding a filter.
--   **Status**: IN PROGRESS
--   **Agent Testing Done**: N
--   **Which testing method agent to use?**: both
--   **User Testing Done**: N
+- **Last item agent was working**: Adding advanced demographic filters (Race, Age min/max), multi-select functionality for Divisions/Departments, and per-chart export capabilities to the  and .
+- **Status**: USER VERIFICATION PENDING
+- **Agent Testing Done**: Y (Agent tested via bash curl and took a visual screenshot to confirm UI rendering).
+- **Which testing method agent to use?**: both (Needs  to thoroughly validate the complex multi-query aggregation logic).
+- **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1: Outdated Drag-and-Drop on Prospects Page (P1)**
-    -   **Description**: The  uses the older  library, which is inconsistent with other Kanban boards (, ) that use .
-    -   **Attempted fixes**: None. This has been repeatedly deprioritized.
-    -   **Next debug checklist**:
-        1.  Edit .
-        2.  Replace  with  components and hooks, using  as a reference.
-    -   **Why fix this issue?**: To standardize the UI/UX across all Kanban-style boards and remove potential library conflicts or console warnings.
-    -   **Status**: NOT STARTED
-    -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: frontend
-    -   **Blocked on other issue**: None
+Issue 1: Validate Final Reporting Filters & Export Logic (P0)
+- **Attempted fixes**: The agent implemented the code and did basic smoke tests but finished the session without running the testing subagent on the final multi-select/race/age additions.
+- **Next debug checklist**: 
+  - Run  focusing strictly on the  frontend and the  backend endpoints to ensure multi-select parameters (comma-separated strings) and age/race aggregations don't cause edge-case crashes.
+- **Why fix this issue and what will be achieved with the fix?**: Ensures data integrity and prevents unhandled exceptions when users apply complex layered filters to generate reports.
+- **Status**: TESTING PENDING
+- **Is recurring issue?**: N
+- **Should Test frontend/backend/both after fix?**: both
+- **Blocked on other issue**: None
 
 **In progress Task List**:
--   **Task 1: Verify and Finalize Multi-Feature Implementation (P0)**
-    -   **Description**: The last set of changes (application approval, RBAC for pages, employee dashboard, messaging restrictions, user highlighting) were implemented but need comprehensive testing and verification to ensure all parts work together correctly.
-    -   **Where to resume**:
-        1.  Log in as a , , and  to verify the new sidebar visibility rules ( for super_admin,  for employee).
-        2.  As an , check the new dashboard view.
-        3.  As an , go to the  page and verify that the user list for creating new conversations is limited to their division/subgroup members.
-        4.  As a , go to the  page and verify the new Assignment filter works and that unassigned users are highlighted in red.
-        5.  Test the application approval flow by having a division head (who is not an admin) attempt to change the status of an application for a user in their division.
-    -   **What will be achieved with this?**: Confirms that the latest complex feature request is fully implemented and bug-free.
-    -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: both
-    -   **Blocked on something**: No.
+*None strictly in progress. Transition directly to upcoming tasks after verifying Issue 1.*
 
-**Upcoming and Future Tasks**
--   **Upcoming Tasks:**
-    -   **Task 1 (P1): Refactor  - Part 3:** Continue breaking down the monolithic  by extracting remaining logical units (e.g., , , , , , ) into their own router files in .
-    -   **Task 2 (P1): Employee Ticket Creation:** The user requested that employees be able to create new tickets, but this was not implemented. Add the Tickets page to the employee's visible navigation and ensure they have creation permissions.
--   **Future Tasks:**
-    -   **Task 3 (P2): Refactor File Uploads:** Replace all remaining base64 file submission instances with the new chunked multipart upload endpoint ().
-    -   **Task 4 (P2): Audit Log Feature:** Implement an audit log to track all admin actions for compliance.
-    -   **Task 5 (P2): Scheduled Auto-Export Reports:** Add a feature to automatically email weekly XLSX summary reports to admins.
+**Upcoming and Future Tasks**:
+Upcoming Tasks:
+- **Task 1: Continue  Refactoring - Part 4 (P1)**: Extract remaining logical modules (e.g., , , , , ) into their own router files in  to eliminate the monolithic file structure.
 
-**Completed work in this session**
--   **Application Lifecycle Overhaul (DONE):** Fixed edit links, implemented submission deadline logic, and added feature parity (, batch delete, settings) to .
--   **Backend Refactoring (Part 1 & 2 DONE):** Extracted , , and  routes from  into dedicated router files, reducing  from ~5100 to ~3900 lines.
--   **Expenses Page Rewrite (DONE):** Overhauled the page with a tabbed interface, a new workflow to link expenses to applications, advanced filters, and correct Total Expenses calculation.
--   **Employee RBAC on Training Track (DONE):** Restricted employees to view/comment only on assigned modules.
--   **Data Import & Division Setup (DONE):** Imported 261 users from XLSX into a new Managed Infrastructure Business division, creating subgroups, assigning heads, and fixing leader lookup logic.
--   **UI/Access Control (DONE):** Hid the Sponsors page, and made the  and  pages visible to employees.
--   **Test User Creation (DONE):** Created and verified  and  users.
+Future Tasks:
+- **Task 2: Refactor File Uploads (P2)**: Replace all remaining base64 file submission instances with the chunked multipart upload endpoint ().
+- **Task 3: Audit Log Feature (P2)**: Implement a system audit log to track all admin and super_admin actions for security compliance.
+- **Task 4: Scheduled Auto-Export Reports (P2)**: Implement a background job/cron to automatically email weekly XLSX summary reports to admins.
 
-**Earlier issues found/mentioned but not fixed**
--   **Issue 1:  Drag-and-Drop Inconsistency**
-    -   **Debug checklist**: See All Pending/In progress Issue list.
-    -   **Why to solve this issue and what will be achieved with this?**: Standardize UI/UX across the application.
-    -   **Should Test frontend/backend/both after fix?**: frontend
-    -   **Is recurring issue?**: Y
+**Completed work in this session**:
+- Verified and finalized multi-feature RBAC and employee dashboard (DONE)
+-  Drag-and-Drop library migration ( -> ) (DONE)
+- Backend Router Extraction (, , ) (DONE)
+- Ticket Auto-Routing and Escalation System (DONE)
+-  Rewrite with Recharts, interactive toggles, and base filtering (DONE)
+- Udemy external link added to Layout Sidebar (DONE)
+- Advanced Reporting capabilities: Race, Age bounds, Multi-select filters, Per-chart export (DONE)
 
-**Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork**: The   migration has been deferred across multiple sessions.
--   **Recurrence count**: 2+
--   **Status**: NOT STARTED
+**Earlier issues found/mentioned but not fixed**:
+*None*
 
-**Code Architecture**
+**Known issue recurrence from previous fork**:
+- **Issue recurrence in previous fork**:  library inconsistency on .
+- **Recurrence count**: 2
+- **Status**: RESOLVED (Agent successfully migrated it to ).
+
+**Code Architecture**:
 
 
-**Key Technical Concepts**
--   **Backend:** Ongoing refactoring of a monolithic FastAPI  into feature-based routers. Advanced RBAC checks involving user hierarchy (division/subgroup heads).
--   **Frontend:** Dynamic UI rendering based on granular user roles (, , ). Complex state management for filtering (, ). Conditional hooks and component rendering for access control (). One-time data import and processing from XLSX via Python scripts.
+**Key Technical Concepts**:
+- **Frontend**: React, Tailwind, Shadcn UI.  for drag-and-drop.  for dynamic data visualization. Multi-select filter state management translating array selections into comma-separated query parameters.
+- **Backend**: FastAPI, MongoDB. Advanced Pymongo aggregation pipelines handling , ,  for multi-variable reporting. Automatic role-based routing algorithms upon document creation (Tickets).
+- **Exporting**: Python  combined with FastAPI  using  for generating on-the-fly Excel files for reports.
 
-**key DB schema**
--   **users**:  and  fields are now heavily used for filtering and access control.  field links an employee to their head's user ID.
--   **division_groups**:  field links a division to its leader's user ID.
--   **subgroups**:  field links a subgroup to its head's user ID.
+**key DB schema**:
+- :  (dictates routing),  (user ID),  (admins, head, etc.),  (previous category if escalated).
+- : Includes , , , , , and /. Used heavily for reporting aggregations.
 
-**changes in tech stack**
--   No new dependencies were added to the core application.  and  were used in temporary bash scripts for data processing.
+**changes in tech stack**:
+- Completely removed . Standardized entirely on  and .
 
-**All files of reference**
--    (Still large, target for more refactoring)
--    (Location of all new and existing routers)
--    (Example of rewritten page with advanced state)
--    (Example of employee RBAC)
--    (Example of new filters and conditional rendering)
--    (Example of role-based component swapping)
--    (Central location for sidebar navigation logic)
--    (Source of user role flags)
--   
+**All files of reference**:
+-  (Ticket routing and escalation logic exists here)
+-  (Contains complex aggregation queries for interactive data and exports)
+-  (Core UI for interactive charting and multi-select filtering)
+-  (UI for viewing ticket routes and escalating)
+-  (Sidebar navigation logic)
 
 **Areas that need refactoring**:
--    must be further broken down. Key modules remaining to be extracted are , , , , , and . This remains a P1 priority.
+-  still contains routes for , , , , , , and . This file needs to continue being broken down into .
 
-**key api endpoints**
--   : Logic updated to allow approval by division/subgroup heads.
--   : Same as above.
--   : **NEW** endpoint for  to fetch users an employee is allowed to contact.
--   :  query parameter added.
--   : **NEW** endpoint to assign users to a training module.
--   : **NEW** endpoint to unassign users.
--   : Backend logic fixed to correctly resolve a division leader who is not a member of that division.
+**key api endpoints**:
+- : Auto-assigns tickets to  or  based on category.
+- : Contains logic for ticket escalation.
+- : Accepts  and  as comma-separated strings, , ,  for demographic filtering.
+- : Same parameters as above, returns  Excel.
+- : Accepts raw chart data payload, returns  Excel.
 
-**Critical Info for New Agent**
--   You are resuming after a very large set of features were just implemented. Your first priority is to thoroughly test and verify these changes (see In progress Task List).
--   The frontend now distinguishes between  and  roles using  and  from . Use these flags for access control.  is also available.
--   The backend refactoring is a major ongoing task. After verifying the current feature set, the next priority is to continue extracting routes from .
--   The user data import was a one-time script. The logic for user creation, division management, and subgroup management now exists as API endpoints that should be used going forward.
+**Critical Info for New Agent**:
+- **Multi-select URL Parameters**: The frontend sends multi-select data (like Divisions) as comma-separated strings (e.g., ). The backend  splits these strings into lists to perform MongoDB  queries. Retain this pattern if adding more multi-selects.
+- **Ticket Routing**: Tickets are no longer unassigned by default. When an employee creates a Bursary/Training ticket, the backend actively queries the / collections to find their leader and sets .
 
-**documents and test reports created in this job**
--   
--   
--    (Updated)
+**documents and test reports created in this job**:
+- 
+- 
+- 
+- 
+- 
 
-**Last 10 User Messages and any pending HUMAN messages**
-1.  **USER:** on employee show the notes page - **Completed.** Agent added Notes to the sidebar nav.
-2.  **USER:** make the employee able to see the PDP page only - **Completed.** Agent restricted PDP page to  in the sidebar.
-3.  **USER:** Add users and new division called Managed Infrastructure Business... (from XLSX file) - **Completed.** Agent parsed the file, created the division, imported 261 users, created 29 subgroups, and assigned heads.
-4.  **USER:** Hide sponsors page - **Completed.** Agent removed the link from the sidebar navigation.
-5.  **USER:** both bursary and training application can be approved by... (large multi-part request) - **In Progress.** Agent implemented all requested changes (approval logic, settings RBAC, employee messaging/dashboard, user highlighting).
-6.  **ASSISTANT:** (Asks for plan confirmation) - User approved.
-7.  **USER:** can I have sample employee logins - **Completed.** Agent provided credentials for all test user roles.
-8.  **USER:** The employee can only create new note, New Ticket, New Message and on the training track he can view and comment only... - **Partially Completed.** Training track, notes, and message restrictions were implemented. New Ticket was missed.
-9.  **USER:** (Agrees with agent's summary) - Confirmation.
-10. **USER:** rename Combined Total to Total Expenses - **Completed.** Agent performed a search-and-replace on the .
+**Last 10 User Messages and any pending HUMAN messages**:
+1. **User**: yes (Approving initial work plan)
+2. **User**: when tickets are created Technical supports to the super Amin and admins, HR Querygoes to the admin and the bursary and training application goes to the Head of that subgroup or head of division he can escalate... -> *Completed*
+3. **User**: on the reporting page create interactive reporting with demographic filtering so that when I filter it affects all charts and also the ability to choose between charts... Add a link on the page section that redirects to udemy. -> *Completed*
+4. **User**: Remove udemy link from report page and put the link on the page section (Sidebar) -> *Completed*
+5. **User**: On the report page add export directly on the charts so that you can export the required I want to add more filters like filter by race and by age and be able to multi select divisions... when filters be able to export the filtered data -> *Completed (Verification pending)*
 
-**Project Health Check:**
--   **Broken:** No
--   **Mocked:** Partially. The  refactoring is still in progress, making the backend architecture incomplete.
+**Project Health Check**:
+- **Broken**: None
+- **Mocked**: Email delivery (SMTP prints to console instead of sending).
 
-**3rd Party Integrations**
--   **recharts:** Used for charting.
--   **@dnd-kit/core:** Standard for drag-and-drop.
--   **openpyxl:** Used for one-time XLSX parsing via script.
--   **howler:** Used for notification sounds.
--   **msal-react:** For Microsoft authentication.
+**3rd Party Integrations**:
+- Recharts (Charting)
+- @dnd-kit/core (Drag and Drop)
+- openpyxl (Excel Generation)
 
-**Testing status**
--   **Testing agent used after significant changes**: YES. The testing agent was used to validate the Expenses Page rewrite and the Users router refactoring (). It has **not** been used to validate the most recent set of RBAC/Dashboard/Approval changes.
--   **Test files created**: None.
--   **Known regressions**: None.
+**Testing status**:
+- **Testing agent used after significant changes**: YES (Used extensively for iterations 23-26).
+- **Troubleshoot agent used after agent stuck in loop**: NO
+- **Test files created**: None
+- **Known regressions**: None
 
-**Credentials to test flow:**
--   **Super Admin:**
-    -   **Email:** 
-    -   **Password:** 
--   **Admin:**
-    -   **Email:** 
-    -   **Password:** 
--   **Employee:**
-    -   **Email:** 
-    -   **Password:** 
+**Credentials to test flow**:
+- Super Admin:  / 
+- Admin:  / 
+- Employee:  / 
+- Employee (MIB Div):  / 
+- Head (MIB Subgroup):  / 
 
-**What agent forgot to execute**
--   In user message #203, the user requested: The employee can only create new note, New Ticket, New Message.... The agent implemented the new note and new message parts (by making pages visible and restricting contacts) but did not address making the New Ticket functionality available to employees. The  is likely still hidden by  or  restrictions in .</analysis>
+**What agent forgot to execute**:
+The agent implemented the very complex final user request (adding Race, Age bounds, multi-select array parsing, and per-chart JSON-to-Excel exporting to the Reports page). However, the agent relied *only* on bash scripts and a screenshot to verify this. The  must be run on the  module to ensure these complex MongoDB aggregations don't break under specific edge cases before moving to P1 tasks.</analysis>
