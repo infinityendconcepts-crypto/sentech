@@ -18,7 +18,7 @@ import {
   BarChart3, Download, FileText, FileSpreadsheet,
   Users, DollarSign, Maximize2, CalendarDays, X, Filter,
   PieChart as PieChartIcon, BarChart as BarChartLucide,
-  TrendingUp, Ticket, GraduationCap, ExternalLink, RefreshCw,
+  TrendingUp, Ticket, GraduationCap, RefreshCw,
   Activity, Layers,
 } from 'lucide-react';
 import {
@@ -244,17 +244,6 @@ const ReportsPage = () => {
           <p className="text-sm text-slate-500">Interactive reporting with demographic filtering</p>
         </div>
         <div className="flex items-center gap-2">
-          <a
-            href="https://www.udemy.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition-colors"
-            data-testid="udemy-link"
-          >
-            <GraduationCap className="w-4 h-4" />
-            Udemy
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
           <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} data-testid="refresh-btn">
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
           </Button>

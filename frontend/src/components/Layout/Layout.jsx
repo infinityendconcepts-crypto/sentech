@@ -30,6 +30,7 @@ import {
   GraduationCap,
   Bell,
   StickyNote,
+  ExternalLink,
 } from 'lucide-react';
 
 // adminOnly: true = visible only to admins
@@ -49,6 +50,7 @@ const navigation = [
   { name: 'Notifications', href: '/notifications', icon: Bell },
   { name: 'Division Groups', href: '/division-groups',  icon: UsersRound, rbacModule: 'division_groups' },
   { name: 'Help & Support',href: '/help',         icon: HelpCircle },
+  { name: 'Udemy',        href: 'https://www.udemy.com', icon: GraduationCap, external: true },
   // ── Admin only ──
   // { name: 'Sponsors',   href: '/sponsors',   icon: Users,        adminOnly: true },
   { name: 'BBBEE',      href: '/bbbee',      icon: Award,        adminOnly: true },
@@ -120,20 +122,30 @@ const Layout = () => {
   };
 
   const NavItem = ({ item, isActive }) => {
+    const isExternal = item.external;
+    const linkProps = isExternal
+      ? { href: item.href, target: '_blank', rel: 'noopener noreferrer' }
+      : { to: item.href, onClick: () => isMobile && setSidebarOpen(false) };
+    const Tag = isExternal ? 'a' : Link;
+
     const content = (
-      <Link
-        to={item.href}
+      <Tag
+        {...linkProps}
         data-testid={`nav-link-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
         className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-md transition-all duration-200 ${
           isActive
             ? 'bg-primary text-white shadow-sm'
             : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
         } ${sidebarCollapsed && !isMobile ? 'justify-center' : ''}`}
-        onClick={() => isMobile && setSidebarOpen(false)}
       >
         <item.icon className="w-5 h-5 shrink-0" />
-        {(!sidebarCollapsed || isMobile) && <span className="truncate">{item.name}</span>}
-      </Link>
+        {(!sidebarCollapsed || isMobile) && (
+          <>
+            <span className="truncate flex-1">{item.name}</span>
+            {isExternal && <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-50" />}
+          </>
+        )}
+      </Tag>
     );
 
     if (sidebarCollapsed && !isMobile) {
