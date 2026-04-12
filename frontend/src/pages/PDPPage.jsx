@@ -57,10 +57,14 @@ import {
 import * as XLSX from 'xlsx';
 
 const STATUS_CONFIG = {
-  not_started: { label: 'Not Started', color: 'bg-slate-100 text-slate-600', icon: Circle },
-  in_progress:  { label: 'In Progress',  color: 'bg-blue-100 text-blue-700',   icon: Clock },
-  completed:    { label: 'Completed',    color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 },
-  overdue:      { label: 'Overdue',      color: 'bg-rose-100 text-rose-700',   icon: AlertCircle },
+  not_started:       { label: 'Not Started',        color: 'bg-slate-100 text-slate-600',    icon: Circle },
+  in_progress:       { label: 'In Progress',        color: 'bg-blue-100 text-blue-700',      icon: Clock },
+  pending_approval:  { label: 'Pending Approval',   color: 'bg-amber-100 text-amber-700',    icon: Clock },
+  manager_approved:  { label: 'Manager Approved',   color: 'bg-teal-100 text-teal-700',      icon: CheckCircle2 },
+  ld_tracking:       { label: 'L&D Tracking',       color: 'bg-purple-100 text-purple-700',  icon: Eye },
+  completed:         { label: 'Completed',           color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle2 },
+  overdue:           { label: 'Overdue',             color: 'bg-rose-100 text-rose-700',      icon: AlertCircle },
+  rejected:          { label: 'Rejected',            color: 'bg-red-100 text-red-700',        icon: AlertCircle },
 };
 
 const PRIORITY_CONFIG = {
@@ -341,6 +345,52 @@ const PDPPage = () => {
     }
   };
 
+  // Submit PDP for manager approval (employee action)
+  const handleSubmitForApproval = async (entry) => {
+    try {
+      await pdpAPI.update(entry.id, { status: 'pending_approval' });
+      toast.success('Submitted for manager approval');
+      fetchEntries();
+    } catch {
+      toast.error('Failed to submit for approval');
+    }
+  };
+
+  // Manager approve/reject (head/admin action)
+  const handleApprove = async (entry) => {
+    try {
+      await pdpAPI.update(entry.id, { status: 'manager_approved' });
+      toast.success('PDP entry approved');
+      fetchEntries();
+    } catch {
+      toast.error('Failed to approve');
+    }
+  };
+
+  const handleReject = async (entry) => {
+    try {
+      await pdpAPI.update(entry.id, { status: 'rejected' });
+      toast.success('PDP entry sent back');
+      fetchEntries();
+    } catch {
+      toast.error('Failed to reject');
+    }
+  };
+
+  // L&D admin move to tracking
+  const handleMoveToTracking = async (entry) => {
+    try {
+      await pdpAPI.update(entry.id, { status: 'ld_tracking' });
+      toast.success('Moved to L&D Tracking');
+      fetchEntries();
+    } catch {
+      toast.error('Failed to update');
+    }
+  };
+
+  const isHead = user?.is_head || false;
+  const isAdminOrHead = isAdmin || isHead;
+
   const filtered = entries.filter(e => {
     if (filterStatus !== 'all' && e.status !== filterStatus) return false;
     if (filterPriority !== 'all' && e.priority !== filterPriority) return false;
@@ -355,6 +405,7 @@ const PDPPage = () => {
     in_progress: entries.filter(e => e.status === 'in_progress').length,
     completed: entries.filter(e => e.status === 'completed').length,
     overdue: entries.filter(e => e.status === 'overdue').length,
+    pending_approval: entries.filter(e => e.status === 'pending_approval').length,
   };
 
   // Wizard steps config
@@ -655,12 +706,24 @@ const PDPPage = () => {
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
-                              {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                                <DropdownMenuItem key={k} onClick={() => handleStatusChange(entry, k)}>
-                                  <v.icon className="w-4 h-4 mr-2" />
-                                  {v.label}
-                                </DropdownMenuItem>
-                              ))}
+                              {isAdmin ? (
+                                Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                                  <DropdownMenuItem key={k} onClick={() => handleStatusChange(entry, k)}>
+                                    <v.icon className="w-4 h-4 mr-2" />
+                                    {v.label}
+                                  </DropdownMenuItem>
+                                ))
+                              ) : (
+                                ['not_started', 'in_progress'].map(k => {
+                                  const v = STATUS_CONFIG[k];
+                                  return (
+                                    <DropdownMenuItem key={k} onClick={() => handleStatusChange(entry, k)}>
+                                      <v.icon className="w-4 h-4 mr-2" />
+                                      {v.label}
+                                    </DropdownMenuItem>
+                                  );
+                                })
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${pr.color}`}>
@@ -670,25 +733,54 @@ const PDPPage = () => {
                       </td>
                       {/* Actions */}
                       <td className="px-2 py-4 align-top">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
-                              <MoreVertical className="w-4 h-4" />
+                        <div className="flex items-center gap-1">
+                          {/* Employee: Submit for Approval */}
+                          {!isAdmin && !isHead && (entry.status === 'not_started' || entry.status === 'in_progress' || entry.status === 'rejected') && (
+                            <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-amber-700 border-amber-300 hover:bg-amber-50"
+                              onClick={() => handleSubmitForApproval(entry)} data-testid="submit-for-approval-btn">
+                              Submit
                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openView(entry)}>
-                              <Eye className="w-4 h-4 mr-2" /> View Full
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openEdit(entry)}>
-                              <Edit2 className="w-4 h-4 mr-2" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-rose-600" onClick={() => setDeleteConfirm(entry.id)}>
-                              <Trash2 className="w-4 h-4 mr-2" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                          )}
+                          {/* Manager/Head: Approve or Reject */}
+                          {isAdminOrHead && entry.status === 'pending_approval' && (
+                            <>
+                              <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-emerald-700 border-emerald-300 hover:bg-emerald-50"
+                                onClick={() => handleApprove(entry)} data-testid="approve-pdp-btn">
+                                Approve
+                              </Button>
+                              <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-rose-700 border-rose-300 hover:bg-rose-50"
+                                onClick={() => handleReject(entry)} data-testid="reject-pdp-btn">
+                                Reject
+                              </Button>
+                            </>
+                          )}
+                          {/* Admin (L&D): Move to tracking */}
+                          {isAdmin && entry.status === 'manager_approved' && (
+                            <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-purple-700 border-purple-300 hover:bg-purple-50"
+                              onClick={() => handleMoveToTracking(entry)} data-testid="ld-tracking-btn">
+                              L&D Track
+                            </Button>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openView(entry)}>
+                                <Eye className="w-4 h-4 mr-2" /> View Full
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openEdit(entry)}>
+                                <Edit2 className="w-4 h-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-rose-600" onClick={() => setDeleteConfirm(entry.id)}>
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </td>
                     </tr>
                   );

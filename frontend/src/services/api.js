@@ -56,6 +56,7 @@ export const usersAPI = {
   delete: (id) => api.delete(`/users/${id}`),
   downloadImportTemplate: () => api.get('/users/import-template', { responseType: 'blob' }),
   batchAction: (action, userIds) => api.post('/users/batch-action', { action, user_ids: userIds }),
+  lookupByIdNumber: (idNumber) => api.get('/users/lookup-by-id', { params: { id_number: idNumber } }),
 };
 
 export const divisionsAPI = {

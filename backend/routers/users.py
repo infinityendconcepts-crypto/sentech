@@ -98,6 +98,31 @@ async def get_users(
     return users
 
 
+@router.get("/users/lookup-by-id")
+async def lookup_user_by_id_number(id_number: str, current_user: dict = Depends(get_current_user)):
+    """Lookup a user by SA ID number and return their details for auto-populating application forms."""
+    if not id_number or len(id_number) < 6:
+        raise HTTPException(status_code=400, detail="ID number must be at least 6 characters")
+    user = await db.users.find_one({"id_number": id_number}, {"_id": 0, "password_hash": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="No employee found with this ID number")
+    return {
+        "found": True,
+        "surname": user.get("surname", ""),
+        "name": user.get("full_name", ""),
+        "division": user.get("division", ""),
+        "department": user.get("department", ""),
+        "position": user.get("position", ""),
+        "race": user.get("race", ""),
+        "gender": user.get("gender", ""),
+        "email": user.get("email", ""),
+        "phone": user.get("phone", ""),
+        "personnel_number": user.get("personnel_number", ""),
+        "id_number": user.get("id_number", ""),
+    }
+
+
+
 @router.get("/users/me")
 async def get_my_profile(current_user: dict = Depends(get_current_user)):
     user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { applicationsAPI } from '../services/api';
-import { FileText, Plus, Search, Clock, CheckCircle2, XCircle, Edit, Eye, AlertCircle, Loader2, User, Briefcase, GraduationCap, Upload, Calendar, Building, X, Receipt, Plane, Hotel, Car, UtensilsCrossed, Trash2, CheckSquare, Square, Settings2, Lock, Unlock } from 'lucide-react';
+import { FileText, Plus, Search, Clock, CheckCircle2, XCircle, Edit, Eye, AlertCircle, Loader2, User, Briefcase, GraduationCap, Upload, Calendar, Building, X, Receipt, Plane, Hotel, Car, UtensilsCrossed, Trash2, CheckSquare, Square, Settings2, Lock, Unlock, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -312,6 +312,27 @@ const ApplicationsPage = () => {
     }
   };
 
+  const renderDocumentValue = (value) => {
+    try {
+      const doc = JSON.parse(value);
+      if (doc && doc.name && doc.data) {
+        return (
+          <a
+            href={doc.data}
+            download={doc.name}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 underline"
+            data-testid="doc-download-link"
+          >
+            <Download className="w-3.5 h-3.5" /> {doc.name}
+          </a>
+        );
+      }
+    } catch {
+      // Not JSON — legacy plain string
+    }
+    return <span className="text-sm font-semibold text-slate-900">{String(value)}</span>;
+  };
+
   const getSummarySection = (title, data, icon) => {
     if (!data || typeof data !== 'object') return null;
     const entries = Object.entries(data).filter(([key, value]) => value && value !== '');
@@ -320,6 +341,8 @@ const ApplicationsPage = () => {
     const formatLabel = (key) => {
       return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
+    
+    const isDocSection = title.toLowerCase().includes('document');
     
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
@@ -333,7 +356,7 @@ const ApplicationsPage = () => {
           {entries.map(([key, value]) => (
             <div key={key} className="bg-slate-50 rounded-lg p-3">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{formatLabel(key)}</p>
-              <p className="text-sm font-semibold text-slate-900">{String(value)}</p>
+              {isDocSection ? renderDocumentValue(value) : <p className="text-sm font-semibold text-slate-900">{String(value)}</p>}
             </div>
           ))}
         </div>

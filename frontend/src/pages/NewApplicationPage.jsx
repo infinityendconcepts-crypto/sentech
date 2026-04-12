@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { applicationsAPI } from '../services/api';
+import { applicationsAPI, usersAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { CheckCircle2, ChevronLeft, ChevronRight, FileText, User, Briefcase, GraduationCap, Upload, Eye, Search, Lock, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -167,6 +167,58 @@ const NewApplicationPage = () => {
         [field]: value,
       },
     }));
+  };
+
+  // Auto-populate employee details when SA ID number is entered (13 digits)
+  const [lookingUp, setLookingUp] = useState(false);
+  const handleIdNumberChange = async (value) => {
+    updateField('personal_info', 'id_number', value);
+    if (value.length === 13) {
+      setLookingUp(true);
+      try {
+        const res = await usersAPI.lookupByIdNumber(value);
+        const data = res.data;
+        if (data.found) {
+          setFormData(prev => ({
+            ...prev,
+            personal_info: {
+              ...prev.personal_info,
+              id_number: value,
+              surname: data.surname || prev.personal_info.surname,
+              name: data.name || prev.personal_info.name,
+              race: data.race || prev.personal_info.race,
+              gender: data.gender || prev.personal_info.gender,
+            },
+            employment_info: {
+              ...prev.employment_info,
+              division: data.division || prev.employment_info.division,
+              department: data.department || prev.employment_info.department,
+              position_description: data.position || prev.employment_info.position_description,
+            },
+          }));
+          toast.success('Employee details auto-populated');
+        }
+      } catch {
+        // Not found — user fills manually
+      } finally {
+        setLookingUp(false);
+      }
+    }
+  };
+
+  // Convert file to base64 and store in form
+  const handleFileUpload = (section, field, file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      updateField(section, field, JSON.stringify({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        data: e.target.result,
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const isNewApplicant = formData.academic_bursary_info.applicant_type === 'NEW APPLICANT';
@@ -376,12 +428,12 @@ const NewApplicationPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="id_number">ID Number *</Label>
+                <Label htmlFor="id_number">ID Number * {lookingUp && <span className="text-primary text-xs ml-1">Looking up...</span>}</Label>
                 <Input
                   id="id_number"
                   placeholder="Enter 13-digit ID number"
                   value={formData.personal_info.id_number}
-                  onChange={(e) => updateField('personal_info', 'id_number', e.target.value)}
+                  onChange={(e) => handleIdNumberChange(e.target.value)}
                   data-testid="input-id-number"
                   maxLength={13}
                   required
@@ -686,7 +738,7 @@ const NewApplicationPage = () => {
                     id="signed_performance_contract"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'signed_performance_contract', e.target.files[0]?.name || '')}
+                    onChange={(e) => handleFileUpload('documents', 'signed_performance_contract', e.target.files[0])}
                     data-testid="input-signed-performance-contract"
                     required
                   />
@@ -704,7 +756,7 @@ const NewApplicationPage = () => {
                       id="academic_transcript"
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => updateField('documents', 'academic_transcript', e.target.files[0]?.name || '')}
+                      onChange={(e) => handleFileUpload('documents', 'academic_transcript', e.target.files[0])}
                       data-testid="input-academic-transcript"
                       required
                     />
@@ -726,7 +778,7 @@ const NewApplicationPage = () => {
                     id="proof_of_registration"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'proof_of_registration', e.target.files[0]?.name || '')}
+                    onChange={(e) => handleFileUpload('documents', 'proof_of_registration', e.target.files[0])}
                     data-testid="input-proof-of-registration"
                     required
                   />
@@ -738,7 +790,7 @@ const NewApplicationPage = () => {
                     id="quotation_amount_requested"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'quotation_amount_requested', e.target.files[0]?.name || '')}
+                    onChange={(e) => handleFileUpload('documents', 'quotation_amount_requested', e.target.files[0])}
                     data-testid="input-quotation-amount-requested"
                     required
                   />
@@ -750,7 +802,7 @@ const NewApplicationPage = () => {
                     id="motivation_document"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => updateField('documents', 'motivation_document', e.target.files[0]?.name || '')}
+                    onChange={(e) => handleFileUpload('documents', 'motivation_document', e.target.files[0])}
                     data-testid="input-motivation-document"
                     required
                   />
@@ -763,7 +815,7 @@ const NewApplicationPage = () => {
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     multiple
-                    onChange={(e) => updateField('documents', 'other_documents', e.target.files[0]?.name || '')}
+                    onChange={(e) => handleFileUpload('documents', 'other_documents', e.target.files[0])}
                     data-testid="input-other-documents"
                   />
                   <p className="text-xs text-slate-600">Upload any other relevant supporting documents</p>
