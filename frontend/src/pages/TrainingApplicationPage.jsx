@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -1260,6 +1261,7 @@ const TrainingApplicationPage = () => {
               <FileText className="w-5 h-5 text-primary" />
               Training Application Summary
             </DialogTitle>
+            <DialogDescription>Review all entered information before submission</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

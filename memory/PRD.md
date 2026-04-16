@@ -30,11 +30,20 @@ Build a comprehensive bursary management system named "Sentech" using React, Fas
 - Real-time messaging system
 - Settings management (SMTP, company info, roles)
 
-## Completed in Current Session (April 2026)
+## Completed (April 2026)
 - **Backend Refactoring**: server.py 3248→71 lines, 18 modular routers (49/49 tests passed)
 - **Auto-populate by SA ID**: Enter 13-digit ID on Bursary/Training forms → auto-fills name, surname, division, dept, race, gender
 - **Document viewing fixed**: Documents stored as base64 JSON with downloadable links in application summaries
 - **PDP Approval Workflow**: Employee submits → Manager approves/rejects → L&D admin tracks → Completed
+- **Employment Eligibility Validations**: Score < 3, temporary contracts, < 1yr permanent blocked
+- **Training Application Form Updates** (NEW - April 16, 2026):
+  - Replaced `training_status` dropdown with `training_date` date picker
+  - Added `training_delivery` selection (Digital / Non-digital)
+  - Updated Supplier Type dropdown: Preferred supplier (Local), Preferred supplier (International), SCM route, Internal Training
+  - Internal Training: auto-sets provider to "Sentech", hides ALL document uploads
+  - SCM route: disables most Step 3 fields, only requires Scope of Work document
+  - Over R15,000 threshold: shows Motivation upload INSTEAD of Performance Contract (not both)
+  - All 11 test cases passed at 100%
 
 ## PDP Workflow
 1. Employee creates PDP entry (status: not_started)
@@ -44,11 +53,13 @@ Build a comprehensive bursary management system named "Sentech" using React, Fas
 5. Admin (L&D) clicks **L&D Track** to monitor progress
 6. Admin marks **Completed** when done
 
+## P1 Backlog
+1. Microsoft SSO (requires Azure AD app registration credentials from user)
+
 ## P2 Backlog
 1. Refactor file uploads to chunked multipart
 2. Audit log for admin actions
 3. Scheduled auto-export weekly XLSX reports
-4. Microsoft SSO (requires Azure AD app registration)
 
 ## Test Credentials
 - Super Admin: jane.smith@uct.ac.za / securepass123
