@@ -74,7 +74,9 @@ const TrainingApplicationPage = () => {
       division: '',
       department: '',
       position_description: '',
+      type_of_employment: '',
       date_of_appointment: '',
+      years_of_service: '',
       performance_score: '',
     },
     training_info: {
@@ -133,7 +135,7 @@ const TrainingApplicationPage = () => {
               surname: '', name: '', id_number: '', race: '', gender: '', disability: '', disability_description: '', medical_certificate: '', district_municipality: ''
             },
             employment_info: app.employment_info || {
-              division: '', department: '', position_description: '', date_of_appointment: '', performance_score: ''
+              division: '', department: '', position_description: '', type_of_employment: '', date_of_appointment: '', years_of_service: '', performance_score: ''
             },
             training_info: app.training_info || {
               training_status: '', service_provider: '', training_type: '', total_amount: '', supplier_type: ''
@@ -210,6 +212,7 @@ const TrainingApplicationPage = () => {
               division: data.division || prev.employment_info.division,
               department: data.department || prev.employment_info.department,
               position_description: data.position || prev.employment_info.position_description,
+              years_of_service: data.years_of_service ? String(data.years_of_service) : prev.employment_info.years_of_service,
             },
           }));
           toast.success('Employee details auto-populated');
@@ -287,7 +290,38 @@ const TrainingApplicationPage = () => {
     }
   };
 
+  // Auto-calculate years of service when date_of_appointment changes
+  const handleDateOfAppointment = (value) => {
+    updateField('employment_info', 'date_of_appointment', value);
+    if (value) {
+      const appointDate = new Date(value);
+      const now = new Date();
+      const diffYears = (now - appointDate) / (365.25 * 24 * 60 * 60 * 1000);
+      updateField('employment_info', 'years_of_service', diffYears.toFixed(1));
+    }
+  };
+
   const handleNext = () => {
+    // Step 2 validation — employment eligibility checks
+    if (currentStep === 2) {
+      const emp = formData.employment_info;
+      const score = parseFloat(emp.performance_score);
+      const employmentType = emp.type_of_employment;
+      const yearsOfService = parseFloat(emp.years_of_service) || 0;
+
+      if (score && score < 3) {
+        toast.error('You are not eligible to apply. Your performance score must be 3 or above.');
+        return;
+      }
+      if (employmentType === 'Temporary Contract') {
+        toast.error('Employees on a Temporary Contract are not eligible to apply for training.');
+        return;
+      }
+      if (['Permanent', '5-year fixed term contract', '3-year fixed term contract'].includes(employmentType) && yearsOfService < 1) {
+        toast.error('You must have at least 1 year of service to be eligible. Your current service: ' + yearsOfService.toFixed(1) + ' years.');
+        return;
+      }
+    }
     if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
 
@@ -602,14 +636,42 @@ const TrainingApplicationPage = () => {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="type_of_employment">Type of Employment *</Label>
+                <select
+                  id="type_of_employment"
+                  value={formData.employment_info.type_of_employment}
+                  onChange={(e) => updateField('employment_info', 'type_of_employment', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  data-testid="select-type-of-employment"
+                  required
+                >
+                  <option value="">Select type of employment</option>
+                  <option value="Permanent">Permanent</option>
+                  <option value="5-year fixed term contract">5-year fixed term contract</option>
+                  <option value="3-year fixed term contract">3-year fixed term contract</option>
+                  <option value="Temporary Contract">Temporary Contract</option>
+                </select>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="date_of_appointment">Date of Appointment *</Label>
                 <Input
                   id="date_of_appointment"
                   type="date"
                   value={formData.employment_info.date_of_appointment}
-                  onChange={(e) => updateField('employment_info', 'date_of_appointment', e.target.value)}
+                  onChange={(e) => handleDateOfAppointment(e.target.value)}
                   data-testid="input-date-of-appointment"
                   required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="years_of_service">Years of Service</Label>
+                <Input
+                  id="years_of_service"
+                  value={formData.employment_info.years_of_service ? `${formData.employment_info.years_of_service} years` : ''}
+                  readOnly
+                  className="bg-slate-50"
+                  data-testid="input-years-of-service"
+                  placeholder="Auto-calculated from date of appointment"
                 />
               </div>
               <div className="space-y-2">
@@ -629,7 +691,18 @@ const TrainingApplicationPage = () => {
                   <option value="4">4</option>
                   <option value="5">5</option>
                 </select>
-                <p className="text-xs text-slate-600">Select your most recent performance evaluation score</p>
+                {formData.employment_info.performance_score && parseFloat(formData.employment_info.performance_score) < 3 ? (
+                  <p className="text-xs text-rose-600 font-medium">Score below 3 — not eligible to proceed</p>
+                ) : (
+                  <p className="text-xs text-slate-600">Select your most recent performance evaluation score</p>
+                )}
+                {formData.employment_info.type_of_employment === 'Temporary Contract' && (
+                  <p className="text-xs text-rose-600 font-medium">Temporary Contract employees are not eligible to apply</p>
+                )}
+                {['Permanent', '5-year fixed term contract', '3-year fixed term contract'].includes(formData.employment_info.type_of_employment) &&
+                  formData.employment_info.years_of_service && parseFloat(formData.employment_info.years_of_service) < 1 && (
+                  <p className="text-xs text-rose-600 font-medium">Less than 1 year of service — not eligible to apply</p>
+                )}
               </div>
             </div>
           )}
