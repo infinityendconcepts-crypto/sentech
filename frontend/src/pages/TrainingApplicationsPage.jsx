@@ -266,24 +266,52 @@ const TrainingApplicationsPage = () => {
   });
 
   const renderDocumentValue = (value) => {
+    if (!value) return null;
     try {
       const doc = JSON.parse(value);
       if (doc && doc.name && doc.data) {
         return (
-          <a
-            href={doc.data}
-            download={doc.name}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 underline"
-            data-testid="doc-download-link"
-          >
-            <Download className="w-3.5 h-3.5" /> {doc.name}
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href={doc.data}
+              download={doc.name}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 underline"
+              data-testid="doc-download-link"
+            >
+              <Download className="w-3.5 h-3.5" /> {doc.name}
+            </a>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={() => {
+                const win = window.open('', '_blank');
+                if (doc.type && doc.type.startsWith('image/')) {
+                  win.document.write(`<img src="${doc.data}" style="max-width:100%" />`);
+                } else if (doc.type === 'application/pdf') {
+                  win.document.write(`<iframe src="${doc.data}" style="width:100%;height:100vh;border:none"></iframe>`);
+                } else {
+                  win.location.href = doc.data;
+                }
+              }}
+              data-testid="doc-view-btn"
+            >
+              <Eye className="w-3 h-3 mr-1" /> View
+            </Button>
+          </div>
         );
       }
     } catch {
-      // Not JSON — legacy plain string
+      // Not JSON — legacy filename
     }
-    return <span className="text-sm font-semibold text-slate-900">{String(value)}</span>;
+    const filename = String(value);
+    return (
+      <div className="flex items-center gap-2">
+        <FileText className="w-4 h-4 text-slate-400" />
+        <span className="text-sm font-semibold text-slate-700">{filename}</span>
+        <span className="text-xs text-slate-400 italic">(re-upload required to view)</span>
+      </div>
+    );
   };
 
   const getSummarySection = (title, data, icon) => {
@@ -547,7 +575,7 @@ const TrainingApplicationsPage = () => {
 
       {/* Application Full View Dialog */}
       <Dialog open={showSummaryDialog} onOpenChange={setShowSummaryDialog}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
           {selectedApplication && (
             <>
               <div className="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6">
