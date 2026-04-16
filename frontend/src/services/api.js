@@ -292,6 +292,7 @@ export const dashboardAPI = {
   getStats: () => api.get('/dashboard/stats'),
   getRecentActivity: () => api.get('/dashboard/recent-activity'),
   getReportSummary: () => api.get('/dashboard/report-summary'),
+  getTrainingInsights: () => api.get('/dashboard/training-insights'),
 };
 
 export const notificationsAPI = {

@@ -519,6 +519,49 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     }
 
 
+@router.get("/dashboard/training-insights")
+async def get_training_insights(current_user: dict = Depends(get_current_user)):
+    """Training insights for admin/head dashboard: digital vs non-digital, spend, interns."""
+    is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    is_head = current_user.get("is_head", False)
+    if not is_admin and not is_head:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # Fetch all non-draft training applications
+    apps = await db.training_applications.find(
+        {"status": {"$ne": "draft"}}, {"_id": 0, "training_info": 1}
+    ).to_list(10000)
+
+    digital = 0
+    non_digital = 0
+    total_spend = 0.0
+    for a in apps:
+        ti = a.get("training_info", {})
+        delivery = ti.get("training_delivery", "")
+        if delivery == "digital":
+            digital += 1
+        elif delivery == "non-digital":
+            non_digital += 1
+        amt = ti.get("total_amount")
+        if amt:
+            try:
+                total_spend += float(amt)
+            except (ValueError, TypeError):
+                pass
+
+    total_trainings = len(apps)
+    total_interns = await db.users.count_documents({"roles": "student"})
+
+    return {
+        "digital_trainings": digital,
+        "non_digital_trainings": non_digital,
+        "total_trainings": total_trainings,
+        "total_spend": total_spend,
+        "total_interns": total_interns,
+    }
+
+
+
 @router.get("/dashboard/recent-activity")
 async def get_recent_activity(current_user: dict = Depends(get_current_user)):
     is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])

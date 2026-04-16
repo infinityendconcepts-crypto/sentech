@@ -36,14 +36,19 @@ Build a comprehensive bursary management system named "Sentech" using React, Fas
 - **Document viewing fixed**: Documents stored as base64 JSON with downloadable links in application summaries
 - **PDP Approval Workflow**: Employee submits → Manager approves/rejects → L&D admin tracks → Completed
 - **Employment Eligibility Validations**: Score < 3, temporary contracts, < 1yr permanent blocked
-- **Training Application Form Updates** (NEW - April 16, 2026):
+- **Training Application Form Updates** (April 16, 2026):
   - Replaced `training_status` dropdown with `training_date` date picker
   - Added `training_delivery` selection (Digital / Non-digital)
   - Updated Supplier Type dropdown: Preferred supplier (Local), Preferred supplier (International), SCM route, Internal Training
   - Internal Training: auto-sets provider to "Sentech", hides ALL document uploads
   - SCM route: disables most Step 3 fields, only requires Scope of Work document
   - Over R15,000 threshold: shows Motivation upload INSTEAD of Performance Contract (not both)
-  - All 11 test cases passed at 100%
+- **Dashboard Training Insights** (April 16, 2026):
+  - Pie chart: Digital vs Non-digital trainings (recharts)
+  - Stat cards: Total Trainings, Total Spend, Total Interns (users with "student" role)
+  - Visible only to admins and heads
+  - Backend: `GET /api/dashboard/training-insights`
+  - Udemy sidebar link updated to `https://sentech.udemy.com`
 
 ## PDP Workflow
 1. Employee creates PDP entry (status: not_started)
