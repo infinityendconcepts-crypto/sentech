@@ -354,10 +354,10 @@ const ApplicationsPage = () => {
     // Legacy documents: just filename stored, no file data
     const filename = String(value);
     return (
-      <div className="flex items-center gap-2">
-        <FileText className="w-4 h-4 text-slate-400" />
-        <span className="text-sm font-semibold text-slate-700">{filename}</span>
-        <span className="text-xs text-slate-400 italic">(re-upload required to view)</span>
+      <div className="flex items-center gap-2 flex-wrap">
+        <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
+        <span className="text-sm font-semibold text-slate-700 break-all">{filename}</span>
+        <span className="text-xs text-slate-400 italic whitespace-nowrap">(re-upload required to view)</span>
       </div>
     );
   };
@@ -381,11 +381,11 @@ const ApplicationsPage = () => {
           </div>
           <h4 className="text-lg font-semibold text-slate-900">{title}</h4>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={`grid gap-4 ${isDocSection ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
           {entries.map(([key, value]) => (
-            <div key={key} className="bg-slate-50 rounded-lg p-3">
+            <div key={key} className="bg-slate-50 rounded-lg p-3 overflow-hidden">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{formatLabel(key)}</p>
-              {isDocSection ? renderDocumentValue(value) : <p className="text-sm font-semibold text-slate-900">{String(value)}</p>}
+              {isDocSection ? renderDocumentValue(value) : <p className="text-sm font-semibold text-slate-900 break-words">{String(value)}</p>}
             </div>
           ))}
         </div>
