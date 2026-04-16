@@ -8,7 +8,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://grant-portal-14.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://rbac-forms-dev.preview.emergentagent.com')
 
 # Test credentials
 SUPER_ADMIN = {"email": "jane.smith@uct.ac.za", "password": "securepass123"}

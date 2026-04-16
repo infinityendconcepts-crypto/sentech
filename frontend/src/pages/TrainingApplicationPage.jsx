@@ -80,11 +80,12 @@ const TrainingApplicationPage = () => {
       performance_score: '',
     },
     training_info: {
-      training_status: '',
+      training_date: '',
+      training_delivery: '',
       service_provider: '',
       training_type: '',
       total_amount: '',
-      supplier_type: '', // 'sa_supplier' or 'international_supplier'
+      supplier_type: '',
     },
     documents: {
       signed_performance_contract: '',
@@ -137,8 +138,13 @@ const TrainingApplicationPage = () => {
             employment_info: app.employment_info || {
               division: '', department: '', position_description: '', type_of_employment: '', date_of_appointment: '', years_of_service: '', performance_score: ''
             },
-            training_info: app.training_info || {
-              training_status: '', service_provider: '', training_type: '', total_amount: '', supplier_type: ''
+            training_info: {
+              training_date: app.training_info?.training_date || app.training_info?.training_status || '',
+              training_delivery: app.training_info?.training_delivery || '',
+              service_provider: app.training_info?.service_provider || '',
+              training_type: app.training_info?.training_type || '',
+              total_amount: app.training_info?.total_amount || '',
+              supplier_type: app.training_info?.supplier_type || '',
             },
             documents: app.documents || {
               signed_performance_contract: '', quotation: '', sbd4_form: '', sbd1_form: '', consent_form: '', csd_report: '', bbbee_certificate: '', motivation: '', scope_of_work: '', other_documents: ''
@@ -345,8 +351,10 @@ const TrainingApplicationPage = () => {
   // Calculate if training is over R15,000
   const totalAmount = parseFloat(formData.training_info.total_amount) || 0;
   const isOverThreshold = totalAmount > 15000;
-  const isRFQRequired = formData.training_info.supplier_type === 'sa_supplier' || formData.training_info.supplier_type === 'international_supplier';
-  const isInternational = formData.training_info.supplier_type === 'international_supplier';
+  const supplierType = formData.training_info.supplier_type;
+  const isScmRoute = supplierType === 'scm_route';
+  const isInternalTraining = supplierType === 'internal_training';
+  const isPreferredInternational = supplierType === 'preferred_international';
 
   if (loadingApplication) {
     return (
@@ -729,27 +737,34 @@ const TrainingApplicationPage = () => {
                 <select
                   id="supplier_type"
                   value={formData.training_info.supplier_type}
-                  onChange={(e) => updateField('training_info', 'supplier_type', e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    updateField('training_info', 'supplier_type', val);
+                    if (val === 'internal_training') {
+                      updateField('training_info', 'service_provider', 'Sentech');
+                    } else if (formData.training_info.service_provider === 'Sentech') {
+                      updateField('training_info', 'service_provider', '');
+                    }
+                  }}
                   className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   data-testid="select-supplier-type"
                   required
                 >
                   <option value="">Select supplier type</option>
-                  <option value="preferred_supplier">Preferred Supplier</option>
-                  <option value="sa_supplier">South African Supplier (SCM) Route</option>
-                  <option value="international_supplier">International Supplier (SCM) Route</option>
+                  <option value="preferred_local">Preferred supplier (Local)</option>
+                  <option value="preferred_international">Preferred supplier (International)</option>
+                  <option value="scm_route">SCM route</option>
+                  <option value="internal_training">Internal Training</option>
                 </select>
               </div>
 
-              {/* RFQ Selected Info Box */}
-              {isRFQRequired && (
+              {/* SCM Route Info Box */}
+              {isScmRoute && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="w-5 h-5 mt-0.5 text-purple-600" />
                     <div>
-                      <h4 className="font-semibold text-purple-900">
-                        {isInternational ? 'International Supplier (SCM) Route Selected' : 'South African Supplier (SCM) Route Selected'}
-                      </h4>
+                      <h4 className="font-semibold text-purple-900">SCM Route Selected</h4>
                       <p className="text-sm mt-1 text-purple-800">
                         Since you selected the SCM route, you only need to upload the Scope of Work document in Step 4.
                         All other fields and documents will be handled through the SCM process.
@@ -759,64 +774,94 @@ const TrainingApplicationPage = () => {
                 </div>
               )}
 
-              {/* Other fields - disabled when RFQ is selected */}
+              {/* Internal Training Info Box */}
+              {isInternalTraining && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 mt-0.5 text-emerald-600" />
+                    <div>
+                      <h4 className="font-semibold text-emerald-900">Internal Training Selected</h4>
+                      <p className="text-sm mt-1 text-emerald-800">
+                        Internal training (Sentech) does not require any document uploads. The supplier name has been set to Sentech automatically.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Other fields - disabled when SCM or Internal Training is selected */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="training_status" className={isRFQRequired ? 'text-slate-400' : ''}>
-                    Training Status {!isRFQRequired && '*'}
+                  <Label htmlFor="training_date" className={isScmRoute ? 'text-slate-400' : ''}>
+                    Training Date {!isScmRoute && '*'}
+                  </Label>
+                  <Input
+                    id="training_date"
+                    type="date"
+                    value={formData.training_info.training_date}
+                    onChange={(e) => updateField('training_info', 'training_date', e.target.value)}
+                    className={isScmRoute ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
+                    data-testid="input-training-date"
+                    disabled={isScmRoute}
+                    required={!isScmRoute}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="training_delivery" className={isScmRoute ? 'text-slate-400' : ''}>
+                    Training Delivery {!isScmRoute && '*'}
                   </Label>
                   <select
-                    id="training_status"
-                    value={formData.training_info.training_status}
-                    onChange={(e) => updateField('training_info', 'training_status', e.target.value)}
+                    id="training_delivery"
+                    value={formData.training_info.training_delivery}
+                    onChange={(e) => updateField('training_info', 'training_delivery', e.target.value)}
                     className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                      isRFQRequired 
-                        ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed' 
+                      isScmRoute
+                        ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
                         : 'border-slate-200 bg-white'
                     }`}
-                    data-testid="select-training-status"
-                    disabled={isRFQRequired}
-                    required={!isRFQRequired}
+                    data-testid="select-training-delivery"
+                    disabled={isScmRoute}
+                    required={!isScmRoute}
                   >
-                    <option value="">Select status</option>
-                    <option value="new">New Training</option>
-                    <option value="continuation">Continuation</option>
-                    <option value="upgrade">Upgrade/Advanced</option>
+                    <option value="">Select delivery mode</option>
+                    <option value="digital">Digital</option>
+                    <option value="non-digital">Non-digital</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="service_provider" className={isRFQRequired ? 'text-slate-400' : ''}>
-                    Service Provider {!isRFQRequired && '*'}
+                  <Label htmlFor="service_provider" className={(isScmRoute || isInternalTraining) ? 'text-slate-400' : ''}>
+                    Service Provider {!(isScmRoute || isInternalTraining) && '*'}
                   </Label>
                   <Input
                     id="service_provider"
                     placeholder="Enter service provider name"
                     value={formData.training_info.service_provider}
                     onChange={(e) => updateField('training_info', 'service_provider', e.target.value)}
-                    className={isRFQRequired ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
+                    className={(isScmRoute || isInternalTraining) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
                     data-testid="input-service-provider"
-                    disabled={isRFQRequired}
-                    required={!isRFQRequired}
+                    disabled={isScmRoute || isInternalTraining}
+                    required={!(isScmRoute || isInternalTraining)}
                   />
+                  {isInternalTraining && <p className="text-xs text-emerald-600">Auto-set to Sentech for internal training</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="training_type" className={isRFQRequired ? 'text-slate-400' : ''}>
-                    Training Type {!isRFQRequired && '*'}
+                  <Label htmlFor="training_type" className={isScmRoute ? 'text-slate-400' : ''}>
+                    Training Type {!isScmRoute && '*'}
                   </Label>
                   <Input
                     id="training_type"
                     placeholder="e.g., Project Management, Excel Advanced"
                     value={formData.training_info.training_type}
                     onChange={(e) => updateField('training_info', 'training_type', e.target.value)}
-                    className={isRFQRequired ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
+                    className={isScmRoute ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
                     data-testid="input-training-type"
-                    disabled={isRFQRequired}
-                    required={!isRFQRequired}
+                    disabled={isScmRoute}
+                    required={!isScmRoute}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="total_amount" className={isRFQRequired ? 'text-slate-400' : ''}>
-                    Total Amount (R) {!isRFQRequired && '*'}
+                  <Label htmlFor="total_amount" className={(isScmRoute || isInternalTraining) ? 'text-slate-400' : ''}>
+                    Total Amount (R) {!(isScmRoute || isInternalTraining) && '*'}
                   </Label>
                   <Input
                     id="total_amount"
@@ -824,17 +869,17 @@ const TrainingApplicationPage = () => {
                     placeholder="e.g., 15000"
                     value={formData.training_info.total_amount}
                     onChange={(e) => updateField('training_info', 'total_amount', e.target.value)}
-                    className={isRFQRequired ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
+                    className={(isScmRoute || isInternalTraining) ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
                     data-testid="input-total-amount"
-                    disabled={isRFQRequired}
-                    required={!isRFQRequired}
+                    disabled={isScmRoute || isInternalTraining}
+                    required={!(isScmRoute || isInternalTraining)}
                   />
-                  {!isRFQRequired && <p className="text-xs text-slate-600">Enter the total training cost including VAT</p>}
+                  {!(isScmRoute || isInternalTraining) && <p className="text-xs text-slate-600">Enter the total training cost including VAT</p>}
                 </div>
               </div>
 
-              {/* Document Requirements Info - Only show if NOT RFQ route */}
-              {!isRFQRequired && (
+              {/* Document Requirements Info - Only show for preferred suppliers */}
+              {!isScmRoute && !isInternalTraining && supplierType && (
                 <div className={`rounded-lg p-4 ${isOverThreshold ? 'bg-amber-50 border border-amber-200' : 'bg-blue-50 border border-blue-200'}`}>
                   <div className="flex items-start gap-3">
                     <AlertTriangle className={`w-5 h-5 mt-0.5 ${isOverThreshold ? 'text-amber-600' : 'text-blue-600'}`} />
@@ -846,13 +891,15 @@ const TrainingApplicationPage = () => {
                         Based on your training amount, please ensure you upload the following documents in Step 4:
                       </p>
                       <ul className={`text-sm mt-2 space-y-1 ml-4 list-disc ${isOverThreshold ? 'text-amber-700' : 'text-blue-700'}`}>
-                        <li>Signed Performance Contract</li>
+                        {isOverThreshold
+                          ? <li className="font-semibold">Motivation (replaces Performance Contract for amounts over R15,000)</li>
+                          : <li>Signed Performance Contract</li>
+                        }
                         <li>Quotation</li>
-                        <li>{isInternational ? 'SBD 1 Form' : 'SBD 4 Form'}</li>
+                        <li>{isPreferredInternational ? 'SBD 1 Form' : 'SBD 4 Form'}</li>
                         <li>Consent Form</li>
                         <li>CSD Report</li>
                         <li>BBBEE Certificate</li>
-                        {isOverThreshold && <li className="font-semibold">Motivation (Required for amounts over R15,000)</li>}
                       </ul>
                     </div>
                   </div>
@@ -864,16 +911,29 @@ const TrainingApplicationPage = () => {
           {/* Step 4: Documents */}
           {currentStep === 4 && (
             <div className="space-y-6">
-              {/* RFQ Route - Only show Scope of Work */}
-              {isRFQRequired ? (
+              {/* Internal Training - No documents needed */}
+              {isInternalTraining ? (
+                <div className="space-y-4">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="w-5 h-5 mt-0.5 text-emerald-600" />
+                      <div>
+                        <h4 className="font-semibold text-emerald-900">Internal Training — No Documents Required</h4>
+                        <p className="text-sm mt-1 text-emerald-800">
+                          Since you selected Internal Training (Sentech), no document uploads are required. You may proceed to submit your application.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : isScmRoute ? (
+                /* SCM Route - Only show Scope of Work */
                 <div className="space-y-4">
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
                     <div className="flex items-start gap-3">
                       <AlertTriangle className="w-5 h-5 mt-0.5 text-purple-600" />
                       <div>
-                        <h4 className="font-semibold text-purple-900">
-                          {isInternational ? 'International Supplier (SCM) Route Selected' : 'South African Supplier (SCM) Route Selected'}
-                        </h4>
+                        <h4 className="font-semibold text-purple-900">SCM Route Selected</h4>
                         <p className="text-sm mt-1 text-purple-800">
                           Since you selected the SCM route, please upload only the Scope of Work document.
                           All other documents will be handled through the SCM process.
@@ -899,20 +959,39 @@ const TrainingApplicationPage = () => {
                   </div>
                 </div>
               ) : (
-                /* Non-RFQ Route - Show all document uploads */
+                /* Preferred Supplier (Local/International) - Show document uploads */
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signed_performance_contract">Signed Performance Contract *</Label>
-                    <Input
-                      id="signed_performance_contract"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileUpload('documents', 'signed_performance_contract', e.target.files[0])}
-                      data-testid="input-signed-performance-contract"
-                      required
-                    />
-                    <p className="text-xs text-slate-600">Upload your signed performance contract</p>
-                  </div>
+                  {/* Conditional: Motivation (>R15k) OR Performance Contract (<=R15k) */}
+                  {isOverThreshold ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="motivation">
+                        Motivation *
+                        <Badge className="ml-2 bg-amber-100 text-amber-700">Required — training over R15,000</Badge>
+                      </Label>
+                      <Input
+                        id="motivation"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileUpload('documents', 'motivation', e.target.files[0])}
+                        data-testid="input-motivation"
+                        required
+                      />
+                      <p className="text-xs text-slate-600">Upload a motivation letter explaining the need for this training (replaces performance contract for amounts over R15,000)</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="signed_performance_contract">Signed Performance Contract *</Label>
+                      <Input
+                        id="signed_performance_contract"
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileUpload('documents', 'signed_performance_contract', e.target.files[0])}
+                        data-testid="input-signed-performance-contract"
+                        required
+                      />
+                      <p className="text-xs text-slate-600">Upload your signed performance contract</p>
+                    </div>
+                  )}
                   
                   <div className="space-y-2">
                     <Label htmlFor="quotation">Quotation *</Label>
@@ -927,7 +1006,7 @@ const TrainingApplicationPage = () => {
                     <p className="text-xs text-slate-600">Upload the quotation from the service provider</p>
                   </div>
 
-                  {isInternational ? (
+                  {isPreferredInternational ? (
                     <div className="space-y-2">
                       <Label htmlFor="sbd1_form">SBD 1 Form *</Label>
                       <Input
@@ -993,25 +1072,6 @@ const TrainingApplicationPage = () => {
                     />
                     <p className="text-xs text-slate-600">Upload the service provider&apos;s BBBEE certificate</p>
                   </div>
-
-                  {/* Motivation - Required for training over R15,000 */}
-                  {isOverThreshold && (
-                    <div className="space-y-2">
-                      <Label htmlFor="motivation">
-                        Motivation *
-                        <Badge className="ml-2 bg-amber-100 text-amber-700">Required for amounts over R15,000</Badge>
-                      </Label>
-                      <Input
-                        id="motivation"
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => handleFileUpload('documents', 'motivation', e.target.files[0])}
-                        data-testid="input-motivation"
-                        required
-                      />
-                      <p className="text-xs text-slate-600">Upload your motivation letter explaining the need for this training</p>
-                    </div>
-                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="other_documents">Other Supporting Documents (Optional)</Label>
@@ -1223,14 +1283,16 @@ const TrainingApplicationPage = () => {
             <div className="space-y-2">
               <h4 className="font-semibold text-slate-900">Training Information</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><span className="text-slate-500">Status:</span> {formData.training_info.training_status}</div>
+                <div><span className="text-slate-500">Training Date:</span> {formData.training_info.training_date}</div>
+                <div><span className="text-slate-500">Training Delivery:</span> {formData.training_info.training_delivery === 'digital' ? 'Digital' : formData.training_info.training_delivery === 'non-digital' ? 'Non-digital' : ''}</div>
                 <div><span className="text-slate-500">Service Provider:</span> {formData.training_info.service_provider}</div>
                 <div><span className="text-slate-500">Training Type:</span> {formData.training_info.training_type}</div>
                 <div><span className="text-slate-500">Amount:</span> R{formData.training_info.total_amount}</div>
                 <div><span className="text-slate-500">Supplier Type:</span> {
-                  formData.training_info.supplier_type === 'sa_supplier' ? 'South African Supplier (SCM) Route' :
-                  formData.training_info.supplier_type === 'international_supplier' ? 'International Supplier (SCM) Route' :
-                  formData.training_info.supplier_type === 'preferred_supplier' ? 'Preferred Supplier' :
+                  formData.training_info.supplier_type === 'preferred_local' ? 'Preferred supplier (Local)' :
+                  formData.training_info.supplier_type === 'preferred_international' ? 'Preferred supplier (International)' :
+                  formData.training_info.supplier_type === 'scm_route' ? 'SCM route' :
+                  formData.training_info.supplier_type === 'internal_training' ? 'Internal Training (Sentech)' :
                   formData.training_info.supplier_type
                 }</div>
               </div>
