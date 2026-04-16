@@ -50,7 +50,7 @@ const navigation = [
   { name: 'Notifications', href: '/notifications', icon: Bell },
   { name: 'Division Groups', href: '/division-groups',  icon: UsersRound, adminOnly: true, rbacModule: 'division_groups' },
   { name: 'Help & Support',href: '/help',         icon: HelpCircle },
-  { name: 'Udemy',        href: 'https://www.udemy.com', icon: GraduationCap, external: true },
+  { name: 'Udemy',        href: 'https://sentech.udemy.com', icon: GraduationCap, external: true },
   // ── Admin only ──
   // { name: 'Sponsors',   href: '/sponsors',   icon: Users,        adminOnly: true },
   { name: 'BBBEE',      href: '/bbbee',      icon: Award,        adminOnly: true },
