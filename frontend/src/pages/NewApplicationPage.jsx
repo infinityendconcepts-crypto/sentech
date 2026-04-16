@@ -302,20 +302,33 @@ const NewApplicationPage = () => {
         return;
       }
 
-      // 1-year / Temporary contract — block
+      // Temporary contract — block
       if (employmentType === 'Temporary Contract') {
         toast.error('Employees on a Temporary Contract are not eligible to apply for a bursary.');
         return;
       }
 
-      // Permanent, 3-year or 5-year contract with less than 1 year of service — block
-      if (['Permanent', '5-year fixed term contract', '3-year fixed term contract'].includes(employmentType) && yearsOfService < 1) {
-        toast.error('You must have at least 1 year of service to be eligible. Your current service: ' + yearsOfService.toFixed(1) + ' years.');
+      // Permanent with less than 1 year of service — block
+      if (employmentType === 'Permanent' && yearsOfService < 1) {
+        toast.error('Permanent employees must have at least 1 year of service to be eligible. Your current service: ' + yearsOfService.toFixed(1) + ' years.');
         return;
       }
     }
     if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
+
+  // Compute eligibility for greying out Next/Submit buttons
+  const getEligibility = () => {
+    const emp = formData.employment_info;
+    const score = parseFloat(emp.performance_score);
+    const employmentType = emp.type_of_employment;
+    const yearsOfService = parseFloat(emp.years_of_service) || 0;
+    if (score && score < 3) return false;
+    if (employmentType === 'Temporary Contract') return false;
+    if (employmentType === 'Permanent' && yearsOfService > 0 && yearsOfService < 1) return false;
+    return true;
+  };
+  const isEligible = getEligibility();
 
   const prevStep = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
@@ -705,7 +718,7 @@ const NewApplicationPage = () => {
                 {formData.employment_info.type_of_employment === 'Temporary Contract' && (
                   <p className="text-xs text-rose-600 font-medium">Temporary Contract employees are not eligible to apply</p>
                 )}
-                {['Permanent', '5-year fixed term contract', '3-year fixed term contract'].includes(formData.employment_info.type_of_employment) &&
+                {formData.employment_info.type_of_employment === 'Permanent' &&
                   formData.employment_info.years_of_service && parseFloat(formData.employment_info.years_of_service) < 1 && (
                   <p className="text-xs text-rose-600 font-medium">Less than 1 year of service — not eligible to apply</p>
                 )}
@@ -931,12 +944,12 @@ const NewApplicationPage = () => {
                 Save Draft
               </Button>
               {currentStep < 4 ? (
-                <Button onClick={nextStep} className="gap-2" data-testid="next-step-btn">
+                <Button onClick={nextStep} className="gap-2" disabled={currentStep === 2 && !isEligible} data-testid="next-step-btn">
                   Next
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={loading} data-testid="submit-application-btn">
+                <Button onClick={handleSubmit} disabled={loading || !isEligible} data-testid="submit-application-btn">
                   {loading ? 'Submitting...' : 'Submit Application'}
                 </Button>
               )}
