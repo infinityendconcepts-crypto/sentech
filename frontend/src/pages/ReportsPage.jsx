@@ -191,26 +191,28 @@ const ReportsPage = () => {
   const [selDivisions, setSelDivisions] = useState([]);
   const [selDepartments, setSelDepartments] = useState([]);
   const [selRaces, setSelRaces] = useState([]);
+  const [selGenders, setSelGenders] = useState([]);
   const [filterStatus, setFilterStatus] = useState('');
   const [ageMin, setAgeMin] = useState('');
   const [ageMax, setAgeMax] = useState('');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
 
-  const filtersActive = selDivisions.length > 0 || selDepartments.length > 0 || selRaces.length > 0 || filterStatus || ageMin || ageMax || filterDateFrom || filterDateTo;
+  const filtersActive = selDivisions.length > 0 || selDepartments.length > 0 || selRaces.length > 0 || selGenders.length > 0 || filterStatus || ageMin || ageMax || filterDateFrom || filterDateTo;
 
   const buildParams = useCallback(() => {
     const p = {};
     if (selDivisions.length) p.divisions = selDivisions.join(',');
     if (selDepartments.length) p.departments = selDepartments.join(',');
     if (selRaces.length) p.races = selRaces.join(',');
+    if (selGenders.length) p.genders = selGenders.join(',');
     if (filterStatus) p.status = filterStatus;
     if (ageMin) p.age_min = ageMin;
     if (ageMax) p.age_max = ageMax;
     if (filterDateFrom) p.date_from = filterDateFrom;
     if (filterDateTo) p.date_to = filterDateTo;
     return p;
-  }, [selDivisions, selDepartments, selRaces, filterStatus, ageMin, ageMax, filterDateFrom, filterDateTo]);
+  }, [selDivisions, selDepartments, selRaces, selGenders, filterStatus, ageMin, ageMax, filterDateFrom, filterDateTo]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -235,7 +237,7 @@ const ReportsPage = () => {
   useEffect(() => { fetchData(); fetchTrainingReport(); }, [fetchData, fetchTrainingReport]);
 
   const clearFilters = () => {
-    setSelDivisions([]); setSelDepartments([]); setSelRaces([]);
+    setSelDivisions([]); setSelDepartments([]); setSelRaces([]); setSelGenders([]);
     setFilterStatus(''); setAgeMin(''); setAgeMax('');
     setFilterDateFrom(''); setFilterDateTo('');
   };
@@ -273,6 +275,7 @@ const ReportsPage = () => {
   const divisions = useMemo(() => data?.filters?.divisions || [], [data]);
   const departments = useMemo(() => data?.filters?.departments || [], [data]);
   const raceOptions = useMemo(() => data?.filters?.races || [], [data]);
+  const genderOptions = useMemo(() => data?.filters?.genders || [], [data]);
 
   if (loading && !data) {
     return <div className="flex items-center justify-center h-64"><div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -283,6 +286,7 @@ const ReportsPage = () => {
   selDivisions.forEach(d => filterBadges.push({ label: d, clear: () => setSelDivisions(prev => prev.filter(v => v !== d)) }));
   selDepartments.forEach(d => filterBadges.push({ label: d, clear: () => setSelDepartments(prev => prev.filter(v => v !== d)) }));
   selRaces.forEach(r => filterBadges.push({ label: `Race: ${r}`, clear: () => setSelRaces(prev => prev.filter(v => v !== r)) }));
+  selGenders.forEach(g => filterBadges.push({ label: `Gender: ${g}`, clear: () => setSelGenders(prev => prev.filter(v => v !== g)) }));
   if (filterStatus) filterBadges.push({ label: `Status: ${filterStatus}`, clear: () => setFilterStatus('') });
   if (ageMin) filterBadges.push({ label: `Age >= ${ageMin}`, clear: () => setAgeMin('') });
   if (ageMax) filterBadges.push({ label: `Age <= ${ageMax}`, clear: () => setAgeMax('') });
@@ -318,7 +322,7 @@ const ReportsPage = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {/* Division multi-select */}
             <div>
               <Label className="text-xs text-slate-500 mb-1 block">Divisions</Label>
@@ -337,6 +341,12 @@ const ReportsPage = () => {
               <Label className="text-xs text-slate-500 mb-1 block">Race</Label>
               <MultiSelect label="Races" options={raceOptions} selected={selRaces}
                 onChange={setSelRaces} testId="filter-races" />
+            </div>
+            {/* Gender multi-select */}
+            <div>
+              <Label className="text-xs text-slate-500 mb-1 block">Gender</Label>
+              <MultiSelect label="Genders" options={genderOptions} selected={selGenders}
+                onChange={setSelGenders} testId="filter-genders" />
             </div>
             {/* Status */}
             <div>

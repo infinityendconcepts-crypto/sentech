@@ -19,6 +19,8 @@ async def get_interactive_report_data(
     status: Optional[str] = None,
     race: Optional[str] = None,
     races: Optional[str] = None,
+    gender: Optional[str] = None,
+    genders: Optional[str] = None,
     age_min: Optional[int] = None,
     age_max: Optional[int] = None,
     date_from: Optional[str] = None,
@@ -55,6 +57,15 @@ async def get_interactive_report_data(
         race_list = [race]
     if race_list:
         user_query["race"] = {"$in": race_list} if len(race_list) > 1 else race_list[0]
+
+    # Multi-value gender filter
+    gender_list = []
+    if genders:
+        gender_list = [g.strip() for g in genders.split(",") if g.strip()]
+    elif gender:
+        gender_list = [gender]
+    if gender_list:
+        user_query["gender"] = {"$in": gender_list} if len(gender_list) > 1 else gender_list[0]
 
     # Age range filter
     if age_min is not None or age_max is not None:
@@ -110,7 +121,7 @@ async def get_interactive_report_data(
 
     # ── Build app query ──
     app_query = {}
-    has_user_filter = bool(div_list or dept_list or race_list or age_min is not None or age_max is not None)
+    has_user_filter = bool(div_list or dept_list or race_list or gender_list or age_min is not None or age_max is not None)
     if user_ids and has_user_filter:
         app_query["user_id"] = {"$in": user_ids}
     if status:
@@ -234,12 +245,15 @@ async def get_interactive_report_data(
     all_departments = [d for d in all_departments if d]
     all_races = await db.users.distinct("race")
     all_races = [r for r in all_races if r]
+    all_genders = await db.users.distinct("gender")
+    all_genders = [g for g in all_genders if g]
 
     return {
         "filters": {
             "divisions": sorted(all_divisions),
             "departments": sorted(all_departments),
             "races": sorted(all_races),
+            "genders": sorted(all_genders),
         },
         "users": {
             "total": len(users),
@@ -496,6 +510,8 @@ async def export_filtered_data(
     status: Optional[str] = None,
     race: Optional[str] = None,
     races: Optional[str] = None,
+    gender: Optional[str] = None,
+    genders: Optional[str] = None,
     age_min: Optional[int] = None,
     age_max: Optional[int] = None,
     date_from: Optional[str] = None,
@@ -507,12 +523,15 @@ async def export_filtered_data(
     div_list = [d.strip() for d in (divisions or "").split(",") if d.strip()] if divisions else ([division] if division else [])
     dept_list = [d.strip() for d in (departments or "").split(",") if d.strip()] if departments else ([subgroup] if subgroup else [])
     race_list = [r.strip() for r in (races or "").split(",") if r.strip()] if races else ([race] if race else [])
+    gender_list = [g.strip() for g in (genders or "").split(",") if g.strip()] if genders else ([gender] if gender else [])
     if div_list:
         user_query["division"] = {"$in": div_list} if len(div_list) > 1 else div_list[0]
     if dept_list:
         user_query["department"] = {"$in": dept_list} if len(dept_list) > 1 else dept_list[0]
     if race_list:
         user_query["race"] = {"$in": race_list} if len(race_list) > 1 else race_list[0]
+    if gender_list:
+        user_query["gender"] = {"$in": gender_list} if len(gender_list) > 1 else gender_list[0]
     if age_min is not None or age_max is not None:
         age_q = {}
         if age_min is not None:
@@ -521,7 +540,7 @@ async def export_filtered_data(
             age_q["$lte"] = age_max
         user_query["age"] = age_q
 
-    has_user_filter = bool(div_list or dept_list or race_list or age_min is not None or age_max is not None)
+    has_user_filter = bool(div_list or dept_list or race_list or gender_list or age_min is not None or age_max is not None)
 
     users = await db.users.find(user_query, {"_id": 0, "password_hash": 0}).to_list(10000)
     user_ids = [u["id"] for u in users]
@@ -533,19 +552,20 @@ async def export_filtered_data(
     wb = Workbook()
     wb.remove(wb.active)
 
+    header_fill = PatternFill(start_color="0056B3", end_color="0056B3", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    alt = PatternFill(start_color="E8F0FE", end_color="E8F0FE", fill_type="solid")
+
     def write_sheet(ws, title, rows):
         if not rows:
             ws.append(["No data"])
             return
         headers = list(rows[0].keys())
-        header_fill = PatternFill(start_color="0056B3", end_color="0056B3", fill_type="solid")
-        header_font = Font(bold=True, color="FFFFFF")
         for ci, h in enumerate(headers, 1):
             cell = ws.cell(row=1, column=ci, value=h.replace("_", " ").title())
             cell.fill = header_fill
             cell.font = header_font
             cell.alignment = Alignment(horizontal="center")
-        alt = PatternFill(start_color="E8F0FE", end_color="E8F0FE", fill_type="solid")
         for ri, row in enumerate(rows, 2):
             for ci, h in enumerate(headers, 1):
                 val = row.get(h, "")
@@ -601,26 +621,56 @@ async def export_filtered_data(
         write_sheet(ws, "Bursary Applications", rows)
 
         training = await db.training_applications.find(app_q, {"_id": 0}).to_list(10000)
-        ws = wb.create_sheet("Training Applications")
-        rows = []
-        for a in training:
+        ws = wb.create_sheet("Skills Development")
+        sd_headers = [
+            "Course name", "Digital / non digital", "Training Provider",
+            "Training date", "Learner Name  and Surname", "ID Number *",
+            "Gender *", "Race *", "Disabled? *", "Age", "Municipality",
+            "Course Cost", "Travel Cost", "Accommodation Cost",
+            "Catering Cost", "Stationery Cost", "Business Unit",
+            "OFO Major Group", "OFO Sub Major Group", "OFO Occupation", "OFO Code",
+        ]
+        for ci, h in enumerate(sd_headers, 1):
+            cell = ws.cell(row=1, column=ci, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center")
+        for ri, a in enumerate(training, 2):
             u = user_map.get(a.get("user_id"), {})
+            pi = a.get("personal_info", {})
+            ei = a.get("employment_info", {})
             ti = a.get("training_info", {})
             exp = a.get("additional_expenses", {})
-            rows.append({
-                "Applicant": a.get("applicant_name") or u.get("full_name", ""),
-                "Division": u.get("division", ""),
-                "Department": u.get("department", ""),
-                "Status": a.get("status", ""),
-                "Provider": ti.get("service_provider", ""),
-                "Amount": ti.get("total_amount") or ti.get("amount_requested") or 0,
-                "Flights": exp.get("flights", 0),
-                "Accommodation": exp.get("accommodation", 0),
-                "Car Hire": exp.get("car_hire_or_shuttle", 0),
-                "Catering": exp.get("catering", 0),
-                "Created": str(a.get("created_at", ""))[:10],
-            })
-        write_sheet(ws, "Training Applications", rows)
+            learner = f"{pi.get('name', '') or u.get('full_name', '')} {pi.get('surname', '') or u.get('surname', '')}".strip()
+            row_vals = [
+                ti.get("training_type", ""),
+                ti.get("training_delivery", ""),
+                ti.get("service_provider", ""),
+                ti.get("training_date", ""),
+                learner,
+                pi.get("id_number") or u.get("id_number") or "",
+                pi.get("gender") or u.get("gender") or "",
+                pi.get("race") or u.get("race") or "",
+                pi.get("disability") or "No",
+                u.get("age") or "",
+                pi.get("district_municipality") or "",
+                float(ti.get("total_amount") or 0),
+                float(exp.get("flights") or 0),
+                float(exp.get("accommodation") or 0),
+                float(exp.get("catering") or 0),
+                0,
+                ei.get("division") or u.get("division") or "",
+                u.get("ofo_major_group") or "",
+                u.get("ofo_sub_major_group") or "",
+                u.get("ofo_occupation") or "",
+                u.get("ofo_code") or "",
+            ]
+            for ci, val in enumerate(row_vals, 1):
+                cell = ws.cell(row=ri, column=ci, value=val)
+                if ri % 2 == 0:
+                    cell.fill = alt
+        for ci, h in enumerate(sd_headers, 1):
+            ws.column_dimensions[get_column_letter(ci)].width = min(len(h) + 6, 35)
 
     if data_type in ("all", "expenses"):
         exp_q = {}

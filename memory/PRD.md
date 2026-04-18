@@ -49,6 +49,12 @@ Build a comprehensive bursary management system named "Sentech" using React, Fas
   - Visible only to admins and heads
   - Backend: `GET /api/dashboard/training-insights`
   - Udemy sidebar link updated to `https://sentech.udemy.com`
+- **Reports: Sentech Template Format & Gender Filter** (April 18, 2026):
+  - Training Report tab (default) shows Skills Development table with 21 columns matching Sentech XLSX template
+  - Export XLSX generates 2-sheet file: "Skills Development" + "Overhead Costs" 
+  - Demographics export now uses Sentech template format for training applications
+  - Added Gender multi-select filter to the Reports filtering panel
+  - Backend endpoints: `GET /api/reports/training-report`, `GET /api/reports/export-training-report`
 
 ## PDP Workflow
 1. Employee creates PDP entry (status: not_started)
