@@ -282,6 +282,8 @@ export const reportsAPI = {
   getInteractiveData: (params = {}) => api.get('/reports/interactive-data', { params }),
   exportFiltered: (params = {}) => api.get('/reports/export-filtered', { params, responseType: 'blob' }),
   exportChart: (title, data) => api.post('/reports/export-chart', { title, data }, { responseType: 'blob' }),
+  getTrainingReport: (params = {}) => api.get('/reports/training-report', { params }),
+  exportTrainingReport: (params = {}) => api.get('/reports/export-training-report', { params, responseType: 'blob' }),
   export: (reportType, format = 'json', params = {}) => api.get(`/reports/export/${reportType}`, { 
     params: { format, ...params },
     responseType: ['excel', 'pdf', 'csv'].includes(format) ? 'blob' : 'json'

@@ -303,6 +303,188 @@ async def export_chart_data(
     )
 
 
+async def _build_training_report_rows(division: Optional[str] = None):
+    """Shared helper: builds Skills Development rows from training_applications + users."""
+    app_query = {"status": {"$ne": "draft"}}
+    apps = await db.training_applications.find(app_query, {"_id": 0}).to_list(10000)
+
+    user_ids = list({a.get("user_id") for a in apps if a.get("user_id")})
+    users_list = await db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "password_hash": 0}).to_list(10000) if user_ids else []
+    user_map = {u["id"]: u for u in users_list}
+
+    rows = []
+    for a in apps:
+        uid = a.get("user_id", "")
+        u = user_map.get(uid, {})
+        pi = a.get("personal_info", {})
+        ei = a.get("employment_info", {})
+        ti = a.get("training_info", {})
+        exp = a.get("additional_expenses", {})
+
+        biz_unit = ei.get("division") or u.get("division") or ""
+        if division and biz_unit != division:
+            continue
+
+        learner_name = f"{pi.get('name', '') or u.get('full_name', '')} {pi.get('surname', '') or u.get('surname', '')}".strip()
+
+        rows.append({
+            "course_name": ti.get("training_type", ""),
+            "digital_non_digital": ti.get("training_delivery", ""),
+            "training_provider": ti.get("service_provider", ""),
+            "training_date": ti.get("training_date", ""),
+            "learner_name_surname": learner_name,
+            "id_number": pi.get("id_number") or u.get("id_number") or "",
+            "gender": pi.get("gender") or u.get("gender") or "",
+            "race": pi.get("race") or u.get("race") or "",
+            "disabled": pi.get("disability") or "No",
+            "age": u.get("age") or "",
+            "municipality": pi.get("district_municipality") or "",
+            "course_cost": float(ti.get("total_amount") or 0),
+            "travel_cost": float(exp.get("flights") or 0),
+            "accommodation_cost": float(exp.get("accommodation") or 0),
+            "catering_cost": float(exp.get("catering") or 0),
+            "stationery_cost": 0,
+            "business_unit": biz_unit,
+            "ofo_major_group": u.get("ofo_major_group") or "",
+            "ofo_sub_major_group": u.get("ofo_sub_major_group") or "",
+            "ofo_occupation": u.get("ofo_occupation") or "",
+            "ofo_code": u.get("ofo_code") or "",
+        })
+    return rows
+
+
+@router.get("/reports/training-report")
+async def get_training_report(
+    division: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+):
+    """Return Skills Development data for the Training Report table."""
+    rows = await _build_training_report_rows(division)
+    return {"rows": rows, "total": len(rows)}
+
+
+@router.get("/reports/export-training-report")
+async def export_training_report(
+    division: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+):
+    """Export Training Report as XLSX matching the Sentech template (2 sheets)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+    rows = await _build_training_report_rows(division)
+
+    wb = Workbook()
+    # ── Sheet 1: Skills Development ──
+    ws1 = wb.active
+    ws1.title = "Skills Development"
+
+    headers = [
+        "Course name", "Digital / non digital", "Training Provider",
+        "Training date", "Learner Name  and Surname", "ID Number *",
+        "Gender *", "Race *", "Disabled? *", "Age", "Municipality",
+        "Course Cost", "Travel Cost", "Accommodation Cost",
+        "Catering Cost", "Stationery Cost", "Business Unit",
+        "OFO Major Group", "OFO Sub Major Group", "OFO Occupation", "OFO Code",
+    ]
+    field_keys = [
+        "course_name", "digital_non_digital", "training_provider",
+        "training_date", "learner_name_surname", "id_number",
+        "gender", "race", "disabled", "age", "municipality",
+        "course_cost", "travel_cost", "accommodation_cost",
+        "catering_cost", "stationery_cost", "business_unit",
+        "ofo_major_group", "ofo_sub_major_group", "ofo_occupation", "ofo_code",
+    ]
+
+    header_fill = PatternFill(start_color="0056B3", end_color="0056B3", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF", size=10)
+    thin_border = Border(
+        left=Side(style="thin"), right=Side(style="thin"),
+        top=Side(style="thin"), bottom=Side(style="thin"),
+    )
+
+    # Write headers in row 2 (row 1 left empty to match template)
+    for ci, h in enumerate(headers, 1):
+        cell = ws1.cell(row=2, column=ci, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", wrap_text=True)
+        cell.border = thin_border
+
+    alt_fill = PatternFill(start_color="E8F0FE", end_color="E8F0FE", fill_type="solid")
+    for ri, row in enumerate(rows, 3):
+        for ci, key in enumerate(field_keys, 1):
+            val = row.get(key, "")
+            cell = ws1.cell(row=ri, column=ci, value=val)
+            cell.border = thin_border
+            if ri % 2 == 0:
+                cell.fill = alt_fill
+            # Right-align cost columns
+            if key.endswith("_cost"):
+                cell.alignment = Alignment(horizontal="right")
+                cell.number_format = '#,##0.00'
+
+    # Auto-width
+    from openpyxl.utils import get_column_letter
+    for ci in range(1, len(headers) + 1):
+        max_len = len(str(headers[ci - 1]))
+        for ri in range(3, len(rows) + 3):
+            val = ws1.cell(row=ri, column=ci).value
+            if val:
+                max_len = max(max_len, len(str(val)))
+        ws1.column_dimensions[get_column_letter(ci)].width = min(max_len + 3, 35)
+
+    # ── Sheet 2: Overhead Costs ──
+    ws2 = wb.create_sheet("Overhead Costs")
+
+    # Demographic breakdown headers
+    demo_headers = [
+        "", "Salary/Cost", "African Males", "African Females",
+        "Coloured Males", "Coloured Females", "Indian Males",
+        "Indian Females", "Black Disabled",
+    ]
+    for ci, h in enumerate(demo_headers, 1):
+        cell = ws2.cell(row=2, column=ci, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+        cell.border = thin_border
+
+    ws2.cell(row=1, column=1, value="Overhead Costs").font = Font(bold=True, size=12)
+
+    # Data rows with zeroes (placeholder — real values would come from config)
+    overhead_rows = [
+        "Training Manager's Salary",
+        "Training Overhead Cost",
+    ]
+    for ri, label in enumerate(overhead_rows, 3):
+        ws2.cell(row=ri, column=1, value=label).border = thin_border
+        ws2.cell(row=ri, column=1).font = Font(bold=True)
+        for ci in range(2, 10):
+            cell = ws2.cell(row=ri, column=ci, value=0)
+            cell.border = thin_border
+            cell.number_format = '#,##0.00'
+            cell.alignment = Alignment(horizontal="right")
+
+    for ci in range(1, 10):
+        ws2.column_dimensions[get_column_letter(ci)].width = 20
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    fname = "Sentech_Training_Report"
+    if division:
+        fname += f"_{division.replace(' ', '_')}"
+    fname += ".xlsx"
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={fname}"},
+    )
+
+
 
 @router.get("/reports/export-filtered")
 async def export_filtered_data(
