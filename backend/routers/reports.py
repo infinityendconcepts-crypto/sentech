@@ -195,6 +195,10 @@ async def get_interactive_report_data(
                 expense_by_div[d] = expense_by_div.get(d, 0) + total
                 applicant_expenses.append({
                     "applicant": a.get("applicant_name") or (applicant.get("full_name") if applicant else "Unknown"),
+                    "id_number": applicant.get("id_number", "") if applicant else "",
+                    "gender": applicant.get("gender", "") if applicant else "",
+                    "race": applicant.get("race", "") if applicant else "",
+                    "age": applicant.get("age", "") if applicant else "",
                     "type": coll_name,
                     "division": d,
                     "department": applicant.get("department", "Unknown") if applicant else "Unknown",

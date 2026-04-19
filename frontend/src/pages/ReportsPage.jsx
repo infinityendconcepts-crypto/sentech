@@ -453,15 +453,8 @@ const ReportsPage = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-semibold">Expenses by Applicant</CardTitle>
                 <Button variant="ghost" size="sm" className="text-emerald-600 h-7"
-                  onClick={() => {
-                    const d = data.expenses.by_applicant;
-                    reportsAPI.exportChart('Expenses by Applicant', d).then(res => {
-                      const url = URL.createObjectURL(res.data);
-                      const a = document.createElement('a');
-                      a.href = url; a.download = 'expenses_by_applicant.xlsx'; a.click(); URL.revokeObjectURL(url);
-                      toast.success('Exported');
-                    }).catch(() => toast.error('Export failed'));
-                  }}
+                  onClick={() => handleExportFiltered('all')}
+                  disabled={exporting}
                   data-testid="export-chart-expenses-by-applicant">
                   <Download className="w-3.5 h-3.5 mr-1" /> Export
                 </Button>
@@ -471,7 +464,7 @@ const ReportsPage = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 text-left">
-                        {['Applicant', 'Type', 'Division', 'Dept', 'Flights', 'Accommodation', 'Car Hire', 'Catering', 'Total'].map(h => (
+                        {['Applicant', 'ID Number', 'Gender', 'Race', 'Age', 'Type', 'Division', 'Dept', 'Flights', 'Accommodation', 'Car Hire', 'Catering', 'Total'].map(h => (
                           <th key={h} className={`py-2 px-3 text-xs font-semibold text-slate-500 ${['Flights', 'Accommodation', 'Car Hire', 'Catering', 'Total'].includes(h) ? 'text-right' : ''}`}>{h}</th>
                         ))}
                       </tr>
@@ -479,7 +472,11 @@ const ReportsPage = () => {
                     <tbody>
                       {data.expenses.by_applicant.map((item, i) => (
                         <tr key={i} className={`border-b border-slate-100 ${i % 2 === 0 ? 'bg-slate-50/50' : ''}`}>
-                          <td className="py-2 px-3 font-medium">{item.applicant}</td>
+                          <td className="py-2 px-3 font-medium whitespace-nowrap">{item.applicant}</td>
+                          <td className="py-2 px-3 text-xs whitespace-nowrap">{item.id_number}</td>
+                          <td className="py-2 px-3 text-xs">{item.gender}</td>
+                          <td className="py-2 px-3 text-xs">{item.race}</td>
+                          <td className="py-2 px-3 text-xs text-center">{item.age}</td>
                           <td className="py-2 px-3"><Badge variant="outline" className="text-xs capitalize">{item.type}</Badge></td>
                           <td className="py-2 px-3 text-slate-600 text-xs">{item.division}</td>
                           <td className="py-2 px-3 text-slate-600 text-xs">{item.department}</td>
@@ -491,7 +488,7 @@ const ReportsPage = () => {
                         </tr>
                       ))}
                       <tr className="bg-slate-100 font-semibold">
-                        <td className="py-2 px-3" colSpan={8}>Grand Total</td>
+                        <td className="py-2 px-3" colSpan={12}>Grand Total</td>
                         <td className="py-2 px-3 text-right">{formatCurrency(data.expenses.total_application_expenses)}</td>
                       </tr>
                     </tbody>
