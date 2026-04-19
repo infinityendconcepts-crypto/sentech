@@ -184,8 +184,6 @@ const ReportsPage = () => {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [zoomChart, setZoomChart] = useState(null);
-  const [trainingReport, setTrainingReport] = useState(null);
-  const [trainingReportLoading, setTrainingReportLoading] = useState(false);
 
   // Multi-select filters
   const [selDivisions, setSelDivisions] = useState([]);
@@ -223,18 +221,7 @@ const ReportsPage = () => {
     finally { setLoading(false); }
   }, [buildParams]);
 
-  const fetchTrainingReport = useCallback(async () => {
-    setTrainingReportLoading(true);
-    try {
-      const params = {};
-      if (selDivisions.length === 1) params.division = selDivisions[0];
-      const res = await reportsAPI.getTrainingReport(params);
-      setTrainingReport(res.data);
-    } catch { toast.error('Failed to load training report'); }
-    finally { setTrainingReportLoading(false); }
-  }, [selDivisions]);
-
-  useEffect(() => { fetchData(); fetchTrainingReport(); }, [fetchData, fetchTrainingReport]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const clearFilters = () => {
     setSelDivisions([]); setSelDepartments([]); setSelRaces([]); setSelGenders([]);
@@ -249,25 +236,9 @@ const ReportsPage = () => {
       const url = URL.createObjectURL(res.data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `sentech_report_${dataType}.xlsx`;
+      a.download = `Sentech_Training_Report.xlsx`;
       a.click(); URL.revokeObjectURL(url);
       toast.success('Report exported');
-    } catch { toast.error('Export failed'); }
-    finally { setExporting(false); }
-  };
-
-  const handleExportTrainingReport = async () => {
-    setExporting(true);
-    try {
-      const params = {};
-      if (selDivisions.length === 1) params.division = selDivisions[0];
-      const res = await reportsAPI.exportTrainingReport(params);
-      const url = URL.createObjectURL(res.data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Sentech_Training_Report.xlsx';
-      a.click(); URL.revokeObjectURL(url);
-      toast.success('Training Report exported');
     } catch { toast.error('Export failed'); }
     finally { setExporting(false); }
   };
@@ -434,123 +405,23 @@ const ReportsPage = () => {
         <CardContent className="p-3 flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <Download className="w-4 h-4" />
-            <span>Export filtered data:</span>
+            <span>Export filtered data as Sentech Training Report:</span>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {['all', 'users', 'applications', 'expenses', 'tickets'].map((t) => (
-              <Button key={t} variant="outline" size="sm" onClick={() => handleExportFiltered(t)} disabled={exporting}
-                data-testid={`export-${t}`}>
-                <FileSpreadsheet className="w-4 h-4 mr-1" /> {t === 'all' ? 'All Data' : t.charAt(0).toUpperCase() + t.slice(1)}
-              </Button>
-            ))}
-          </div>
+          <Button variant="outline" size="sm" onClick={() => handleExportFiltered('all')} disabled={exporting}
+            data-testid="export-all">
+            <FileSpreadsheet className="w-4 h-4 mr-1" /> Download XLSX
+          </Button>
         </CardContent>
       </Card>
 
       {/* Charts - Tabbed */}
-      <Tabs defaultValue="training_report" className="space-y-4">
+      <Tabs defaultValue="demographics" className="space-y-4">
         <TabsList className="bg-slate-100 p-1" data-testid="report-tabs">
-          <TabsTrigger value="training_report" data-testid="tab-training-report" onClick={() => { if (!trainingReport) fetchTrainingReport(); }}>Training Report</TabsTrigger>
           <TabsTrigger value="demographics" data-testid="tab-demographics">Demographics</TabsTrigger>
           <TabsTrigger value="applications" data-testid="tab-applications">Applications</TabsTrigger>
           <TabsTrigger value="expenses" data-testid="tab-expenses">Expenses</TabsTrigger>
           <TabsTrigger value="tickets" data-testid="tab-tickets">Tickets</TabsTrigger>
         </TabsList>
-
-        {/* Training Report Tab — Skills Development Table */}
-        <TabsContent value="training_report" className="space-y-4">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold text-slate-900">Skills Development Report</h3>
-              {trainingReport && <Badge variant="secondary" className="text-xs">{trainingReport.total} records</Badge>}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={fetchTrainingReport} disabled={trainingReportLoading} data-testid="refresh-training-report">
-                <RefreshCw className={`w-4 h-4 mr-1 ${trainingReportLoading ? 'animate-spin' : ''}`} /> Refresh
-              </Button>
-              <Button size="sm" onClick={handleExportTrainingReport} disabled={exporting} data-testid="export-training-report">
-                <FileSpreadsheet className="w-4 h-4 mr-1" /> Export XLSX
-              </Button>
-            </div>
-          </div>
-
-          {trainingReportLoading && !trainingReport ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : trainingReport && trainingReport.rows.length > 0 ? (
-            <Card className="bg-white border-slate-200" data-testid="training-report-table">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-[#0056B3] text-white text-left">
-                        {[
-                          'Course Name', 'Digital / Non-digital', 'Training Provider', 'Training Date',
-                          'Learner Name & Surname', 'ID Number', 'Gender', 'Race', 'Disabled?', 'Age',
-                          'Municipality', 'Course Cost', 'Travel Cost', 'Accommodation Cost',
-                          'Catering Cost', 'Stationery Cost', 'Business Unit',
-                          'OFO Major Group', 'OFO Sub Major Group', 'OFO Occupation', 'OFO Code',
-                        ].map(h => (
-                          <th key={h} className={`py-2.5 px-3 text-xs font-semibold whitespace-nowrap ${['Course Cost', 'Travel Cost', 'Accommodation Cost', 'Catering Cost', 'Stationery Cost'].includes(h) ? 'text-right' : ''}`}>
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {trainingReport.rows.map((row, i) => (
-                        <tr key={i} className={`border-b border-slate-100 ${i % 2 === 0 ? 'bg-slate-50/50' : ''}`} data-testid={`training-report-row-${i}`}>
-                          <td className="py-2 px-3 font-medium whitespace-nowrap">{row.course_name}</td>
-                          <td className="py-2 px-3 capitalize">{row.digital_non_digital}</td>
-                          <td className="py-2 px-3">{row.training_provider}</td>
-                          <td className="py-2 px-3 whitespace-nowrap">{row.training_date}</td>
-                          <td className="py-2 px-3 whitespace-nowrap">{row.learner_name_surname}</td>
-                          <td className="py-2 px-3 whitespace-nowrap">{row.id_number}</td>
-                          <td className="py-2 px-3">{row.gender}</td>
-                          <td className="py-2 px-3">{row.race}</td>
-                          <td className="py-2 px-3">{row.disabled}</td>
-                          <td className="py-2 px-3 text-center">{row.age}</td>
-                          <td className="py-2 px-3 text-xs max-w-[200px] truncate" title={row.municipality}>{row.municipality}</td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(row.course_cost)}</td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(row.travel_cost)}</td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(row.accommodation_cost)}</td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(row.catering_cost)}</td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(row.stationery_cost)}</td>
-                          <td className="py-2 px-3">{row.business_unit}</td>
-                          <td className="py-2 px-3">{row.ofo_major_group}</td>
-                          <td className="py-2 px-3">{row.ofo_sub_major_group}</td>
-                          <td className="py-2 px-3">{row.ofo_occupation}</td>
-                          <td className="py-2 px-3">{row.ofo_code}</td>
-                        </tr>
-                      ))}
-                      {/* Totals row */}
-                      <tr className="bg-slate-100 font-semibold">
-                        <td className="py-2 px-3" colSpan={11}>Totals</td>
-                        <td className="py-2 px-3 text-right">{formatCurrency(trainingReport.rows.reduce((s, r) => s + (r.course_cost || 0), 0))}</td>
-                        <td className="py-2 px-3 text-right">{formatCurrency(trainingReport.rows.reduce((s, r) => s + (r.travel_cost || 0), 0))}</td>
-                        <td className="py-2 px-3 text-right">{formatCurrency(trainingReport.rows.reduce((s, r) => s + (r.accommodation_cost || 0), 0))}</td>
-                        <td className="py-2 px-3 text-right">{formatCurrency(trainingReport.rows.reduce((s, r) => s + (r.catering_cost || 0), 0))}</td>
-                        <td className="py-2 px-3 text-right">{formatCurrency(trainingReport.rows.reduce((s, r) => s + (r.stationery_cost || 0), 0))}</td>
-                        <td className="py-2 px-3" colSpan={4}></td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="bg-white border-slate-200">
-              <CardContent className="flex flex-col items-center justify-center py-16 text-slate-400">
-                <GraduationCap className="w-10 h-10 mb-3" />
-                <p className="text-sm">No training report data available</p>
-                <p className="text-xs mt-1">Training applications (non-draft) will appear here</p>
-                <Button variant="outline" size="sm" className="mt-4" onClick={fetchTrainingReport}>Load Report</Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
 
         <TabsContent value="demographics" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

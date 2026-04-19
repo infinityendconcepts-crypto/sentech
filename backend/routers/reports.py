@@ -547,168 +547,130 @@ async def export_filtered_data(
     user_map = {u["id"]: u for u in users}
 
     from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
     wb = Workbook()
-    wb.remove(wb.active)
 
     header_fill = PatternFill(start_color="0056B3", end_color="0056B3", fill_type="solid")
-    header_font = Font(bold=True, color="FFFFFF")
+    header_font = Font(bold=True, color="FFFFFF", size=10)
     alt = PatternFill(start_color="E8F0FE", end_color="E8F0FE", fill_type="solid")
+    thin_border = Border(
+        left=Side(style="thin"), right=Side(style="thin"),
+        top=Side(style="thin"), bottom=Side(style="thin"),
+    )
 
-    def write_sheet(ws, title, rows):
-        if not rows:
-            ws.append(["No data"])
-            return
-        headers = list(rows[0].keys())
-        for ci, h in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=ci, value=h.replace("_", " ").title())
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = Alignment(horizontal="center")
-        for ri, row in enumerate(rows, 2):
-            for ci, h in enumerate(headers, 1):
-                val = row.get(h, "")
-                if isinstance(val, (list, dict)):
-                    val = str(val)
-                cell = ws.cell(row=ri, column=ci, value=val)
-                if ri % 2 == 0:
-                    cell.fill = alt
-        for ci, h in enumerate(headers, 1):
-            mx = max(len(str(h)), max((len(str(r.get(h, ""))) for r in rows), default=0))
-            ws.column_dimensions[get_column_letter(ci)].width = min(mx + 4, 50)
+    # ── Sheet 1: Skills Development (Sentech template format) ──
+    ws1 = wb.active
+    ws1.title = "Skills Development"
 
-    if data_type in ("all", "users"):
-        ws = wb.create_sheet("Users")
-        rows = [{"Name": u.get("full_name", ""), "Email": u.get("email", ""),
-                 "Division": u.get("division", ""), "Department": u.get("department", ""),
-                 "Race": u.get("race", ""), "Age": u.get("age", ""),
-                 "Roles": ", ".join(u.get("roles", [])), "Active": "Yes" if u.get("is_active") else "No"}
-                for u in users]
-        write_sheet(ws, "Users", rows)
+    sd_headers = [
+        "Course name", "Digital / non digital", "Training Provider",
+        "Training date", "Learner Name  and Surname", "ID Number *",
+        "Gender *", "Race *", "Disabled? *", "Age", "Municipality",
+        "Course Cost", "Travel Cost", "Accommodation Cost",
+        "Catering Cost", "Stationery Cost", "Business Unit",
+        "OFO Major Group", "OFO Sub Major Group", "OFO Occupation", "OFO Code",
+    ]
 
-    if data_type in ("all", "applications"):
-        app_q = {}
-        if user_ids and has_user_filter:
-            app_q["user_id"] = {"$in": user_ids}
-        if status:
-            app_q["status"] = status
-        if date_from:
-            app_q.setdefault("created_at", {})["$gte"] = date_from
-        if date_to:
-            app_q.setdefault("created_at", {})["$lte"] = date_to + "T23:59:59"
+    # Write headers in row 2 (row 1 left empty to match template)
+    for ci, h in enumerate(sd_headers, 1):
+        cell = ws1.cell(row=2, column=ci, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", wrap_text=True)
+        cell.border = thin_border
 
-        bursary = await db.applications.find(app_q, {"_id": 0}).to_list(10000)
-        ws = wb.create_sheet("Bursary Applications")
-        rows = []
-        for a in bursary:
-            u = user_map.get(a.get("user_id"), {})
-            fi = a.get("financial_info", {})
-            exp = a.get("additional_expenses", {})
-            rows.append({
-                "Applicant": a.get("applicant_name") or u.get("full_name", ""),
-                "Email": a.get("user_email") or u.get("email", ""),
-                "Division": u.get("division", ""),
-                "Department": u.get("department", ""),
-                "Status": a.get("status", ""),
-                "Requested Amount": fi.get("total_amount") or fi.get("amount_requested") or 0,
-                "Flights": exp.get("flights", 0),
-                "Accommodation": exp.get("accommodation", 0),
-                "Car Hire": exp.get("car_hire_or_shuttle", 0),
-                "Catering": exp.get("catering", 0),
-                "Created": str(a.get("created_at", ""))[:10],
-            })
-        write_sheet(ws, "Bursary Applications", rows)
+    # Build training app query
+    app_q = {}
+    if user_ids and has_user_filter:
+        app_q["user_id"] = {"$in": user_ids}
+    if status:
+        app_q["status"] = status
+    if date_from:
+        app_q.setdefault("created_at", {})["$gte"] = date_from
+    if date_to:
+        app_q.setdefault("created_at", {})["$lte"] = date_to + "T23:59:59"
 
-        training = await db.training_applications.find(app_q, {"_id": 0}).to_list(10000)
-        ws = wb.create_sheet("Skills Development")
-        sd_headers = [
-            "Course name", "Digital / non digital", "Training Provider",
-            "Training date", "Learner Name  and Surname", "ID Number *",
-            "Gender *", "Race *", "Disabled? *", "Age", "Municipality",
-            "Course Cost", "Travel Cost", "Accommodation Cost",
-            "Catering Cost", "Stationery Cost", "Business Unit",
-            "OFO Major Group", "OFO Sub Major Group", "OFO Occupation", "OFO Code",
+    training = await db.training_applications.find(app_q, {"_id": 0}).to_list(10000)
+
+    row_idx = 3
+    for a in training:
+        u = user_map.get(a.get("user_id"), {})
+        pi = a.get("personal_info", {})
+        ei = a.get("employment_info", {})
+        ti = a.get("training_info", {})
+        exp = a.get("additional_expenses", {})
+        learner = f"{pi.get('name', '') or u.get('full_name', '')} {pi.get('surname', '') or u.get('surname', '')}".strip()
+        row_vals = [
+            ti.get("training_type", ""),
+            ti.get("training_delivery", ""),
+            ti.get("service_provider", ""),
+            ti.get("training_date", ""),
+            learner,
+            pi.get("id_number") or u.get("id_number") or "",
+            pi.get("gender") or u.get("gender") or "",
+            pi.get("race") or u.get("race") or "",
+            pi.get("disability") or "No",
+            u.get("age") or "",
+            pi.get("district_municipality") or "",
+            float(ti.get("total_amount") or 0),
+            float(exp.get("flights") or 0),
+            float(exp.get("accommodation") or 0),
+            float(exp.get("catering") or 0),
+            0,
+            ei.get("division") or u.get("division") or "",
+            u.get("ofo_major_group") or "",
+            u.get("ofo_sub_major_group") or "",
+            u.get("ofo_occupation") or "",
+            u.get("ofo_code") or "",
         ]
-        for ci, h in enumerate(sd_headers, 1):
-            cell = ws.cell(row=1, column=ci, value=h)
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = Alignment(horizontal="center")
-        for ri, a in enumerate(training, 2):
-            u = user_map.get(a.get("user_id"), {})
-            pi = a.get("personal_info", {})
-            ei = a.get("employment_info", {})
-            ti = a.get("training_info", {})
-            exp = a.get("additional_expenses", {})
-            learner = f"{pi.get('name', '') or u.get('full_name', '')} {pi.get('surname', '') or u.get('surname', '')}".strip()
-            row_vals = [
-                ti.get("training_type", ""),
-                ti.get("training_delivery", ""),
-                ti.get("service_provider", ""),
-                ti.get("training_date", ""),
-                learner,
-                pi.get("id_number") or u.get("id_number") or "",
-                pi.get("gender") or u.get("gender") or "",
-                pi.get("race") or u.get("race") or "",
-                pi.get("disability") or "No",
-                u.get("age") or "",
-                pi.get("district_municipality") or "",
-                float(ti.get("total_amount") or 0),
-                float(exp.get("flights") or 0),
-                float(exp.get("accommodation") or 0),
-                float(exp.get("catering") or 0),
-                0,
-                ei.get("division") or u.get("division") or "",
-                u.get("ofo_major_group") or "",
-                u.get("ofo_sub_major_group") or "",
-                u.get("ofo_occupation") or "",
-                u.get("ofo_code") or "",
-            ]
-            for ci, val in enumerate(row_vals, 1):
-                cell = ws.cell(row=ri, column=ci, value=val)
-                if ri % 2 == 0:
-                    cell.fill = alt
-        for ci, h in enumerate(sd_headers, 1):
-            ws.column_dimensions[get_column_letter(ci)].width = min(len(h) + 6, 35)
+        for ci, val in enumerate(row_vals, 1):
+            cell = ws1.cell(row=row_idx, column=ci, value=val)
+            cell.border = thin_border
+            if row_idx % 2 == 0:
+                cell.fill = alt
+            if sd_headers[ci - 1] in ("Course Cost", "Travel Cost", "Accommodation Cost", "Catering Cost", "Stationery Cost"):
+                cell.alignment = Alignment(horizontal="right")
+                cell.number_format = '#,##0.00'
+        row_idx += 1
 
-    if data_type in ("all", "expenses"):
-        exp_q = {}
-        if user_ids and has_user_filter:
-            exp_q["submitted_by"] = {"$in": user_ids}
-        if date_from:
-            exp_q.setdefault("date", {})["$gte"] = date_from
-        if date_to:
-            exp_q.setdefault("date", {})["$lte"] = date_to + "T23:59:59"
-        expenses = await db.expenses.find(exp_q, {"_id": 0}).to_list(10000)
-        ws = wb.create_sheet("Expenses")
-        rows = [{"Title": e.get("title", ""), "Category": e.get("category", ""),
-                 "Amount": e.get("amount", 0), "Status": e.get("status", ""),
-                 "Vendor": e.get("vendor", ""), "Date": str(e.get("date", ""))[:10]}
-                for e in expenses]
-        write_sheet(ws, "Expenses", rows)
+    # Auto-width columns
+    for ci in range(1, len(sd_headers) + 1):
+        ws1.column_dimensions[get_column_letter(ci)].width = min(len(sd_headers[ci - 1]) + 6, 35)
 
-    if data_type in ("all", "tickets"):
-        tkt_q = {}
-        if user_ids and has_user_filter:
-            tkt_q["created_by"] = {"$in": user_ids}
-        if date_from:
-            tkt_q.setdefault("created_at", {})["$gte"] = date_from
-        if date_to:
-            tkt_q.setdefault("created_at", {})["$lte"] = date_to + "T23:59:59"
-        tkts = await db.tickets.find(tkt_q, {"_id": 0}).to_list(10000)
-        ws = wb.create_sheet("Tickets")
-        rows = [{"Title": t.get("title", ""), "Category": t.get("category", ""),
-                 "Priority": t.get("priority", ""), "Status": t.get("status", ""),
-                 "Created By": t.get("created_by", ""), "Created": str(t.get("created_at", ""))[:10]}
-                for t in tkts]
-        write_sheet(ws, "Tickets", rows)
+    # ── Sheet 2: Overhead Costs ──
+    ws2 = wb.create_sheet("Overhead Costs")
+    ws2.cell(row=1, column=1, value="Overhead Costs").font = Font(bold=True, size=12)
+
+    demo_headers = [
+        "", "Salary/Cost", "African Males", "African Females",
+        "Coloured Males", "Coloured Females", "Indian Males",
+        "Indian Females", "Black Disabled",
+    ]
+    for ci, h in enumerate(demo_headers, 1):
+        cell = ws2.cell(row=2, column=ci, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+        cell.border = thin_border
+
+    for ri, label in enumerate(["Training Manager's Salary", "Training Overhead Cost"], 3):
+        ws2.cell(row=ri, column=1, value=label).border = thin_border
+        ws2.cell(row=ri, column=1).font = Font(bold=True)
+        for ci in range(2, 10):
+            cell = ws2.cell(row=ri, column=ci, value=0)
+            cell.border = thin_border
+            cell.number_format = '#,##0.00'
+            cell.alignment = Alignment(horizontal="right")
+
+    for ci in range(1, 10):
+        ws2.column_dimensions[get_column_letter(ci)].width = 20
 
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
 
-    fname = f"sentech_report_{data_type}"
+    fname = "Sentech_Training_Report"
     if division:
         fname += f"_{division.replace(' ', '_')}"
     fname += ".xlsx"
