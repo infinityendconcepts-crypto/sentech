@@ -124,25 +124,8 @@ const UniversalChart = ({ data, chartType, height = 300 }) => {
 };
 
 /* ─── Chart Card with per-chart export ─── */
-const ChartCard = ({ title, data, defaultChart = 'pie', height = 300, onZoom }) => {
+const ChartCard = ({ title, data, defaultChart = 'pie', height = 300, onZoom, onExport }) => {
   const [chartType, setChartType] = useState(defaultChart);
-  const [exporting, setExporting] = useState(false);
-
-  const handleExportChart = async () => {
-    if (!data || data.length === 0) { toast.error('No data to export'); return; }
-    setExporting(true);
-    try {
-      const res = await reportsAPI.exportChart(title, data);
-      const url = URL.createObjectURL(res.data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${title.replace(/\s+/g, '_').toLowerCase()}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(`${title} exported`);
-    } catch { toast.error('Export failed'); }
-    finally { setExporting(false); }
-  };
 
   return (
     <Card className="bg-white border-slate-200 group" data-testid={`chart-${title.toLowerCase().replace(/\s+/g, '-')}`}>
@@ -157,11 +140,13 @@ const ChartCard = ({ title, data, defaultChart = 'pie', height = 300, onZoom }) 
               <ct.icon className="w-3.5 h-3.5" />
             </Button>
           ))}
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-emerald-600"
-            onClick={handleExportChart} disabled={exporting || !data?.length}
-            title="Export this chart" data-testid={`export-chart-${title.toLowerCase().replace(/\s+/g, '-')}`}>
-            <Download className="w-3.5 h-3.5" />
-          </Button>
+          {onExport && (
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-emerald-600"
+              onClick={onExport} disabled={!data?.length}
+              title="Export filtered users" data-testid={`export-chart-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+              <Download className="w-3.5 h-3.5" />
+            </Button>
+          )}
           <Button variant="ghost" size="sm"
             className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0"
             onClick={() => onZoom({ title, data, chartType })}
@@ -425,42 +410,43 @@ const ReportsPage = () => {
 
         <TabsContent value="demographics" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartCard title="Users by Division" data={data?.users?.by_division || []} defaultChart="pie" onZoom={setZoomChart} />
-            <ChartCard title="Users by Department" data={data?.users?.by_department?.slice(0, 15) || []} defaultChart="horizontal_bar" onZoom={setZoomChart} />
+            <ChartCard title="Users by Division" data={data?.users?.by_division || []} defaultChart="pie" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
+            <ChartCard title="Users by Department" data={data?.users?.by_department?.slice(0, 15) || []} defaultChart="horizontal_bar" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartCard title="Users by Race" data={data?.users?.by_race || []} defaultChart="pie" onZoom={setZoomChart} />
-            <ChartCard title="Users by Age Range" data={data?.users?.by_age_range || []} defaultChart="bar" onZoom={setZoomChart} />
+            <ChartCard title="Users by Race" data={data?.users?.by_race || []} defaultChart="pie" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
+            <ChartCard title="Users by Gender" data={data?.users?.by_gender || []} defaultChart="pie" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ChartCard title="Users by Age Range" data={data?.users?.by_age_range || []} defaultChart="bar" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
             <ChartCard title="Active vs Inactive Users"
               data={[{ name: 'Active', value: data?.users?.active || 0 }, { name: 'Inactive', value: data?.users?.inactive || 0 }]}
-              defaultChart="donut" onZoom={setZoomChart} />
-            <ChartCard title="Users by Role" data={data?.users?.by_role || []} defaultChart="bar" onZoom={setZoomChart} />
+              defaultChart="donut" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
           </div>
+          <ChartCard title="Users by Role" data={data?.users?.by_role || []} defaultChart="bar" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
         </TabsContent>
 
         <TabsContent value="applications" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartCard title="Bursary Applications by Status" data={data?.bursary_applications?.by_status || []} defaultChart="pie" onZoom={setZoomChart} />
-            <ChartCard title="Training Applications by Status" data={data?.training_applications?.by_status || []} defaultChart="pie" onZoom={setZoomChart} />
+            <ChartCard title="Bursary Applications by Status" data={data?.bursary_applications?.by_status || []} defaultChart="pie" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
+            <ChartCard title="Training Applications by Status" data={data?.training_applications?.by_status || []} defaultChart="pie" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartCard title="Bursary Apps by Division" data={data?.bursary_applications?.by_division || []} defaultChart="bar" onZoom={setZoomChart} />
-            <ChartCard title="Training Apps by Division" data={data?.training_applications?.by_division || []} defaultChart="bar" onZoom={setZoomChart} />
+            <ChartCard title="Bursary Apps by Division" data={data?.bursary_applications?.by_division || []} defaultChart="bar" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
+            <ChartCard title="Training Apps by Division" data={data?.training_applications?.by_division || []} defaultChart="bar" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
           </div>
           {(data?.training_applications?.by_provider || []).length > 0 && (
-            <ChartCard title="Training by Service Provider" data={data?.training_applications?.by_provider || []} defaultChart="horizontal_bar" onZoom={setZoomChart} height={280} />
+            <ChartCard title="Training by Service Provider" data={data?.training_applications?.by_provider || []} defaultChart="horizontal_bar" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} height={280} />
           )}
         </TabsContent>
 
         <TabsContent value="expenses" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartCard title="Expenses by Type" data={data?.expenses?.by_type || []} defaultChart="bar" onZoom={setZoomChart} />
-            <ChartCard title="Expenses by Division" data={data?.expenses?.by_division || []} defaultChart="pie" onZoom={setZoomChart} />
+            <ChartCard title="Expenses by Type" data={data?.expenses?.by_type || []} defaultChart="bar" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
+            <ChartCard title="Expenses by Division" data={data?.expenses?.by_division || []} defaultChart="pie" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
           </div>
           {(data?.expenses?.standalone_by_category || []).length > 0 && (
-            <ChartCard title="Standalone Expenses by Category" data={data?.expenses?.standalone_by_category || []} defaultChart="donut" onZoom={setZoomChart} />
+            <ChartCard title="Standalone Expenses by Category" data={data?.expenses?.standalone_by_category || []} defaultChart="donut" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
           )}
           {(data?.expenses?.by_applicant || []).length > 0 && (
             <Card className="bg-white border-slate-200" data-testid="applicant-expense-table">
@@ -518,9 +504,9 @@ const ReportsPage = () => {
 
         <TabsContent value="tickets" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <ChartCard title="Tickets by Status" data={data?.tickets?.by_status || []} defaultChart="pie" onZoom={setZoomChart} />
-            <ChartCard title="Tickets by Category" data={data?.tickets?.by_category || []} defaultChart="bar" onZoom={setZoomChart} />
-            <ChartCard title="Tickets by Priority" data={data?.tickets?.by_priority || []} defaultChart="donut" onZoom={setZoomChart} />
+            <ChartCard title="Tickets by Status" data={data?.tickets?.by_status || []} defaultChart="pie" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
+            <ChartCard title="Tickets by Category" data={data?.tickets?.by_category || []} defaultChart="bar" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
+            <ChartCard title="Tickets by Priority" data={data?.tickets?.by_priority || []} defaultChart="donut" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
           </div>
         </TabsContent>
       </Tabs>

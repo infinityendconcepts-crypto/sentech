@@ -85,6 +85,7 @@ async def get_interactive_report_data(
     dept_counts = {}
     role_counts = {}
     race_counts = {}
+    gender_counts = {}
     age_ranges = {"18-25": 0, "26-35": 0, "36-45": 0, "46-55": 0, "56-65": 0, "65+": 0, "Unknown": 0}
     active_count = 0
     inactive_count = 0
@@ -97,6 +98,8 @@ async def get_interactive_report_data(
             role_counts[r] = role_counts.get(r, 0) + 1
         rc = u.get("race") or "Unspecified"
         race_counts[rc] = race_counts.get(rc, 0) + 1
+        gc = u.get("gender") or "Unspecified"
+        gender_counts[gc] = gender_counts.get(gc, 0) + 1
         age = u.get("age")
         if age is not None and isinstance(age, (int, float)):
             age = int(age)
@@ -263,6 +266,7 @@ async def get_interactive_report_data(
             "by_department": [{"name": k, "value": v} for k, v in sorted(dept_counts.items(), key=lambda x: -x[1])],
             "by_role": [{"name": k, "value": v} for k, v in sorted(role_counts.items(), key=lambda x: -x[1])],
             "by_race": [{"name": k, "value": v} for k, v in sorted(race_counts.items(), key=lambda x: -x[1])],
+            "by_gender": [{"name": k, "value": v} for k, v in sorted(gender_counts.items(), key=lambda x: -x[1])],
             "by_age_range": [{"name": k, "value": v} for k, v in age_ranges.items() if v > 0],
         },
         "bursary_applications": {
