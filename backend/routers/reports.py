@@ -545,6 +545,7 @@ async def export_filtered_data(
         user_query["age"] = age_q
 
     users = await db.users.find(user_query, {"_id": 0, "password_hash": 0}).to_list(10000)
+    filtered_user_ids = {u["id"] for u in users}
 
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -580,90 +581,56 @@ async def export_filtered_data(
         cell.alignment = Alignment(horizontal="center", wrap_text=True)
         cell.border = thin_border
 
-    # Build training app lookup: user_id -> list of training apps
+    # Fetch training applications and filter by user demographics
     training = await db.training_applications.find({}, {"_id": 0}).to_list(10000)
-    training_by_user = {}
-    for a in training:
-        uid = a.get("user_id")
-        if uid:
-            training_by_user.setdefault(uid, []).append(a)
+    # Only include apps whose user_id matches the filtered users
+    training = [a for a in training if a.get("user_id") in filtered_user_ids]
+
+    # Build user lookup for training applicants
+    applicant_ids = list({a.get("user_id") for a in training if a.get("user_id")})
+    app_user_map = {u["id"]: u for u in users if u["id"] in set(applicant_ids)}
 
     row_idx = 3
-    for u in users:
-        uid = u.get("id", "")
-        user_trainings = training_by_user.get(uid, [])
-
-        if user_trainings:
-            # One row per training application for this user
-            for a in user_trainings:
-                pi = a.get("personal_info", {})
-                ei = a.get("employment_info", {})
-                ti = a.get("training_info", {})
-                exp = a.get("additional_expenses", {})
-                learner = f"{u.get('full_name', '')} {u.get('surname', '')}".strip()
-                row_vals = [
-                    ti.get("training_type", ""),
-                    ti.get("training_delivery", ""),
-                    ti.get("service_provider", ""),
-                    ti.get("training_date", ""),
-                    learner,
-                    u.get("id_number") or pi.get("id_number") or "",
-                    u.get("gender") or pi.get("gender") or "",
-                    u.get("race") or pi.get("race") or "",
-                    pi.get("disability") or "No",
-                    u.get("age") or "",
-                    pi.get("district_municipality") or "",
-                    float(ti.get("total_amount") or 0),
-                    float(exp.get("flights") or 0),
-                    float(exp.get("accommodation") or 0),
-                    float(exp.get("catering") or 0),
-                    0,
-                    ei.get("division") or u.get("division") or "",
-                    u.get("ofo_major_group") or "",
-                    u.get("ofo_sub_major_group") or "",
-                    u.get("ofo_occupation") or "",
-                    u.get("ofo_code") or "",
-                ]
-                for ci, val in enumerate(row_vals, 1):
-                    cell = ws1.cell(row=row_idx, column=ci, value=val)
-                    cell.border = thin_border
-                    if row_idx % 2 == 0:
-                        cell.fill = alt
-                    if sd_headers[ci - 1] in ("Course Cost", "Travel Cost", "Accommodation Cost", "Catering Cost", "Stationery Cost"):
-                        cell.alignment = Alignment(horizontal="right")
-                        cell.number_format = '#,##0.00'
-                row_idx += 1
-        else:
-            # Employee with no training — still list their info
-            learner = f"{u.get('full_name', '')} {u.get('surname', '')}".strip()
-            row_vals = [
-                "",  # Course name
-                "",  # Digital / non digital
-                "",  # Training Provider
-                "",  # Training date
-                learner,
-                u.get("id_number") or "",
-                u.get("gender") or "",
-                u.get("race") or "",
-                "No",  # Disabled
-                u.get("age") or "",
-                "",  # Municipality
-                0, 0, 0, 0, 0,  # Costs
-                u.get("division") or "",
-                u.get("ofo_major_group") or "",
-                u.get("ofo_sub_major_group") or "",
-                u.get("ofo_occupation") or "",
-                u.get("ofo_code") or "",
-            ]
-            for ci, val in enumerate(row_vals, 1):
-                cell = ws1.cell(row=row_idx, column=ci, value=val)
-                cell.border = thin_border
-                if row_idx % 2 == 0:
-                    cell.fill = alt
-                if sd_headers[ci - 1] in ("Course Cost", "Travel Cost", "Accommodation Cost", "Catering Cost", "Stationery Cost"):
-                    cell.alignment = Alignment(horizontal="right")
-                    cell.number_format = '#,##0.00'
-            row_idx += 1
+    for a in training:
+        uid = a.get("user_id", "")
+        u = app_user_map.get(uid, {})
+        pi = a.get("personal_info", {})
+        ei = a.get("employment_info", {})
+        ti = a.get("training_info", {})
+        exp = a.get("additional_expenses", {})
+        learner = f"{u.get('full_name', '')} {u.get('surname', '')}".strip() or f"{pi.get('name', '')} {pi.get('surname', '')}".strip()
+        row_vals = [
+            ti.get("training_type", ""),
+            ti.get("training_delivery", ""),
+            ti.get("service_provider", ""),
+            ti.get("training_date", ""),
+            learner,
+            u.get("id_number") or pi.get("id_number") or "",
+            u.get("gender") or pi.get("gender") or "",
+            u.get("race") or pi.get("race") or "",
+            pi.get("disability") or "No",
+            u.get("age") or "",
+            pi.get("district_municipality") or "",
+            float(ti.get("total_amount") or 0),
+            float(exp.get("flights") or 0),
+            float(exp.get("accommodation") or 0),
+            float(exp.get("catering") or 0),
+            0,
+            ei.get("division") or u.get("division") or "",
+            u.get("ofo_major_group") or "",
+            u.get("ofo_sub_major_group") or "",
+            u.get("ofo_occupation") or "",
+            u.get("ofo_code") or "",
+        ]
+        for ci, val in enumerate(row_vals, 1):
+            cell = ws1.cell(row=row_idx, column=ci, value=val)
+            cell.border = thin_border
+            if row_idx % 2 == 0:
+                cell.fill = alt
+            if sd_headers[ci - 1] in ("Course Cost", "Travel Cost", "Accommodation Cost", "Catering Cost", "Stationery Cost"):
+                cell.alignment = Alignment(horizontal="right")
+                cell.number_format = '#,##0.00'
+        row_idx += 1
 
     # Auto-width columns
     for ci in range(1, len(sd_headers) + 1):
