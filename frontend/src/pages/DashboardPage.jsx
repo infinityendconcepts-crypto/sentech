@@ -172,55 +172,66 @@ const DashboardPage = () => {
             <BarChart3 className="w-5 h-5 text-primary" />
             Training Insights
           </h3>
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Pie Chart: Digital vs Non-digital */}
-            <Card className="bg-white border-slate-200 lg:col-span-2" data-testid="training-delivery-pie">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Pie Chart: All 4 metrics */}
+            <Card className="bg-white border-slate-200" data-testid="training-insights-pie">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-heading font-semibold text-slate-700">Digital vs Non-digital Trainings</CardTitle>
+                <CardTitle className="text-sm font-heading font-semibold text-slate-700">Training Overview</CardTitle>
               </CardHeader>
               <CardContent>
-                {(trainingInsights.digital_trainings > 0 || trainingInsights.non_digital_trainings > 0) ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie
-                        data={[
-                          { name: 'Digital', value: trainingInsights.digital_trainings },
-                          { name: 'Non-digital', value: trainingInsights.non_digital_trainings },
-                        ]}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={4}
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}`}
-                      >
-                        <Cell fill="#3b82f6" />
-                        <Cell fill="#f97316" />
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-[220px] text-slate-400">
-                    <Monitor className="w-8 h-8 mb-2" />
-                    <p className="text-sm">No training delivery data yet</p>
-                  </div>
-                )}
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Digital Trainings', value: trainingInsights.digital_trainings },
+                        { name: 'All Trainings', value: trainingInsights.total_trainings },
+                        { name: 'Total Spend (R)', value: trainingInsights.total_spend },
+                        { name: 'Total Interns', value: trainingInsights.total_interns },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={55}
+                      outerRadius={95}
+                      paddingAngle={3}
+                      dataKey="value"
+                      label={({ name, value }) => {
+                        if (name === 'Total Spend (R)') return `Spend: R${value.toLocaleString('en-ZA')}`;
+                        return `${name}: ${value}`;
+                      }}
+                    >
+                      <Cell fill="#3b82f6" />
+                      <Cell fill="#8b5cf6" />
+                      <Cell fill="#10b981" />
+                      <Cell fill="#f59e0b" />
+                    </Pie>
+                    <Tooltip formatter={(value, name) => {
+                      if (name === 'Total Spend (R)') return [`R ${value.toLocaleString('en-ZA')}`, name];
+                      return [value, name];
+                    }} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
               </CardContent>
             </Card>
 
-            {/* Stat cards: Total trainings, Total spend, Total interns */}
-            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Summary cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="bg-white border-slate-200" data-testid="digital-trainings-card">
+                <CardContent className="p-5 flex flex-col items-center justify-center text-center h-full">
+                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-3">
+                    <Monitor className="w-5 h-5 text-white" />
+                  </div>
+                  <p className="text-2xl font-heading font-bold text-slate-900">{trainingInsights.digital_trainings}</p>
+                  <p className="text-xs font-medium text-slate-500 mt-1">Digital Trainings</p>
+                </CardContent>
+              </Card>
               <Card className="bg-white border-slate-200" data-testid="total-trainings-card">
                 <CardContent className="p-5 flex flex-col items-center justify-center text-center h-full">
                   <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center mb-3">
                     <GraduationCap className="w-5 h-5 text-white" />
                   </div>
                   <p className="text-2xl font-heading font-bold text-slate-900">{trainingInsights.total_trainings}</p>
-                  <p className="text-xs font-medium text-slate-500 mt-1">Total Trainings</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{trainingInsights.digital_trainings} digital</p>
+                  <p className="text-xs font-medium text-slate-500 mt-1">All Trainings</p>
                 </CardContent>
               </Card>
               <Card className="bg-white border-slate-200" data-testid="total-spend-card">
@@ -236,7 +247,7 @@ const DashboardPage = () => {
               </Card>
               <Card className="bg-white border-slate-200" data-testid="total-interns-card">
                 <CardContent className="p-5 flex flex-col items-center justify-center text-center h-full">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center mb-3">
+                  <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center mb-3">
                     <Users className="w-5 h-5 text-white" />
                   </div>
                   <p className="text-2xl font-heading font-bold text-slate-900">{trainingInsights.total_interns}</p>
