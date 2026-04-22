@@ -77,32 +77,91 @@ def is_admin_user(user: dict) -> bool:
     roles = user.get("roles", [])
     return "admin" in roles or "super_admin" in roles
 
-async def send_email_notification(to_email: str, subject: str, body_text: str):
+async def send_email_notification(to_email: str, subject: str, body_text: str, link: str = ""):
     smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_port = int(os.getenv("SMTP_PORT", "465"))
     smtp_user = os.getenv("SMTP_USERNAME")
     smtp_pass = os.getenv("SMTP_PASSWORD")
-    from_email = os.getenv("SMTP_FROM_EMAIL", "noreply@sentech.co.za")
+    from_email = os.getenv("SMTP_FROM_EMAIL", "hr@sentechportal.com")
     from_name = os.getenv("SMTP_FROM_NAME", "Sentech Bursary")
     if not smtp_host or not smtp_user:
-        logger.info(f"[EMAIL] To: {to_email} | Subject: {subject} | Body: {body_text[:100]}...")
+        logger.info(f"[EMAIL SKIP] No SMTP config. To: {to_email} | Subject: {subject}")
+        return
+    if not to_email:
         return
     try:
         import smtplib
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
+
+        link_html = ""
+        if link:
+            link_html = f'<p style="margin:20px 0;"><a href="{link}" style="background:#0056B3;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">View in Sentech Portal</a></p>'
+
+        html = f"""
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+          <div style="background:#0056B3;padding:16px 24px;">
+            <h2 style="color:#fff;margin:0;font-size:18px;">Sentech Bursary System</h2>
+          </div>
+          <div style="padding:24px;">
+            <h3 style="color:#1e293b;margin:0 0 12px;">{subject}</h3>
+            <div style="color:#475569;font-size:14px;line-height:1.6;">{body_text}</div>
+            {link_html}
+          </div>
+          <div style="background:#f8fafc;padding:12px 24px;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;">
+            This is an automated notification from the Sentech Bursary Management System.
+          </div>
+        </div>
+        """
+
         msg = MIMEMultipart()
         msg["From"] = f"{from_name} <{from_email}>"
         msg["To"] = to_email
         msg["Subject"] = subject
-        msg.attach(MIMEText(body_text, "html"))
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.sendmail(from_email, to_email, msg.as_string())
+        msg.attach(MIMEText(html, "html"))
+
+        if smtp_port == 465:
+            with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(from_email, to_email, msg.as_string())
+        else:
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.sendmail(from_email, to_email, msg.as_string())
         logger.info(f"[EMAIL SENT] To: {to_email} | Subject: {subject}")
     except Exception as e:
         logger.error(f"[EMAIL FAILED] To: {to_email} | Error: {e}")
+
+
+def get_app_url():
+    return os.getenv("APP_URL", "https://rbac-forms-dev.preview.emergentagent.com")
+
+async def notify_and_email(user_id: str, title: str, message: str, ref_id: str = "", ref_type: str = "", link_path: str = ""):
+    """Create an in-app notification AND send an email to the user."""
+    now = datetime.now(timezone.utc).isoformat()
+    notif = {
+        "id": generate_uuid(), "user_id": user_id, "type": "status_change",
+        "title": title, "message": message,
+        "reference_id": ref_id, "reference_type": ref_type,
+        "is_read": False, "created_at": now,
+    }
+    await db.notifications.insert_one({**notif})
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "email": 1})
+    if user and user.get("email"):
+        link = f"{get_app_url()}{link_path}" if link_path else f"{get_app_url()}/notifications"
+        asyncio.create_task(send_email_notification(user["email"], title, f"<p>{message}</p>", link))
+
+async def notify_admins_and_heads(title: str, message: str, ref_id: str = "", ref_type: str = "", link_path: str = "", exclude_user_id: str = ""):
+    """Send notification + email to all admins, super_admins, and heads."""
+    recipients = await db.users.find(
+        {"$or": [{"roles": {"$in": ["admin", "super_admin"]}}, {"is_head": True}]},
+        {"_id": 0, "id": 1, "email": 1}
+    ).to_list(500)
+    for r in recipients:
+        if r["id"] == exclude_user_id:
+            continue
+        await notify_and_email(r["id"], title, message, ref_id, ref_type, link_path)
 
 def generate_excel(data: list, title: str = "Export") -> io.BytesIO:
     """Generate an Excel file from a list of dicts"""

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from routers import (
     db, get_current_user, generate_uuid, is_admin_user,
-    send_email_notification, logger,
+    send_email_notification, logger, notify_and_email, notify_admins_and_heads,
 )
 
 router = APIRouter(prefix="/api", tags=["applications"])
@@ -119,6 +119,14 @@ async def create_application(app_data: ApplicationCreate, current_user: dict = D
     if app_data.status == "pending":
         app_dict['submitted_at'] = datetime.now(timezone.utc).isoformat()
     await db.applications.insert_one({**app_dict})
+    if app_data.status == "pending":
+        applicant_name = current_user.get("full_name", "An employee")
+        await notify_admins_and_heads(
+            "New Bursary Application Submitted",
+            f"{applicant_name} has submitted a new bursary application for review.",
+            app_dict["id"], "bursary_application", f"/applications/{app_dict['id']}",
+            exclude_user_id=current_user["id"],
+        )
     return app_dict
 
 @router.put("/applications/{application_id}")
@@ -144,13 +152,20 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
     if update_data.status and update_data.status != "draft":
         await db.applications.update_one({"id": application_id}, {"$set": {"is_locked": True}})
     if update_data.status and update_data.status != application.get("status") and application["user_id"] != current_user["id"]:
-        notif = {
-            "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
-            "title": "Application Status Updated", "message": f"Your bursary application status changed to: {update_data.status}",
-            "reference_id": application_id, "reference_type": "bursary_application", "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        await db.notifications.insert_one({**notif})
+        await notify_and_email(
+            application["user_id"],
+            "Application Status Updated",
+            f"Your bursary application status changed to: {update_data.status}",
+            application_id, "bursary_application", f"/applications/{application_id}",
+        )
+    if update_data.status == "pending" and application.get("status") == "draft":
+        applicant_name = current_user.get("full_name", "An employee")
+        await notify_admins_and_heads(
+            "New Bursary Application Submitted",
+            f"{applicant_name} has submitted a bursary application for review.",
+            application_id, "bursary_application", f"/applications/{application_id}",
+            exclude_user_id=current_user["id"],
+        )
     return await db.applications.find_one({"id": application_id}, {"_id": 0})
 
 @router.post("/applications/{application_id}/request-re-edit")
@@ -169,18 +184,11 @@ async def request_bursary_re_edit(application_id: str, body: dict = {}, current_
     }})
     admins = await db.users.find({"roles": {"$in": ["admin", "super_admin"]}}, {"_id": 0, "id": 1, "email": 1, "full_name": 1}).to_list(100)
     for admin in admins:
-        notif = {
-            "id": generate_uuid(), "user_id": admin["id"], "type": "status_change",
-            "title": "Re-edit Request: Bursary Application",
-            "message": f"{current_user.get('full_name', 'A user')} has requested to re-edit their bursary application",
-            "reference_id": application_id, "reference_type": "bursary_application", "is_read": False, "created_at": now,
-        }
-        await db.notifications.insert_one({**notif})
-        await send_email_notification(
-            admin.get("email", ""), "Re-edit Request: Bursary Application",
-            f"<p>{current_user.get('full_name', 'A user')} has requested to re-edit their bursary application.</p>"
-            f"<p>Reason: {body.get('reason', 'Not specified')}</p>"
-            f"<p>Please log in to review and approve or deny this request.</p>"
+        await notify_and_email(
+            admin["id"],
+            "Re-edit Request: Bursary Application",
+            f"{current_user.get('full_name', 'A user')} has requested to re-edit their bursary application. Reason: {body.get('reason', 'Not specified')}",
+            application_id, "bursary_application", f"/applications/{application_id}",
         )
     return {"message": "Re-edit request submitted"}
 
@@ -197,13 +205,12 @@ async def allow_bursary_re_edit(application_id: str, body: dict = {}, current_us
     if not approved:
         update["re_edit_requested"] = False
     await db.applications.update_one({"id": application_id}, {"$set": update})
-    notif = {
-        "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
-        "title": "Re-edit Request " + ("Approved" if approved else "Denied"),
-        "message": f"Your bursary application re-edit request has been {'approved. You can now edit your application.' if approved else 'denied.'}",
-        "reference_id": application_id, "reference_type": "bursary_application", "is_read": False, "created_at": now,
-    }
-    await db.notifications.insert_one({**notif})
+    await notify_and_email(
+        application["user_id"],
+        "Re-edit Request " + ("Approved" if approved else "Denied"),
+        f"Your bursary application re-edit request has been {'approved. You can now edit your application.' if approved else 'denied.'}",
+        application_id, "bursary_application", f"/applications/{application_id}",
+    )
     return {"message": f"Re-edit {'approved' if approved else 'denied'}"}
 
 @router.put("/applications/{application_id}/lock")
@@ -229,13 +236,12 @@ async def unlock_bursary_application(application_id: str, current_user: dict = D
         raise HTTPException(status_code=403, detail="Only admins or group leaders can unlock applications")
     now = datetime.now(timezone.utc).isoformat()
     await db.applications.update_one({"id": application_id}, {"$set": {"is_locked": False, "unlocked_at": now, "unlocked_by": current_user["id"], "updated_at": now}})
-    notif = {
-        "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
-        "title": "Bursary Application Unlocked",
-        "message": "Your bursary application has been unlocked for editing by an admin.",
-        "reference_id": application_id, "reference_type": "bursary_application", "is_read": False, "created_at": now,
-    }
-    await db.notifications.insert_one({**notif})
+    await notify_and_email(
+        application["user_id"],
+        "Bursary Application Unlocked",
+        "Your bursary application has been unlocked for editing by an admin.",
+        application_id, "bursary_application", f"/applications/{application_id}",
+    )
     return {"message": "Application unlocked"}
 
 
@@ -251,13 +257,12 @@ async def batch_unlock_bursary_applications(body: dict, current_user: dict = Dep
     result = await db.applications.update_many({"id": {"$in": ids}}, {"$set": {"is_locked": False, "unlocked_at": now, "unlocked_by": current_user["id"], "updated_at": now}})
     apps = await db.applications.find({"id": {"$in": ids}}, {"_id": 0, "id": 1, "user_id": 1}).to_list(len(ids))
     for app in apps:
-        notif = {
-            "id": generate_uuid(), "user_id": app["user_id"], "type": "status_change",
-            "title": "Bursary Application Unlocked",
-            "message": "Your bursary application has been unlocked for editing by an admin.",
-            "reference_id": app["id"], "reference_type": "bursary_application", "is_read": False, "created_at": now,
-        }
-        await db.notifications.insert_one({**notif})
+        await notify_and_email(
+            app["user_id"],
+            "Bursary Application Unlocked",
+            "Your bursary application has been unlocked for editing by an admin.",
+            app["id"], "bursary_application", f"/applications/{app['id']}",
+        )
     return {"message": f"Unlocked {result.modified_count} application(s)", "count": result.modified_count}
 
 
@@ -349,6 +354,14 @@ async def create_training_application(app_data: TrainingApplicationCreate, curre
     if app_data.status == "pending":
         app_dict['submitted_at'] = datetime.now(timezone.utc).isoformat()
     await db.training_applications.insert_one({**app_dict})
+    if app_data.status == "pending":
+        applicant_name = current_user.get("full_name", "An employee")
+        await notify_admins_and_heads(
+            "New Training Application Submitted",
+            f"{applicant_name} has submitted a new training application for review.",
+            app_dict["id"], "training_application", f"/training-applications/{app_dict['id']}",
+            exclude_user_id=current_user["id"],
+        )
     return app_dict
 
 @router.put("/training-applications/{application_id}")
@@ -370,6 +383,14 @@ async def update_training_application(application_id: str, update_data: Training
         update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
         update_dict["is_locked"] = True
     await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
+    if update_data.status == "pending" and application.get("status") == "draft":
+        applicant_name = current_user.get("full_name", "An employee")
+        await notify_admins_and_heads(
+            "New Training Application Submitted",
+            f"{applicant_name} has submitted a training application for review.",
+            application_id, "training_application", f"/training-applications/{application_id}",
+            exclude_user_id=current_user["id"],
+        )
     return await db.training_applications.find_one({"id": application_id}, {"_id": 0})
 
 @router.put("/training-applications/{application_id}/status")
@@ -388,14 +409,12 @@ async def update_training_application_status(application_id: str, status_data: d
     if new_status and new_status != "draft":
         await db.training_applications.update_one({"id": application_id}, {"$set": {"is_locked": True}})
     if new_status and new_status != application.get("status") and application["user_id"] != current_user["id"]:
-        notif = {
-            "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
-            "title": "Training Application Status Updated",
-            "message": f"Your training application status changed to: {new_status}",
-            "reference_id": application_id, "reference_type": "training_application", "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        await db.notifications.insert_one({**notif})
+        await notify_and_email(
+            application["user_id"],
+            "Training Application Status Updated",
+            f"Your training application status changed to: {new_status}",
+            application_id, "training_application", f"/training-applications/{application_id}",
+        )
     return updated_app
 
 @router.delete("/training-applications/{application_id}")
@@ -442,13 +461,12 @@ async def unlock_training_application(application_id: str, current_user: dict = 
         raise HTTPException(status_code=403, detail="Only admins or group leaders can unlock applications")
     now = datetime.now(timezone.utc).isoformat()
     await db.training_applications.update_one({"id": application_id}, {"$set": {"is_locked": False, "unlocked_at": now, "unlocked_by": current_user["id"], "updated_at": now}})
-    notif = {
-        "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
-        "title": "Training Application Unlocked",
-        "message": "Your training application has been unlocked for editing by an admin.",
-        "reference_id": application_id, "reference_type": "training_application", "is_read": False, "created_at": now,
-    }
-    await db.notifications.insert_one({**notif})
+    await notify_and_email(
+        application["user_id"],
+        "Training Application Unlocked",
+        "Your training application has been unlocked for editing by an admin.",
+        application_id, "training_application", f"/training-applications/{application_id}",
+    )
     return {"message": "Training application unlocked"}
 
 
@@ -464,13 +482,12 @@ async def batch_unlock_training_applications(body: dict, current_user: dict = De
     result = await db.training_applications.update_many({"id": {"$in": ids}}, {"$set": {"is_locked": False, "unlocked_at": now, "unlocked_by": current_user["id"], "updated_at": now}})
     apps = await db.training_applications.find({"id": {"$in": ids}}, {"_id": 0, "id": 1, "user_id": 1}).to_list(len(ids))
     for app in apps:
-        notif = {
-            "id": generate_uuid(), "user_id": app["user_id"], "type": "status_change",
-            "title": "Training Application Unlocked",
-            "message": "Your training application has been unlocked for editing by an admin.",
-            "reference_id": app["id"], "reference_type": "training_application", "is_read": False, "created_at": now,
-        }
-        await db.notifications.insert_one({**notif})
+        await notify_and_email(
+            app["user_id"],
+            "Training Application Unlocked",
+            "Your training application has been unlocked for editing by an admin.",
+            app["id"], "training_application", f"/training-applications/{app['id']}",
+        )
     return {"message": f"Unlocked {result.modified_count} application(s)", "count": result.modified_count}
 
 @router.post("/training-applications/{application_id}/request-re-edit")
@@ -489,13 +506,12 @@ async def request_training_re_edit(application_id: str, body: dict = {}, current
     }})
     admins = await db.users.find({"roles": {"$in": ["admin", "super_admin"]}}, {"_id": 0, "id": 1}).to_list(100)
     for admin in admins:
-        notif = {
-            "id": generate_uuid(), "user_id": admin["id"], "type": "status_change",
-            "title": "Re-edit Request: Training Application",
-            "message": f"{current_user.get('full_name', 'A user')} has requested to re-edit their training application",
-            "reference_id": application_id, "reference_type": "training_application", "is_read": False, "created_at": now,
-        }
-        await db.notifications.insert_one({**notif})
+        await notify_and_email(
+            admin["id"],
+            "Re-edit Request: Training Application",
+            f"{current_user.get('full_name', 'A user')} has requested to re-edit their training application. Reason: {body.get('reason', 'Not specified')}",
+            application_id, "training_application", f"/training-applications/{application_id}",
+        )
     return {"message": "Re-edit request submitted"}
 
 @router.put("/training-applications/{application_id}/allow-re-edit")
@@ -511,13 +527,12 @@ async def allow_training_re_edit(application_id: str, body: dict = {}, current_u
     if not approved:
         update["re_edit_requested"] = False
     await db.training_applications.update_one({"id": application_id}, {"$set": update})
-    notif = {
-        "id": generate_uuid(), "user_id": application["user_id"], "type": "status_change",
-        "title": "Re-edit Request " + ("Approved" if approved else "Denied"),
-        "message": f"Your training application re-edit request has been {'approved. You can now edit your application.' if approved else 'denied.'}",
-        "reference_id": application_id, "reference_type": "training_application", "is_read": False, "created_at": now,
-    }
-    await db.notifications.insert_one({**notif})
+    await notify_and_email(
+        application["user_id"],
+        "Re-edit Request " + ("Approved" if approved else "Denied"),
+        f"Your training application re-edit request has been {'approved. You can now edit your application.' if approved else 'denied.'}",
+        application_id, "training_application", f"/training-applications/{application_id}",
+    )
     return {"message": f"Re-edit {'approved' if approved else 'denied'}"}
 
 
