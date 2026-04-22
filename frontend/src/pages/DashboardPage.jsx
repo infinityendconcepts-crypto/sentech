@@ -194,10 +194,6 @@ const DashboardPage = () => {
                       outerRadius={95}
                       paddingAngle={3}
                       dataKey="value"
-                      label={({ name, value }) => {
-                        if (name === 'Total Spend (R)') return `Spend: R${value.toLocaleString('en-ZA')}`;
-                        return `${name}: ${value}`;
-                      }}
                     >
                       <Cell fill="#3b82f6" />
                       <Cell fill="#8b5cf6" />
