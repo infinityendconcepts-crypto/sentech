@@ -91,15 +91,14 @@ const ApplicationsPage = () => {
     }
   };
 
-  // Check if submissions are closed based on deadline
+  // Check if submissions are closed based on deadline (closes at midnight end of deadline day)
   const isSubmissionClosed = () => {
     if (!appSettings) return false;
     if (!appSettings.bursary_open) return true;
-    if (appSettings.bursary_deadline && appSettings.bursary_close_days_before) {
+    if (appSettings.bursary_deadline) {
       const deadline = new Date(appSettings.bursary_deadline);
-      const closeDays = appSettings.bursary_close_days_before || 0;
-      const closeDate = new Date(deadline.getTime() - closeDays * 86400000);
-      if (new Date() > closeDate) return true;
+      deadline.setHours(23, 59, 59, 999);
+      if (new Date() > deadline) return true;
     }
     return false;
   };
@@ -426,7 +425,7 @@ const ApplicationsPage = () => {
           {appSettings.bursary_open ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
           <span className="text-sm font-medium">
             Bursary applications are {appSettings.bursary_open ? 'open' : 'closed'}
-            {appSettings.bursary_deadline && ` — Deadline: ${new Date(appSettings.bursary_deadline).toLocaleDateString()}`}
+            {appSettings.bursary_deadline && ` — Deadline: ${new Date(appSettings.bursary_deadline).toLocaleDateString()} at midnight`}
           </span>
         </div>
       )}

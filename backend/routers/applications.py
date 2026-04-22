@@ -99,6 +99,17 @@ async def get_application(application_id: str, current_user: dict = Depends(get_
 
 @router.post("/applications")
 async def create_application(app_data: ApplicationCreate, current_user: dict = Depends(get_current_user)):
+    # Enforce bursary deadline for non-draft submissions
+    if app_data.status == "pending":
+        settings = await db.application_settings.find_one({"id": "app_settings"}, {"_id": 0})
+        if settings:
+            if not settings.get("bursary_open"):
+                raise HTTPException(status_code=400, detail="Bursary applications are currently closed.")
+            deadline_str = settings.get("bursary_deadline")
+            if deadline_str:
+                deadline = datetime.fromisoformat(deadline_str).replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                if datetime.now(timezone.utc) > deadline:
+                    raise HTTPException(status_code=400, detail="Bursary application deadline has passed. Submissions are closed.")
     app_dict = {
         "id": generate_uuid(),
         "user_id": current_user["id"],
@@ -145,6 +156,17 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
     update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     if update_data.status in ["pending", "submitted"]:
+        # Enforce bursary deadline when employee submits from draft
+        if application.get("status") == "draft":
+            settings = await db.application_settings.find_one({"id": "app_settings"}, {"_id": 0})
+            if settings:
+                if not settings.get("bursary_open"):
+                    raise HTTPException(status_code=400, detail="Bursary applications are currently closed.")
+                dl = settings.get("bursary_deadline")
+                if dl:
+                    deadline_dt = datetime.fromisoformat(dl).replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                    if datetime.now(timezone.utc) > deadline_dt:
+                        raise HTTPException(status_code=400, detail="Bursary application deadline has passed. Submissions are closed.")
         update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
         update_dict["is_locked"] = True
     await db.applications.update_one({"id": application_id}, {"$set": update_dict})
