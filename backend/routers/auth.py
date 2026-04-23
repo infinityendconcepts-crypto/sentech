@@ -163,11 +163,11 @@ async def login(credentials: UserLogin):
                     role_permissions[module] = []
                 role_permissions[module] = list(set(role_permissions[module] + perms))
     user_response["role_permissions"] = role_permissions
-    # Check head status
+    # Check head status — from user record OR division/subgroup leadership
     uid = user["id"]
-    is_head = False
+    is_head = user.get("is_head", False)
     division = user.get("division", "")
-    if division:
+    if not is_head and division:
         config = await db.division_groups.find_one({"division_name": division}, {"_id": 0})
         if config and config.get("leader_id") == uid:
             is_head = True
