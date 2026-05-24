@@ -248,6 +248,17 @@ const TrainingApplicationPage = () => {
   };
 
   const handleSubmit = async () => {
+    // Validate training date is at least 8 days out
+    const trainingDate = formData.training_info.training_date;
+    if (trainingDate && !isScmRoute) {
+      const selected = new Date(trainingDate);
+      const minDate = new Date();
+      minDate.setDate(minDate.getDate() + 8);
+      if (selected < minDate) {
+        toast.error('Training date must be at least 8 days from today to allow time for approval.');
+        return;
+      }
+    }
     setLoading(true);
     try {
       const submissionData = {
@@ -265,8 +276,8 @@ const TrainingApplicationPage = () => {
       }
       navigate('/training-applications');
     } catch (error) {
-      toast.error('Failed to submit training application');
-      console.error('Submission error:', error);
+      const detail = error?.response?.data?.detail;
+      toast.error(detail || 'Failed to submit training application');
     } finally {
       setLoading(false);
     }
@@ -309,41 +320,49 @@ const TrainingApplicationPage = () => {
   };
 
   const handleNext = () => {
-    // Step 2 validation — employment eligibility checks
-    if (currentStep === 2) {
-      const emp = formData.employment_info;
-      const score = parseFloat(emp.performance_score);
-      const employmentType = emp.type_of_employment;
-      const yearsOfService = parseFloat(emp.years_of_service) || 0;
-
-      if (score && score < 3) {
-        toast.error('You are not eligible to apply. Your performance score must be 3 or above.');
-        return;
-      }
-      if (employmentType === 'Temporary Contract') {
-        toast.error('Employees on a Temporary Contract are not eligible to apply for training.');
-        return;
-      }
-      if (employmentType === 'Permanent' && yearsOfService < 1) {
-        toast.error('Permanent employees must have at least 1 year of service to be eligible. Your current service: ' + yearsOfService.toFixed(1) + ' years.');
-        return;
-      }
-    }
     if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
 
-  // Compute eligibility for greying out Next/Submit buttons
-  const getEligibility = () => {
-    const emp = formData.employment_info;
-    const score = parseFloat(emp.performance_score);
-    const employmentType = emp.type_of_employment;
-    const yearsOfService = parseFloat(emp.years_of_service) || 0;
-    if (score && score < 3) return false;
-    if (employmentType === 'Temporary Contract') return false;
-    if (employmentType === 'Permanent' && yearsOfService > 0 && yearsOfService < 1) return false;
+  // Training applications have no eligibility restrictions
+  const isEligible = true;
+
+  // Grey out submit until all mandatory fields + docs are filled
+  const canSubmit = () => {
+    const pi = formData.personal_info;
+    const ei = formData.employment_info;
+    const ti = formData.training_info;
+    const docs = formData.documents;
+    // Personal info
+    if (!pi.surname || !pi.name || !pi.id_number || !pi.race || !pi.gender) return false;
+    // Employment info
+    if (!ei.division || !ei.type_of_employment) return false;
+    // Training info (skip fields disabled by SCM/Internal)
+    if (!ti.supplier_type) return false;
+    if (!isScmRoute && !ti.training_date) return false;
+    if (!isScmRoute && !ti.training_delivery) return false;
+    if (!isScmRoute && !isInternalTraining && !ti.service_provider) return false;
+    if (!isScmRoute && !ti.training_type) return false;
+    if (!isScmRoute && !isInternalTraining && !ti.total_amount) return false;
+    // Training date must be 8+ days away
+    if (ti.training_date && !isScmRoute) {
+      const selected = new Date(ti.training_date);
+      const minDate = new Date();
+      minDate.setDate(minDate.getDate() + 8);
+      if (selected < minDate) return false;
+    }
+    // Documents — depends on supplier type
+    if (isInternalTraining) return true; // no docs needed
+    if (isScmRoute) return !!docs.scope_of_work; // only scope of work
+    // Preferred supplier — check required docs
+    if (!docs.quotation) return false;
+    if (isPreferredInternational) {
+      if (!docs.sbd1_form || !docs.consent_form) return false;
+    } else {
+      if (!docs.sbd4_form || !docs.consent_form || !docs.csd_report || !docs.bbbee_certificate) return false;
+    }
+    if (isOverThreshold && !docs.motivation) return false;
     return true;
   };
-  const isEligible = getEligibility();
 
   const handlePrev = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
@@ -800,16 +819,27 @@ const TrainingApplicationPage = () => {
                     id="training_date"
                     type="date"
                     value={formData.training_info.training_date}
-                    onChange={(e) => updateField('training_info', 'training_date', e.target.value)}
+                    onChange={(e) => {
+                      const selected = new Date(e.target.value);
+                      const minDate = new Date();
+                      minDate.setDate(minDate.getDate() + 8);
+                      if (selected < minDate) {
+                        toast.error('Training date must be at least 8 days from today to allow time for approval.');
+                        return;
+                      }
+                      updateField('training_info', 'training_date', e.target.value);
+                    }}
+                    min={(() => { const d = new Date(); d.setDate(d.getDate() + 8); return d.toISOString().split('T')[0]; })()}
                     className={isScmRoute ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : ''}
                     data-testid="input-training-date"
                     disabled={isScmRoute}
                     required={!isScmRoute}
                   />
+                  <p className="text-xs text-slate-600">Must be at least 8 days from today</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="training_delivery" className={isScmRoute ? 'text-slate-400' : ''}>
-                    Training Delivery {!isScmRoute && '*'}
+                    Training Type {!isScmRoute && '*'}
                   </Label>
                   <select
                     id="training_delivery"
@@ -847,7 +877,7 @@ const TrainingApplicationPage = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="training_type" className={isScmRoute ? 'text-slate-400' : ''}>
-                    Training Type {!isScmRoute && '*'}
+                    Training Name {!isScmRoute && '*'}
                   </Label>
                   <Input
                     id="training_type"
@@ -892,15 +922,12 @@ const TrainingApplicationPage = () => {
                         Based on your training amount, please ensure you upload the following documents in Step 4:
                       </p>
                       <ul className={`text-sm mt-2 space-y-1 ml-4 list-disc ${isOverThreshold ? 'text-amber-700' : 'text-blue-700'}`}>
-                        {isOverThreshold
-                          ? <li className="font-semibold">Motivation (replaces Performance Contract for amounts over R15,000)</li>
-                          : <li>Signed Performance Contract</li>
-                        }
+                        {isOverThreshold && <li className="font-semibold">Motivation (required for amounts over R15,000)</li>}
                         <li>Quotation</li>
                         <li>{isPreferredInternational ? 'SBD 1 Form' : 'SBD 4 Form'}</li>
                         <li>Consent Form</li>
-                        <li>CSD Report</li>
-                        <li>BBBEE Certificate</li>
+                        {!isPreferredInternational && <li>CSD Report</li>}
+                        {!isPreferredInternational && <li>BBBEE Certificate</li>}
                       </ul>
                     </div>
                   </div>
@@ -962,8 +989,8 @@ const TrainingApplicationPage = () => {
               ) : (
                 /* Preferred Supplier (Local/International) - Show document uploads */
                 <div className="space-y-4">
-                  {/* Conditional: Motivation (>R15k) OR Performance Contract (<=R15k) */}
-                  {isOverThreshold ? (
+                  {/* Motivation only for >R15k */}
+                  {isOverThreshold && (
                     <div className="space-y-2">
                       <Label htmlFor="motivation">
                         Motivation *
@@ -977,20 +1004,7 @@ const TrainingApplicationPage = () => {
                         data-testid="input-motivation"
                         required
                       />
-                      <p className="text-xs text-slate-600">Upload a motivation letter explaining the need for this training (replaces performance contract for amounts over R15,000)</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Label htmlFor="signed_performance_contract">Signed Performance Contract *</Label>
-                      <Input
-                        id="signed_performance_contract"
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => handleFileUpload('documents', 'signed_performance_contract', e.target.files[0])}
-                        data-testid="input-signed-performance-contract"
-                        required
-                      />
-                      <p className="text-xs text-slate-600">Upload your signed performance contract</p>
+                      <p className="text-xs text-slate-600">Upload a motivation letter explaining the need for this training</p>
                     </div>
                   )}
                   
@@ -1048,31 +1062,36 @@ const TrainingApplicationPage = () => {
                     <p className="text-xs text-slate-600">Upload the signed consent form</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="csd_report">CSD Report *</Label>
-                    <Input
-                      id="csd_report"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileUpload('documents', 'csd_report', e.target.files[0])}
-                      data-testid="input-csd-report"
-                      required
-                    />
-                    <p className="text-xs text-slate-600">Upload the Central Supplier Database (CSD) report</p>
-                  </div>
+                  {/* CSD Report and BBBEE Certificate — not required for International */}
+                  {!isPreferredInternational && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="csd_report">CSD Report *</Label>
+                        <Input
+                          id="csd_report"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => handleFileUpload('documents', 'csd_report', e.target.files[0])}
+                          data-testid="input-csd-report"
+                          required
+                        />
+                        <p className="text-xs text-slate-600">Upload the Central Supplier Database (CSD) report</p>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="bbbee_certificate">BBBEE Certificate *</Label>
-                    <Input
-                      id="bbbee_certificate"
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileUpload('documents', 'bbbee_certificate', e.target.files[0])}
-                      data-testid="input-bbbee-certificate"
-                      required
-                    />
-                    <p className="text-xs text-slate-600">Upload the service provider&apos;s BBBEE certificate</p>
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="bbbee_certificate">BBBEE Certificate *</Label>
+                        <Input
+                          id="bbbee_certificate"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => handleFileUpload('documents', 'bbbee_certificate', e.target.files[0])}
+                          data-testid="input-bbbee-certificate"
+                          required
+                        />
+                        <p className="text-xs text-slate-600">Upload the service provider&apos;s BBBEE certificate</p>
+                      </div>
+                    </>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="other_documents">Other Supporting Documents (Optional)</Label>
@@ -1244,7 +1263,7 @@ const TrainingApplicationPage = () => {
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={loading || !isEligible} data-testid="submit-application-btn">
+                <Button onClick={handleSubmit} disabled={loading || !canSubmit()} data-testid="submit-application-btn">
                   {loading ? 'Submitting...' : 'Submit Application'}
                 </Button>
               )}
@@ -1286,9 +1305,9 @@ const TrainingApplicationPage = () => {
               <h4 className="font-semibold text-slate-900">Training Information</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div><span className="text-slate-500">Training Date:</span> {formData.training_info.training_date}</div>
-                <div><span className="text-slate-500">Training Delivery:</span> {formData.training_info.training_delivery === 'digital' ? 'Digital' : formData.training_info.training_delivery === 'non-digital' ? 'Non-digital' : ''}</div>
+                <div><span className="text-slate-500">Training Type:</span> {formData.training_info.training_delivery === 'digital' ? 'Digital' : formData.training_info.training_delivery === 'non-digital' ? 'Non-digital' : ''}</div>
                 <div><span className="text-slate-500">Service Provider:</span> {formData.training_info.service_provider}</div>
-                <div><span className="text-slate-500">Training Type:</span> {formData.training_info.training_type}</div>
+                <div><span className="text-slate-500">Training Name:</span> {formData.training_info.training_type}</div>
                 <div><span className="text-slate-500">Amount:</span> R{formData.training_info.total_amount}</div>
                 <div><span className="text-slate-500">Supplier Type:</span> {
                   formData.training_info.supplier_type === 'preferred_local' ? 'Preferred supplier (Local)' :

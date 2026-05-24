@@ -520,6 +520,7 @@ async def export_filtered_data(
     races: Optional[str] = None,
     gender: Optional[str] = None,
     genders: Optional[str] = None,
+    app_type: Optional[str] = None,
     age_min: Optional[int] = None,
     age_max: Optional[int] = None,
     date_from: Optional[str] = None,
@@ -549,7 +550,6 @@ async def export_filtered_data(
         user_query["age"] = age_q
 
     users = await db.users.find(user_query, {"_id": 0, "password_hash": 0}).to_list(10000)
-    filtered_user_ids = {u["id"] for u in users}
 
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -585,13 +585,25 @@ async def export_filtered_data(
         cell.alignment = Alignment(horizontal="center", wrap_text=True)
         cell.border = thin_border
 
-    # Fetch training applications for user lookup
-    training = await db.training_applications.find({}, {"_id": 0}).to_list(10000)
+    # Fetch training/bursary applications based on app_type filter
+    training = []
+    bursary = []
+    if app_type != "bursary":
+        training = await db.training_applications.find({}, {"_id": 0}).to_list(10000)
+    if app_type != "training":
+        bursary = await db.applications.find({}, {"_id": 0}).to_list(10000)
+
     training_by_user = {}
     for a in training:
         uid = a.get("user_id")
         if uid:
             training_by_user.setdefault(uid, []).append(a)
+
+    bursary_by_user = {}
+    for a in bursary:
+        uid = a.get("user_id")
+        if uid:
+            bursary_by_user.setdefault(uid, []).append(a)
 
     row_idx = 3
     for u in users:

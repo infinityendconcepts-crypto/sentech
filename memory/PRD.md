@@ -54,6 +54,18 @@ Build a comprehensive bursary management system named "Sentech" using React, Fas
   - Added Gender multi-select filter to the Reports filtering panel
   - Removed Training Report tab — Demographics is default; charts remain unchanged
   - Single "Download XLSX" export button replaces multiple export buttons
+- **Bursary & Training Form Updates** (April 23, 2026):
+  - Bursary: Municipality + Appointment Date auto-populate from ID lookup
+  - Bursary: 5-year/3-year contracts now have same 1-year service restriction as Permanent
+  - Bursary: Bursary Status only shown for New Applicants (hidden for Continuation)
+  - Bursary: Proof of Registration made optional
+  - Bursary: Submit button greyed out until all mandatory fields + documents filled
+  - Training: Removed performance score and years of service restrictions
+  - Training: Renamed "Training Delivery" → "Training Type", "Training Type" → "Training Name"
+  - Training: Training Date must be 8+ days in future
+  - Training: Signed Performance Contract removed from documents entirely
+  - Training: International suppliers no longer require CSD Report or BBBEE Certificate
+  - Reports: Added Application Type filter (Bursary/Training) to filter panel
 
 ## PDP Workflow
 1. Employee creates PDP entry (status: not_started)

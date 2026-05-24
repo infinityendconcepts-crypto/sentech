@@ -119,6 +119,8 @@ async def lookup_user_by_id_number(id_number: str, current_user: dict = Depends(
         "phone": user.get("phone", ""),
         "personnel_number": user.get("personnel_number", ""),
         "id_number": user.get("id_number", ""),
+        "district_municipality": user.get("district_municipality", ""),
+        "date_of_appointment": user.get("start_date") or user.get("date_of_appointment") or "",
     }
 
 

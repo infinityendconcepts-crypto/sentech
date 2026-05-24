@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from routers import (
     db, get_current_user, generate_uuid, is_admin_user,
@@ -366,6 +366,16 @@ async def get_training_application(application_id: str, current_user: dict = Dep
 
 @router.post("/training-applications")
 async def create_training_application(app_data: TrainingApplicationCreate, current_user: dict = Depends(get_current_user)):
+    # Enforce 8-day minimum training date for non-draft submissions
+    if app_data.status == "pending":
+        ti = app_data.training_info or {}
+        supplier = ti.get("supplier_type", "")
+        training_date = ti.get("training_date", "")
+        if training_date and supplier != "scm_route":
+            td = datetime.fromisoformat(training_date)
+            min_date = datetime.now(timezone.utc) + timedelta(days=8)
+            if td.replace(tzinfo=timezone.utc) < min_date:
+                raise HTTPException(status_code=400, detail="Training date must be at least 8 days from today to allow time for approval.")
     app_dict = {
         "id": generate_uuid(), "user_id": current_user["id"], "user_email": current_user["email"],
         "status": app_data.status or "draft", "current_step": app_data.current_step or 1,
@@ -402,6 +412,16 @@ async def update_training_application(application_id: str, update_data: Training
     update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
     update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
     if update_data.status in ["pending", "submitted"]:
+        # Enforce 8-day training date when submitting
+        if application.get("status") == "draft":
+            ti = update_data.training_info or application.get("training_info", {})
+            supplier = ti.get("supplier_type", "")
+            training_date = ti.get("training_date", "")
+            if training_date and supplier != "scm_route":
+                td = datetime.fromisoformat(training_date)
+                min_date = datetime.now(timezone.utc) + timedelta(days=8)
+                if td.replace(tzinfo=timezone.utc) < min_date:
+                    raise HTTPException(status_code=400, detail="Training date must be at least 8 days from today to allow time for approval.")
         update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
         update_dict["is_locked"] = True
     await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})

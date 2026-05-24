@@ -176,12 +176,13 @@ const ReportsPage = () => {
   const [selRaces, setSelRaces] = useState([]);
   const [selGenders, setSelGenders] = useState([]);
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterAppType, setFilterAppType] = useState('');
   const [ageMin, setAgeMin] = useState('');
   const [ageMax, setAgeMax] = useState('');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
 
-  const filtersActive = selDivisions.length > 0 || selDepartments.length > 0 || selRaces.length > 0 || selGenders.length > 0 || filterStatus || ageMin || ageMax || filterDateFrom || filterDateTo;
+  const filtersActive = selDivisions.length > 0 || selDepartments.length > 0 || selRaces.length > 0 || selGenders.length > 0 || filterStatus || filterAppType || ageMin || ageMax || filterDateFrom || filterDateTo;
 
   const buildParams = useCallback(() => {
     const p = {};
@@ -190,12 +191,13 @@ const ReportsPage = () => {
     if (selRaces.length) p.races = selRaces.join(',');
     if (selGenders.length) p.genders = selGenders.join(',');
     if (filterStatus) p.status = filterStatus;
+    if (filterAppType) p.app_type = filterAppType;
     if (ageMin) p.age_min = ageMin;
     if (ageMax) p.age_max = ageMax;
     if (filterDateFrom) p.date_from = filterDateFrom;
     if (filterDateTo) p.date_to = filterDateTo;
     return p;
-  }, [selDivisions, selDepartments, selRaces, selGenders, filterStatus, ageMin, ageMax, filterDateFrom, filterDateTo]);
+  }, [selDivisions, selDepartments, selRaces, selGenders, filterStatus, filterAppType, ageMin, ageMax, filterDateFrom, filterDateTo]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -210,7 +212,7 @@ const ReportsPage = () => {
 
   const clearFilters = () => {
     setSelDivisions([]); setSelDepartments([]); setSelRaces([]); setSelGenders([]);
-    setFilterStatus(''); setAgeMin(''); setAgeMax('');
+    setFilterStatus(''); setFilterAppType(''); setAgeMin(''); setAgeMax('');
     setFilterDateFrom(''); setFilterDateTo('');
   };
 
@@ -243,6 +245,7 @@ const ReportsPage = () => {
   selDepartments.forEach(d => filterBadges.push({ label: d, clear: () => setSelDepartments(prev => prev.filter(v => v !== d)) }));
   selRaces.forEach(r => filterBadges.push({ label: `Race: ${r}`, clear: () => setSelRaces(prev => prev.filter(v => v !== r)) }));
   selGenders.forEach(g => filterBadges.push({ label: `Gender: ${g}`, clear: () => setSelGenders(prev => prev.filter(v => v !== g)) }));
+  if (filterAppType) filterBadges.push({ label: `Type: ${filterAppType}`, clear: () => setFilterAppType('') });
   if (filterStatus) filterBadges.push({ label: `Status: ${filterStatus}`, clear: () => setFilterStatus('') });
   if (ageMin) filterBadges.push({ label: `Age >= ${ageMin}`, clear: () => setAgeMin('') });
   if (ageMax) filterBadges.push({ label: `Age <= ${ageMax}`, clear: () => setAgeMax('') });
@@ -278,7 +281,7 @@ const ReportsPage = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             {/* Division multi-select */}
             <div>
               <Label className="text-xs text-slate-500 mb-1 block">Divisions</Label>
@@ -317,6 +320,20 @@ const ReportsPage = () => {
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Application Type */}
+            <div>
+              <Label className="text-xs text-slate-500 mb-1 block">Application Type</Label>
+              <Select value={filterAppType} onValueChange={(v) => setFilterAppType(v === '_all' ? '' : v)}>
+                <SelectTrigger className="h-9" data-testid="filter-app-type">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all">All Types</SelectItem>
+                  <SelectItem value="bursary">Bursary</SelectItem>
+                  <SelectItem value="training">Training</SelectItem>
                 </SelectContent>
               </Select>
             </div>

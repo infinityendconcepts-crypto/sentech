@@ -181,6 +181,15 @@ const NewApplicationPage = () => {
         const res = await usersAPI.lookupByIdNumber(value);
         const data = res.data;
         if (data.found) {
+          // Calculate years of service from appointment date
+          let yos = '';
+          const apptDate = data.date_of_appointment;
+          if (apptDate) {
+            const appointDate = new Date(apptDate);
+            const now = new Date();
+            const diffYears = (now - appointDate) / (365.25 * 24 * 60 * 60 * 1000);
+            yos = diffYears.toFixed(1);
+          }
           setFormData(prev => ({
             ...prev,
             personal_info: {
@@ -190,13 +199,15 @@ const NewApplicationPage = () => {
               name: data.name || prev.personal_info.name,
               race: data.race || prev.personal_info.race,
               gender: data.gender || prev.personal_info.gender,
+              district_municipality: data.district_municipality || prev.personal_info.district_municipality,
             },
             employment_info: {
               ...prev.employment_info,
               division: data.division || prev.employment_info.division,
               department: data.department || prev.employment_info.department,
               position_description: data.position || prev.employment_info.position_description,
-              years_of_service: data.years_of_service ? String(data.years_of_service) : prev.employment_info.years_of_service,
+              date_of_appointment: data.date_of_appointment || prev.employment_info.date_of_appointment,
+              years_of_service: yos || prev.employment_info.years_of_service,
             },
           }));
           toast.success('Employee details auto-populated');
@@ -308,9 +319,9 @@ const NewApplicationPage = () => {
         return;
       }
 
-      // Permanent with less than 1 year of service — block
-      if (employmentType === 'Permanent' && yearsOfService < 1) {
-        toast.error('Permanent employees must have at least 1 year of service to be eligible. Your current service: ' + yearsOfService.toFixed(1) + ' years.');
+      // Permanent, 5-year, or 3-year contract with less than 1 year of service — block
+      if (['Permanent', '5-year fixed term contract', '3-year fixed term contract'].includes(employmentType) && yearsOfService < 1) {
+        toast.error(`Employees on a ${employmentType} must have at least 1 year of service to be eligible. Your current service: ${yearsOfService.toFixed(1)} years.`);
         return;
       }
     }
@@ -325,10 +336,29 @@ const NewApplicationPage = () => {
     const yearsOfService = parseFloat(emp.years_of_service) || 0;
     if (score && score < 3) return false;
     if (employmentType === 'Temporary Contract') return false;
-    if (employmentType === 'Permanent' && yearsOfService > 0 && yearsOfService < 1) return false;
+    if (['Permanent', '5-year fixed term contract', '3-year fixed term contract'].includes(employmentType) && yearsOfService > 0 && yearsOfService < 1) return false;
     return true;
   };
   const isEligible = getEligibility();
+
+  // Check if all mandatory fields are filled for submission
+  const canSubmit = () => {
+    const pi = formData.personal_info;
+    const ei = formData.employment_info;
+    const ab = formData.academic_bursary_info;
+    const docs = formData.documents;
+    // Personal info mandatory
+    if (!pi.surname || !pi.name || !pi.id_number || !pi.race || !pi.gender || !pi.district_municipality) return false;
+    // Employment mandatory
+    if (!ei.division || !ei.type_of_employment || !ei.date_of_appointment || !ei.performance_score) return false;
+    // Academic mandatory
+    if (!ab.applicant_type || !ab.institution || !ab.course_of_study || !ab.total_amount_requested) return false;
+    if (ab.applicant_type === 'NEW APPLICANT' && !ab.bursary_status) return false;
+    // Documents mandatory (excluding proof_of_registration and other_documents)
+    if (!docs.signed_performance_contract || !docs.quotation_amount_requested || !docs.motivation_document) return false;
+    if (isContinuationApplicant && !docs.academic_transcript) return false;
+    return isEligible;
+  };
 
   const prevStep = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
@@ -718,7 +748,7 @@ const NewApplicationPage = () => {
                 {formData.employment_info.type_of_employment === 'Temporary Contract' && (
                   <p className="text-xs text-rose-600 font-medium">Temporary Contract employees are not eligible to apply</p>
                 )}
-                {formData.employment_info.type_of_employment === 'Permanent' &&
+                {['Permanent', '5-year fixed term contract', '3-year fixed term contract'].includes(formData.employment_info.type_of_employment) &&
                   formData.employment_info.years_of_service && parseFloat(formData.employment_info.years_of_service) < 1 && (
                   <p className="text-xs text-rose-600 font-medium">Less than 1 year of service — not eligible to apply</p>
                 )}
@@ -750,22 +780,16 @@ const NewApplicationPage = () => {
                     <option value="CONTINUATION">CONTINUATION</option>
                   </select>
                 </div>
+                {isNewApplicant && (
                 <div className="space-y-2">
-                  <Label htmlFor="bursary_status">
-                    Bursary Status {isContinuationApplicant ? '*' : '(Not applicable for new applicants)'}
-                  </Label>
+                  <Label htmlFor="bursary_status">Bursary Status *</Label>
                   <select
                     id="bursary_status"
                     value={formData.academic_bursary_info.bursary_status}
                     onChange={(e) => updateField('academic_bursary_info', 'bursary_status', e.target.value)}
-                    className={`flex h-10 w-full rounded-md border px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                      isNewApplicant 
-                        ? 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed' 
-                        : 'border-slate-200 bg-white'
-                    }`}
+                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     data-testid="select-bursary-status"
-                    disabled={isNewApplicant}
-                    required={isContinuationApplicant}
+                    required
                   >
                     <option value="">Select status</option>
                     <option value="Active">Active</option>
@@ -773,10 +797,8 @@ const NewApplicationPage = () => {
                     <option value="Completed">Completed</option>
                     <option value="Not Applicable">Not Applicable</option>
                   </select>
-                  {isNewApplicant && (
-                    <p className="text-xs text-amber-600">Bursary status is disabled for new applicants</p>
-                  )}
                 </div>
+                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2 md:col-span-2">
@@ -864,16 +886,15 @@ const NewApplicationPage = () => {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="proof_of_registration">Proof of Registration / Acceptance Letter *</Label>
+                  <Label htmlFor="proof_of_registration">Proof of Registration / Acceptance Letter (Optional)</Label>
                   <Input
                     id="proof_of_registration"
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     onChange={(e) => handleFileUpload('documents', 'proof_of_registration', e.target.files[0])}
                     data-testid="input-proof-of-registration"
-                    required
                   />
-                  <p className="text-xs text-slate-600">Upload your Proof of Registration / Acceptance Letter from the institution</p>
+                  <p className="text-xs text-slate-600">Upload your Proof of Registration / Acceptance Letter from the institution (optional)</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="quotation_amount_requested">Quotation Amount Requested *</Label>
@@ -949,7 +970,7 @@ const NewApplicationPage = () => {
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               ) : (
-                <Button onClick={handleSubmit} disabled={loading || !isEligible} data-testid="submit-application-btn">
+                <Button onClick={handleSubmit} disabled={loading || !canSubmit()} data-testid="submit-application-btn">
                   {loading ? 'Submitting...' : 'Submit Application'}
                 </Button>
               )}
