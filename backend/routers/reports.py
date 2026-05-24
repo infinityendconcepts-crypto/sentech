@@ -21,6 +21,7 @@ async def get_interactive_report_data(
     races: Optional[str] = None,
     gender: Optional[str] = None,
     genders: Optional[str] = None,
+    app_type: Optional[str] = None,
     age_min: Optional[int] = None,
     age_max: Optional[int] = None,
     date_from: Optional[str] = None,
@@ -135,14 +136,15 @@ async def get_interactive_report_data(
         app_query.setdefault("created_at", {})["$lte"] = date_to + "T23:59:59"
 
     # ── Bursary Applications ──
-    bursary_apps = await db.applications.find(app_query, {"_id": 0}).to_list(10000)
+    bursary_apps = []
+    if app_type != "training":
+        bursary_apps = await db.applications.find(app_query, {"_id": 0}).to_list(10000)
     bursary_status = {}
     bursary_by_div = {}
     bursary_total_amount = 0
     for a in bursary_apps:
         s = a.get("status", "unknown")
         bursary_status[s] = bursary_status.get(s, 0) + 1
-        # Match user's division
         applicant = next((u for u in users if u["id"] == a.get("user_id")), None)
         d = applicant.get("division", "Unknown") if applicant else "Unknown"
         bursary_by_div[d] = bursary_by_div.get(d, 0) + 1
@@ -151,7 +153,9 @@ async def get_interactive_report_data(
         bursary_total_amount += float(amt) if amt else 0
 
     # ── Training Applications ──
-    training_apps = await db.training_applications.find(app_query, {"_id": 0}).to_list(10000)
+    training_apps = []
+    if app_type != "bursary":
+        training_apps = await db.training_applications.find(app_query, {"_id": 0}).to_list(10000)
     training_status = {}
     training_by_div = {}
     training_total_amount = 0
@@ -286,6 +290,10 @@ async def get_interactive_report_data(
             "total_amount": training_total_amount,
             "by_provider": [{"name": k, "value": v} for k, v in training_by_provider.items()],
         },
+        "applications_overview": [
+            {"name": "Bursary", "value": len(bursary_apps)},
+            {"name": "Training", "value": len(training_apps)},
+        ],
         "expenses": {
             "by_type": [{"name": k, "value": v} for k, v in expense_types.items() if v > 0],
             "by_division": [{"name": k, "value": v} for k, v in expense_by_div.items()],

@@ -444,6 +444,8 @@ const ReportsPage = () => {
         </TabsContent>
 
         <TabsContent value="applications" className="space-y-6">
+          {/* Bursary vs Training overview */}
+          <ChartCard title="Bursary vs Training Applications" data={data?.applications_overview || []} defaultChart="pie" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ChartCard title="Bursary Applications by Status" data={data?.bursary_applications?.by_status || []} defaultChart="pie" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
             <ChartCard title="Training Applications by Status" data={data?.training_applications?.by_status || []} defaultChart="pie" onZoom={setZoomChart} onExport={() => handleExportFiltered('all')} />
