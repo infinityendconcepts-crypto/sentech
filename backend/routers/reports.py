@@ -617,6 +617,10 @@ async def export_filtered_data(
     for u in users:
         uid = u.get("id", "")
         user_trainings = training_by_user.get(uid, [])
+        user_bursaries = bursary_by_user.get(uid, [])
+        # Only include users linked to applications
+        if not user_trainings and not user_bursaries:
+            continue
         learner = f"{u.get('full_name', '')} {u.get('surname', '')}".strip()
 
         if user_trainings:
@@ -657,18 +661,30 @@ async def export_filtered_data(
                         cell.alignment = Alignment(horizontal="right")
                         cell.number_format = '#,##0.00'
                 row_idx += 1
-        else:
+        # Bursary applications for this user (no training-specific fields)
+        for a in user_bursaries:
+            pi = a.get("personal_info", {})
+            ei = a.get("employment_info", {})
+            fi = a.get("financial_info", {})
+            exp = a.get("additional_expenses", {})
             row_vals = [
-                "", "", "", "",
+                a.get("academic_bursary_info", {}).get("course_of_study", ""),
+                "Bursary",
+                a.get("academic_bursary_info", {}).get("institution", ""),
+                str(a.get("created_at", ""))[:10],
                 learner,
-                u.get("id_number") or "",
-                u.get("gender") or "",
-                u.get("race") or "",
-                "No",
+                u.get("id_number") or pi.get("id_number") or "",
+                u.get("gender") or pi.get("gender") or "",
+                u.get("race") or pi.get("race") or "",
+                pi.get("disability") or "No",
                 u.get("age") or "",
-                "",
-                0, 0, 0, 0, 0,
-                u.get("division") or "",
+                pi.get("district_municipality") or "",
+                float(fi.get("total_amount") or fi.get("amount_requested") or 0),
+                float(exp.get("flights") or 0),
+                float(exp.get("accommodation") or 0),
+                float(exp.get("catering") or 0),
+                0,
+                ei.get("division") or u.get("division") or "",
                 u.get("ofo_major_group") or "",
                 u.get("ofo_sub_major_group") or "",
                 u.get("ofo_occupation") or "",
