@@ -181,14 +181,25 @@ const NewApplicationPage = () => {
         const res = await usersAPI.lookupByIdNumber(value);
         const data = res.data;
         if (data.found) {
-          // Calculate years of service from appointment date
+          // Parse and format appointment date (may be DD.MM.YYYY or YYYY-MM-DD)
+          let formattedDate = '';
           let yos = '';
           const apptDate = data.date_of_appointment;
           if (apptDate) {
-            const appointDate = new Date(apptDate);
-            const now = new Date();
-            const diffYears = (now - appointDate) / (365.25 * 24 * 60 * 60 * 1000);
-            yos = diffYears.toFixed(1);
+            let appointDate;
+            if (apptDate.includes('.')) {
+              const parts = apptDate.split('.');
+              appointDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+              formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            } else {
+              appointDate = new Date(apptDate);
+              formattedDate = apptDate;
+            }
+            if (!isNaN(appointDate.getTime())) {
+              const now = new Date();
+              const diffYears = (now - appointDate) / (365.25 * 24 * 60 * 60 * 1000);
+              yos = diffYears.toFixed(1);
+            }
           }
           setFormData(prev => ({
             ...prev,
@@ -206,7 +217,7 @@ const NewApplicationPage = () => {
               division: data.division || prev.employment_info.division,
               department: data.department || prev.employment_info.department,
               position_description: data.position || prev.employment_info.position_description,
-              date_of_appointment: data.date_of_appointment || prev.employment_info.date_of_appointment,
+              date_of_appointment: formattedDate || prev.employment_info.date_of_appointment,
               years_of_service: yos || prev.employment_info.years_of_service,
             },
           }));

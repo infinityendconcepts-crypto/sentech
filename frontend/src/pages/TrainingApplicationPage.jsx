@@ -204,6 +204,26 @@ const TrainingApplicationPage = () => {
         const res = await usersAPI.lookupByIdNumber(value);
         const data = res.data;
         if (data.found) {
+          // Parse appointment date (DD.MM.YYYY or YYYY-MM-DD) and calculate years of service
+          let formattedDate = '';
+          let yos = '';
+          const apptDate = data.date_of_appointment;
+          if (apptDate) {
+            let appointDate;
+            if (apptDate.includes('.')) {
+              const parts = apptDate.split('.');
+              appointDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+              formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            } else {
+              appointDate = new Date(apptDate);
+              formattedDate = apptDate;
+            }
+            if (!isNaN(appointDate.getTime())) {
+              const now = new Date();
+              const diffYears = (now - appointDate) / (365.25 * 24 * 60 * 60 * 1000);
+              yos = diffYears.toFixed(1);
+            }
+          }
           setFormData(prev => ({
             ...prev,
             personal_info: {
@@ -213,13 +233,15 @@ const TrainingApplicationPage = () => {
               name: data.name || prev.personal_info.name,
               race: data.race || prev.personal_info.race,
               gender: data.gender || prev.personal_info.gender,
+              district_municipality: data.district_municipality || prev.personal_info.district_municipality,
             },
             employment_info: {
               ...prev.employment_info,
               division: data.division || prev.employment_info.division,
               department: data.department || prev.employment_info.department,
               position_description: data.position || prev.employment_info.position_description,
-              years_of_service: data.years_of_service ? String(data.years_of_service) : prev.employment_info.years_of_service,
+              date_of_appointment: formattedDate || prev.employment_info.date_of_appointment,
+              years_of_service: yos || prev.employment_info.years_of_service,
             },
           }));
           toast.success('Employee details auto-populated');
