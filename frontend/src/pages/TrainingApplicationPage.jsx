@@ -194,6 +194,25 @@ const TrainingApplicationPage = () => {
     }));
   };
 
+  // Helper: calculate years and months of service
+  const calcYearsMonths = (dateStr) => {
+    if (!dateStr) return { display: '', raw: 0 };
+    let d;
+    if (dateStr.includes('.')) {
+      const p = dateStr.split('.');
+      d = new Date(`${p[2]}-${p[1]}-${p[0]}`);
+    } else {
+      d = new Date(dateStr);
+    }
+    if (isNaN(d.getTime())) return { display: '', raw: 0 };
+    const now = new Date();
+    let years = now.getFullYear() - d.getFullYear();
+    let months = now.getMonth() - d.getMonth();
+    if (months < 0) { years--; months += 12; }
+    const raw = years + months / 12;
+    return { display: `${years} year${years !== 1 ? 's' : ''} ${months} month${months !== 1 ? 's' : ''}`, raw };
+  };
+
   // Auto-populate employee details when SA ID number is entered (13 digits)
   const [lookingUp, setLookingUp] = useState(false);
   const handleIdNumberChange = async (value) => {
@@ -204,25 +223,19 @@ const TrainingApplicationPage = () => {
         const res = await usersAPI.lookupByIdNumber(value);
         const data = res.data;
         if (data.found) {
-          // Parse appointment date (DD.MM.YYYY or YYYY-MM-DD) and calculate years of service
+          // Parse appointment date and calculate years + months of service
           let formattedDate = '';
           let yos = '';
           const apptDate = data.date_of_appointment;
           if (apptDate) {
-            let appointDate;
             if (apptDate.includes('.')) {
               const parts = apptDate.split('.');
-              appointDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
               formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
             } else {
-              appointDate = new Date(apptDate);
               formattedDate = apptDate;
             }
-            if (!isNaN(appointDate.getTime())) {
-              const now = new Date();
-              const diffYears = (now - appointDate) / (365.25 * 24 * 60 * 60 * 1000);
-              yos = diffYears.toFixed(1);
-            }
+            const calc = calcYearsMonths(apptDate);
+            yos = calc.display;
           }
           setFormData(prev => ({
             ...prev,
@@ -334,10 +347,8 @@ const TrainingApplicationPage = () => {
   const handleDateOfAppointment = (value) => {
     updateField('employment_info', 'date_of_appointment', value);
     if (value) {
-      const appointDate = new Date(value);
-      const now = new Date();
-      const diffYears = (now - appointDate) / (365.25 * 24 * 60 * 60 * 1000);
-      updateField('employment_info', 'years_of_service', diffYears.toFixed(1));
+      const calc = calcYearsMonths(value);
+      updateField('employment_info', 'years_of_service', calc.display);
     }
   };
 
@@ -730,7 +741,7 @@ const TrainingApplicationPage = () => {
                 <Label htmlFor="years_of_service">Years of Service</Label>
                 <Input
                   id="years_of_service"
-                  value={formData.employment_info.years_of_service ? `${formData.employment_info.years_of_service} years` : ''}
+                  value={formData.employment_info.years_of_service || ''}
                   readOnly
                   className="bg-slate-50"
                   data-testid="input-years-of-service"

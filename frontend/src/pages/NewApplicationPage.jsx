@@ -171,6 +171,25 @@ const NewApplicationPage = () => {
     }));
   };
 
+  // Helper: calculate years and months of service
+  const calcYearsMonths = (dateStr) => {
+    if (!dateStr) return { display: '', raw: 0 };
+    let d;
+    if (dateStr.includes('.')) {
+      const p = dateStr.split('.');
+      d = new Date(`${p[2]}-${p[1]}-${p[0]}`);
+    } else {
+      d = new Date(dateStr);
+    }
+    if (isNaN(d.getTime())) return { display: '', raw: 0 };
+    const now = new Date();
+    let years = now.getFullYear() - d.getFullYear();
+    let months = now.getMonth() - d.getMonth();
+    if (months < 0) { years--; months += 12; }
+    const raw = years + months / 12;
+    return { display: `${years} year${years !== 1 ? 's' : ''} ${months} month${months !== 1 ? 's' : ''}`, raw };
+  };
+
   // Auto-populate employee details when SA ID number is entered (13 digits)
   const [lookingUp, setLookingUp] = useState(false);
   const handleIdNumberChange = async (value) => {
@@ -181,25 +200,21 @@ const NewApplicationPage = () => {
         const res = await usersAPI.lookupByIdNumber(value);
         const data = res.data;
         if (data.found) {
-          // Parse and format appointment date (may be DD.MM.YYYY or YYYY-MM-DD)
+          // Parse appointment date and calculate years + months of service
           let formattedDate = '';
           let yos = '';
+          let yosRaw = 0;
           const apptDate = data.date_of_appointment;
           if (apptDate) {
-            let appointDate;
             if (apptDate.includes('.')) {
               const parts = apptDate.split('.');
-              appointDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
               formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
             } else {
-              appointDate = new Date(apptDate);
               formattedDate = apptDate;
             }
-            if (!isNaN(appointDate.getTime())) {
-              const now = new Date();
-              const diffYears = (now - appointDate) / (365.25 * 24 * 60 * 60 * 1000);
-              yos = diffYears.toFixed(1);
-            }
+            const calc = calcYearsMonths(apptDate);
+            yos = calc.display;
+            yosRaw = calc.raw;
           }
           setFormData(prev => ({
             ...prev,
@@ -303,10 +318,8 @@ const NewApplicationPage = () => {
   const handleDateOfAppointment = (value) => {
     updateField('employment_info', 'date_of_appointment', value);
     if (value) {
-      const appointDate = new Date(value);
-      const now = new Date();
-      const diffYears = (now - appointDate) / (365.25 * 24 * 60 * 60 * 1000);
-      updateField('employment_info', 'years_of_service', diffYears.toFixed(1));
+      const calc = calcYearsMonths(value);
+      updateField('employment_info', 'years_of_service', calc.display);
     }
   };
 
@@ -316,7 +329,9 @@ const NewApplicationPage = () => {
       const emp = formData.employment_info;
       const score = parseFloat(emp.performance_score);
       const employmentType = emp.type_of_employment;
-      const yearsOfService = parseFloat(emp.years_of_service) || 0;
+      const yosStr = emp.years_of_service || '';
+      const yearsMatch = yosStr.match(/^(\d+)\s*year/);
+      const yearsOfService = yearsMatch ? parseFloat(yearsMatch[1]) : parseFloat(yosStr) || 0;
 
       // Performance score below 3 — block
       if (score && score < 3) {
@@ -344,10 +359,13 @@ const NewApplicationPage = () => {
     const emp = formData.employment_info;
     const score = parseFloat(emp.performance_score);
     const employmentType = emp.type_of_employment;
-    const yearsOfService = parseFloat(emp.years_of_service) || 0;
+    // Parse years from display string or raw number
+    const yosStr = emp.years_of_service || '';
+    const yearsMatch = yosStr.match(/^(\d+)\s*year/);
+    const yearsOfService = yearsMatch ? parseFloat(yearsMatch[1]) : parseFloat(yosStr) || 0;
     if (score && score < 3) return false;
     if (employmentType === 'Temporary Contract') return false;
-    if (['Permanent', '5-year fixed term contract', '3-year fixed term contract'].includes(employmentType) && yearsOfService > 0 && yearsOfService < 1) return false;
+    if (['Permanent', '5-year fixed term contract', '3-year fixed term contract'].includes(employmentType) && yearsOfService < 1) return false;
     return true;
   };
   const isEligible = getEligibility();
@@ -727,7 +745,7 @@ const NewApplicationPage = () => {
                 <Label htmlFor="years_of_service">Years of Service</Label>
                 <Input
                   id="years_of_service"
-                  value={formData.employment_info.years_of_service ? `${formData.employment_info.years_of_service} years` : ''}
+                  value={formData.employment_info.years_of_service || ''}
                   readOnly
                   className="bg-slate-50"
                   data-testid="input-years-of-service"
