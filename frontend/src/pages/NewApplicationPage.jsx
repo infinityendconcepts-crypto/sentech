@@ -102,8 +102,10 @@ const NewApplicationPage = () => {
   const [applicationLocked, setApplicationLocked] = useState(false);
   const [appIsLocked, setAppIsLocked] = useState(false);
   const [appStatus, setAppStatus] = useState('draft');
+  const [autoPopulated, setAutoPopulated] = useState(false);
   const isAdmin = user?.roles?.some(r => ['super_admin', 'admin'].includes(r));
   const isAdminOrHead = isAdmin || !!user?.is_head;
+  const apClass = autoPopulated ? 'bg-slate-50 text-slate-700' : '';
 
   // Load existing application data when editing
   useEffect(() => {
@@ -236,6 +238,7 @@ const NewApplicationPage = () => {
               years_of_service: yos || prev.employment_info.years_of_service,
             },
           }));
+          setAutoPopulated(true);
           toast.success('Employee details auto-populated');
         }
       } catch {
@@ -525,6 +528,8 @@ const NewApplicationPage = () => {
                   onChange={(e) => updateField('personal_info', 'surname', e.target.value)}
                   data-testid="input-surname"
                   required
+                  disabled={autoPopulated && !!formData.personal_info.surname}
+                  className={autoPopulated && formData.personal_info.surname ? apClass : ''}
                 />
               </div>
               <div className="space-y-2">
@@ -536,6 +541,8 @@ const NewApplicationPage = () => {
                   onChange={(e) => updateField('personal_info', 'name', e.target.value)}
                   data-testid="input-name"
                   required
+                  disabled={autoPopulated && !!formData.personal_info.name}
+                  className={autoPopulated && formData.personal_info.name ? apClass : ''}
                 />
               </div>
               <div className="space-y-2">
@@ -599,9 +606,10 @@ const NewApplicationPage = () => {
                   id="race"
                   value={formData.personal_info.race}
                   onChange={(e) => updateField('personal_info', 'race', e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className={`flex h-10 w-full rounded-md border border-slate-200 px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${autoPopulated && formData.personal_info.race ? 'bg-slate-50 text-slate-700' : 'bg-white'}`}
                   data-testid="select-race"
                   required
+                  disabled={autoPopulated && !!formData.personal_info.race}
                 >
                   <option value="">Select race</option>
                   <option value="Black">Black</option>
@@ -617,9 +625,10 @@ const NewApplicationPage = () => {
                   id="gender"
                   value={formData.personal_info.gender}
                   onChange={(e) => updateField('personal_info', 'gender', e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className={`flex h-10 w-full rounded-md border border-slate-200 px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${autoPopulated && formData.personal_info.gender ? 'bg-slate-50 text-slate-700' : 'bg-white'}`}
                   data-testid="select-gender"
                   required
+                  disabled={autoPopulated && !!formData.personal_info.gender}
                 >
                   <option value="">Select gender</option>
                   <option value="Male">Male</option>
@@ -689,6 +698,8 @@ const NewApplicationPage = () => {
                   onChange={(e) => updateField('employment_info', 'division', e.target.value)}
                   data-testid="input-division"
                   required
+                  disabled={autoPopulated && !!formData.employment_info.division}
+                  className={autoPopulated && formData.employment_info.division ? apClass : ''}
                 />
               </div>
               <div className="space-y-2">
@@ -700,6 +711,8 @@ const NewApplicationPage = () => {
                   onChange={(e) => updateField('employment_info', 'department', e.target.value)}
                   data-testid="input-department"
                   required
+                  disabled={autoPopulated && !!formData.employment_info.department}
+                  className={autoPopulated && formData.employment_info.department ? apClass : ''}
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
@@ -711,6 +724,8 @@ const NewApplicationPage = () => {
                   onChange={(e) => updateField('employment_info', 'position_description', e.target.value)}
                   data-testid="input-position-description"
                   required
+                  disabled={autoPopulated && !!formData.employment_info.position_description}
+                  className={autoPopulated && formData.employment_info.position_description ? apClass : ''}
                 />
               </div>
               <div className="space-y-2">
@@ -739,6 +754,8 @@ const NewApplicationPage = () => {
                   onChange={(e) => handleDateOfAppointment(e.target.value)}
                   data-testid="input-date-of-appointment"
                   required
+                  disabled={autoPopulated && !!formData.employment_info.date_of_appointment}
+                  className={autoPopulated && formData.employment_info.date_of_appointment ? apClass : ''}
                 />
               </div>
               <div className="space-y-2">
