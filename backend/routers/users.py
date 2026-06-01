@@ -106,10 +106,18 @@ async def lookup_user_by_id_number(id_number: str, current_user: dict = Depends(
     user = await db.users.find_one({"id_number": id_number}, {"_id": 0, "password_hash": 0})
     if not user:
         raise HTTPException(status_code=404, detail="No employee found with this ID number")
+    surname = user.get("surname", "")
+    full_name = user.get("full_name", "")
+    # Extract first name(s) by removing surname from full_name
+    name = full_name
+    if surname and full_name.endswith(surname):
+        name = full_name[: -len(surname)].strip()
+    elif surname and full_name.startswith(surname):
+        name = full_name[len(surname):].strip()
     return {
         "found": True,
-        "surname": user.get("surname", ""),
-        "name": user.get("full_name", ""),
+        "surname": surname,
+        "name": name or full_name,
         "division": user.get("division", ""),
         "department": user.get("department", ""),
         "position": user.get("position", ""),
@@ -212,11 +220,16 @@ async def create_user(data: dict, current_user: dict = Depends(get_current_user)
         "id": generate_uuid(),
         "email": email,
         "full_name": full_name or email.split("@")[0].title(),
+        "surname": data.get("surname", ""),
         "roles": roles if isinstance(roles, list) else [roles],
         "is_verified": True, "is_active": True,
         "password_hash": get_password_hash(password),
         "division": data.get("division", ""), "department": data.get("department", ""),
         "position": data.get("position", ""),
+        "id_number": data.get("id_number", ""),
+        "gender": data.get("gender", ""),
+        "race": data.get("race", ""),
+        "phone": data.get("phone", ""),
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }

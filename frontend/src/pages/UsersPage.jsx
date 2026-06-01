@@ -21,7 +21,7 @@ import {
   Trash2, Mail, Building2, CheckCircle, XCircle, UserCheck,
   Briefcase, Calendar, Hash, X, Eye, Pencil,
   Upload, Download, FileSpreadsheet, ChevronLeft, ChevronRight,
-  CheckSquare, Square,
+  CheckSquare, Square, UserPlus,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -87,6 +87,15 @@ const UsersPage = () => {
   const [importFile, setImportFile] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
+
+  // Add User state
+  const [addDialog, setAddDialog] = useState(false);
+  const [addForm, setAddForm] = useState({
+    email: '', full_name: '', surname: '', password: '',
+    division: '', department: '', position: '', role: 'employee',
+    id_number: '', gender: '', race: '', phone: '',
+  });
+  const [addSaving, setAddSaving] = useState(false);
 
   // Pagination state
   const [pageSize, setPageSize] = useState(10);
@@ -216,6 +225,38 @@ const UsersPage = () => {
       toast.error(err.response?.data?.detail || 'Failed to update user');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!addForm.email || !addForm.password) {
+      toast.error('Email and password are required');
+      return;
+    }
+    setAddSaving(true);
+    try {
+      await usersAPI.create({
+        email: addForm.email,
+        full_name: addForm.full_name,
+        surname: addForm.surname,
+        password: addForm.password,
+        division: addForm.division,
+        department: addForm.department,
+        position: addForm.position,
+        roles: [addForm.role],
+        id_number: addForm.id_number,
+        gender: addForm.gender,
+        race: addForm.race,
+        phone: addForm.phone,
+      });
+      toast.success('User created successfully');
+      setAddDialog(false);
+      setAddForm({ email: '', full_name: '', surname: '', password: '', division: '', department: '', position: '', role: 'employee', id_number: '', gender: '', race: '', phone: '' });
+      fetchUsers();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to create user');
+    } finally {
+      setAddSaving(false);
     }
   };
 
@@ -418,9 +459,13 @@ const UsersPage = () => {
               <Download className="w-4 h-4" />
               Template
             </Button>
-            <Button className="gap-2" onClick={() => { setImportDialog(true); setImportFile(null); setImportResult(null); }} data-testid="import-users-btn">
+            <Button variant="outline" className="gap-2" onClick={() => { setImportDialog(true); setImportFile(null); setImportResult(null); }} data-testid="import-users-btn">
               <Upload className="w-4 h-4" />
-              Import Users
+              Import
+            </Button>
+            <Button className="gap-2" onClick={() => setAddDialog(true)} data-testid="add-user-btn">
+              <UserPlus className="w-4 h-4" />
+              Add User
             </Button>
           </div>
         )}
@@ -1232,6 +1277,92 @@ const UsersPage = () => {
             >
               <Upload className="w-4 h-4" />
               {importing ? 'Importing...' : 'Import Users'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={addDialog} onOpenChange={setAddDialog}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Add New User
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Email *</Label>
+                <Input placeholder="user@sentech.co.za" value={addForm.email} onChange={(e) => setAddForm(f => ({...f, email: e.target.value}))} data-testid="add-user-email" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Password *</Label>
+                <Input type="password" placeholder="Min 6 characters" value={addForm.password} onChange={(e) => setAddForm(f => ({...f, password: e.target.value}))} data-testid="add-user-password" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Full Name</Label>
+                <Input placeholder="First and middle names" value={addForm.full_name} onChange={(e) => setAddForm(f => ({...f, full_name: e.target.value}))} data-testid="add-user-fullname" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Surname</Label>
+                <Input placeholder="Surname" value={addForm.surname} onChange={(e) => setAddForm(f => ({...f, surname: e.target.value}))} data-testid="add-user-surname" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">ID Number</Label>
+                <Input placeholder="13-digit SA ID" value={addForm.id_number} onChange={(e) => setAddForm(f => ({...f, id_number: e.target.value}))} data-testid="add-user-idnumber" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Role *</Label>
+                <select value={addForm.role} onChange={(e) => setAddForm(f => ({...f, role: e.target.value}))} className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm" data-testid="add-user-role">
+                  {ROLES.map(r => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                  <option value="admin">admin</option>
+                  <option value="student">student / intern</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Division</Label>
+                <Input placeholder="e.g., Operations" value={addForm.division} onChange={(e) => setAddForm(f => ({...f, division: e.target.value}))} data-testid="add-user-division" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Department</Label>
+                <Input placeholder="e.g., IT" value={addForm.department} onChange={(e) => setAddForm(f => ({...f, department: e.target.value}))} data-testid="add-user-department" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Position</Label>
+                <Input placeholder="Job title" value={addForm.position} onChange={(e) => setAddForm(f => ({...f, position: e.target.value}))} data-testid="add-user-position" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Gender</Label>
+                <select value={addForm.gender} onChange={(e) => setAddForm(f => ({...f, gender: e.target.value}))} className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm" data-testid="add-user-gender">
+                  <option value="">Select</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Race</Label>
+                <select value={addForm.race} onChange={(e) => setAddForm(f => ({...f, race: e.target.value}))} className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm" data-testid="add-user-race">
+                  <option value="">Select</option>
+                  <option value="Black">Black</option>
+                  <option value="Coloured">Coloured</option>
+                  <option value="Indian">Indian</option>
+                  <option value="White">White</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Phone</Label>
+                <Input placeholder="Phone number" value={addForm.phone} onChange={(e) => setAddForm(f => ({...f, phone: e.target.value}))} data-testid="add-user-phone" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddUser} disabled={addSaving || !addForm.email || !addForm.password} data-testid="add-user-submit">
+              {addSaving ? 'Creating...' : 'Create User'}
             </Button>
           </DialogFooter>
         </DialogContent>
