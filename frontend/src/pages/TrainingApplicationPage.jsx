@@ -766,14 +766,13 @@ const TrainingApplicationPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="performance_score">Performance Score (1-5) *</Label>
+                <Label htmlFor="performance_score">Performance Score (1-5)</Label>
                 <select
                   id="performance_score"
                   value={formData.employment_info.performance_score}
                   onChange={(e) => updateField('employment_info', 'performance_score', e.target.value)}
                   className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   data-testid="select-performance-score"
-                  required
                 >
                   <option value="">Select score</option>
                   <option value="1">1</option>
@@ -782,11 +781,7 @@ const TrainingApplicationPage = () => {
                   <option value="4">4</option>
                   <option value="5">5</option>
                 </select>
-                {formData.employment_info.performance_score && parseFloat(formData.employment_info.performance_score) < 3 ? (
-                  <p className="text-xs text-rose-600 font-medium">Score below 3 — not eligible to proceed</p>
-                ) : (
-                  <p className="text-xs text-slate-600">Select your most recent performance evaluation score</p>
-                )}
+                <p className="text-xs text-slate-600">Select your most recent performance evaluation score (optional)</p>
                 {formData.employment_info.type_of_employment === 'Temporary Contract' && (
                   <p className="text-xs text-rose-600 font-medium">Temporary Contract employees are not eligible to apply</p>
                 )}
