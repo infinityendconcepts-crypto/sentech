@@ -132,6 +132,14 @@ async def create_application(app_data: ApplicationCreate, current_user: dict = D
     await db.applications.insert_one({**app_dict})
     if app_data.status == "pending":
         applicant_name = current_user.get("full_name", "An employee")
+        # Email the submitter confirmation
+        await notify_and_email(
+            current_user["id"],
+            "Bursary Application Submitted",
+            "Your bursary application has been submitted successfully and is now pending review.",
+            app_dict["id"], "bursary_application", f"/applications/{app_dict['id']}",
+        )
+        # Email admins/heads
         await notify_admins_and_heads(
             "New Bursary Application Submitted",
             f"{applicant_name} has submitted a new bursary application for review.",
@@ -182,6 +190,12 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
         )
     if update_data.status == "pending" and application.get("status") == "draft":
         applicant_name = current_user.get("full_name", "An employee")
+        await notify_and_email(
+            current_user["id"],
+            "Bursary Application Submitted",
+            "Your bursary application has been submitted successfully and is now pending review.",
+            application_id, "bursary_application", f"/applications/{application_id}",
+        )
         await notify_admins_and_heads(
             "New Bursary Application Submitted",
             f"{applicant_name} has submitted a bursary application for review.",
@@ -388,6 +402,12 @@ async def create_training_application(app_data: TrainingApplicationCreate, curre
     await db.training_applications.insert_one({**app_dict})
     if app_data.status == "pending":
         applicant_name = current_user.get("full_name", "An employee")
+        await notify_and_email(
+            current_user["id"],
+            "Training Application Submitted",
+            "Your training application has been submitted successfully and is now pending review.",
+            app_dict["id"], "training_application", f"/training-applications/{app_dict['id']}",
+        )
         await notify_admins_and_heads(
             "New Training Application Submitted",
             f"{applicant_name} has submitted a new training application for review.",
@@ -427,6 +447,12 @@ async def update_training_application(application_id: str, update_data: Training
     await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
     if update_data.status == "pending" and application.get("status") == "draft":
         applicant_name = current_user.get("full_name", "An employee")
+        await notify_and_email(
+            current_user["id"],
+            "Training Application Submitted",
+            "Your training application has been submitted successfully and is now pending review.",
+            application_id, "training_application", f"/training-applications/{application_id}",
+        )
         await notify_admins_and_heads(
             "New Training Application Submitted",
             f"{applicant_name} has submitted a training application for review.",
