@@ -349,13 +349,12 @@ async def update_application_settings(body: dict, current_user: dict = Depends(g
         for u in users:
             if u["id"] == current_user["id"]:
                 continue
-            notif = {
-                "id": generate_uuid(), "user_id": u["id"], "type": "announcement",
-                "title": f"{app_type} Applications Now Open",
-                "message": f"{app_type} applications are now accepting submissions. Apply before the deadline.",
-                "is_read": False, "created_at": now,
-            }
-            await db.notifications.insert_one({**notif})
+            await notify_and_email(
+                u["id"],
+                f"{app_type} Applications Now Open",
+                f"{app_type} applications are now accepting submissions. Apply before the deadline.",
+                "", "announcement", f"/{app_type.lower().replace(' ', '-')}-applications",
+            )
     return await db.application_settings.find_one({"id": "app_settings"}, {"_id": 0})
 
 

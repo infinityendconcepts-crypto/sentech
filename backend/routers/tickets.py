@@ -5,7 +5,7 @@ from typing import Optional, Dict, List
 from datetime import datetime, timezone
 
 from routers import (
-    db, get_current_user, generate_uuid, is_admin_user,
+    db, get_current_user, generate_uuid, is_admin_user, notify_and_email,
 )
 
 router = APIRouter(prefix="/api", tags=["tickets"])
@@ -368,18 +368,12 @@ async def update_ticket(ticket_id: str, update_data: TicketUpdate, current_user:
 
     # Notify ticket creator about status change
     if update_data.status and update_data.status != ticket.get("status") and ticket["created_by"] != current_user["id"]:
-        notif = {
-            "id": generate_uuid(),
-            "user_id": ticket["created_by"],
-            "type": "ticket_response",
-            "title": "Ticket Status Updated",
-            "message": f"Your ticket '{ticket.get('title', '')}' has been updated to: {update_data.status}",
-            "reference_id": ticket_id,
-            "reference_type": "ticket",
-            "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        await db.notifications.insert_one({**notif})
+        await notify_and_email(
+            ticket["created_by"],
+            "Ticket Status Updated",
+            f"Your ticket '{ticket.get('title', '')}' has been updated to: {update_data.status}",
+            ticket_id, "ticket", "/tickets",
+        )
 
     return {"message": "Ticket updated successfully"}
 
@@ -446,17 +440,11 @@ async def add_ticket_comment(ticket_id: str, comment_data: TicketCommentCreate, 
     )
 
     if not comment_data.is_internal and ticket["created_by"] != current_user["id"]:
-        notif = {
-            "id": generate_uuid(),
-            "user_id": ticket["created_by"],
-            "type": "ticket_response",
-            "title": "New Response on Your Ticket",
-            "message": f"New comment on '{ticket.get('title', '')}': {comment_data.content[:80]}",
-            "reference_id": ticket_id,
-            "reference_type": "ticket",
-            "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        }
-        await db.notifications.insert_one({**notif})
+        await notify_and_email(
+            ticket["created_by"],
+            "New Response on Your Ticket",
+            f"New comment on '{ticket.get('title', '')}': {comment_data.content[:80]}",
+            ticket_id, "ticket", "/tickets",
+        )
 
     return comment

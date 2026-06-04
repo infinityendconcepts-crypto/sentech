@@ -5,7 +5,7 @@ from typing import Optional, Dict, List
 from datetime import datetime, timezone
 
 from routers import (
-    db, get_current_user, generate_uuid, is_admin_user, logger,
+    db, get_current_user, generate_uuid, is_admin_user, logger, notify_and_email,
 )
 
 router = APIRouter(prefix="/api", tags=["messages"])
@@ -65,18 +65,12 @@ class ConversationCreate(BaseModel):
 async def _create_message_notifications(conversation, sender_id, sender_name, content):
     for pid in conversation.get("participant_ids", []):
         if pid != sender_id:
-            notif = {
-                "id": generate_uuid(),
-                "user_id": pid,
-                "type": "new_message",
-                "title": f"New message from {sender_name}",
-                "message": content[:100] + ("..." if len(content) > 100 else ""),
-                "reference_id": conversation["id"],
-                "reference_type": "conversation",
-                "is_read": False,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-            }
-            await db.notifications.insert_one({**notif})
+            await notify_and_email(
+                pid,
+                f"New message from {sender_name}",
+                content[:100] + ("..." if len(content) > 100 else ""),
+                conversation["id"], "conversation", "/messages",
+            )
 
 
 # ── Routes ──

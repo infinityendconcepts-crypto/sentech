@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, timezone
 from typing import Optional
-from . import db, get_current_user, generate_uuid
+from . import db, get_current_user, generate_uuid, notify_and_email
 from schemas import Meeting, MeetingCreate, MeetingUpdate
 
 router = APIRouter(prefix="/api", tags=["meetings"])
@@ -65,14 +65,12 @@ async def create_meeting(meeting_data: MeetingCreate, current_user: dict = Depen
 
     for attendee_id in meeting_dict.get("attendee_ids", []):
         if attendee_id != current_user["id"]:
-            notif = {
-                "id": generate_uuid(), "user_id": attendee_id, "type": "meeting_invite",
-                "title": "New Meeting Invitation",
-                "message": f"You've been invited to: {meeting_dict.get('title', 'Meeting')}",
-                "reference_id": meeting_dict["id"], "reference_type": "meeting",
-                "is_read": False, "created_at": datetime.now(timezone.utc).isoformat(),
-            }
-            await db.notifications.insert_one({**notif})
+            await notify_and_email(
+                attendee_id,
+                "New Meeting Invitation",
+                f"You've been invited to: {meeting_dict.get('title', 'Meeting')}",
+                meeting_dict["id"], "meeting", "/meetings",
+            )
     return meeting
 
 
