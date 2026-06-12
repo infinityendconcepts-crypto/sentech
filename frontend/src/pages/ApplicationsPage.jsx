@@ -392,6 +392,8 @@ const ApplicationsPage = () => {
     );
   };
 
+  const submissionClosed = isSubmissionClosed();
+
   return (
     <div className="space-y-6" data-testid="applications-page">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -405,8 +407,8 @@ const ApplicationsPage = () => {
               <Settings2 className="w-4 h-4" /> Period Settings
             </Button>
           )}
-          {isSubmissionClosed() && !isAdminOrHead ? (
-            <Button className="gap-2 opacity-50 cursor-not-allowed" disabled data-testid="new-application-btn">
+          {submissionClosed ? (
+            <Button className="gap-2 bg-rose-400 cursor-not-allowed" disabled data-testid="new-application-btn">
               <Plus className="w-4 h-4" /> New Application
             </Button>
           ) : (
@@ -420,11 +422,24 @@ const ApplicationsPage = () => {
       </div>
 
       {/* Application Status Banner */}
-      {appSettings && (
-        <div className={`flex items-center gap-3 p-3 rounded-lg border ${appSettings.bursary_open ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`}>
-          {appSettings.bursary_open ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
+      {submissionClosed ? (
+        <div className="flex items-center gap-3 p-4 rounded-lg border-2 border-rose-300 bg-rose-50 text-rose-800" data-testid="bursary-status-banner">
+          <XCircle className="w-6 h-6 text-rose-600 shrink-0" />
+          <div>
+            <p className="font-bold text-rose-700">Bursary Applications are CLOSED</p>
+            <p className="text-sm text-rose-600 mt-0.5">
+              {!appSettings?.bursary_open
+                ? 'The application period has been closed by an administrator.'
+                : `The deadline (${new Date(appSettings?.bursary_deadline).toLocaleDateString()}) has passed. New applications are no longer accepted.`
+              }
+            </p>
+          </div>
+        </div>
+      ) : appSettings && (
+        <div className="flex items-center gap-3 p-3 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-800" data-testid="bursary-status-banner">
+          <CheckCircle2 className="w-5 h-5" />
           <span className="text-sm font-medium">
-            Bursary applications are {appSettings.bursary_open ? 'open' : 'closed'}
+            Bursary applications are open
             {appSettings.bursary_deadline && ` — Deadline: ${new Date(appSettings.bursary_deadline).toLocaleDateString()} at midnight`}
           </span>
         </div>

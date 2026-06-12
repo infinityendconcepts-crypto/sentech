@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { applicationsAPI, usersAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { CheckCircle2, ChevronLeft, ChevronRight, FileText, User, Briefcase, GraduationCap, Upload, Eye, Search, Lock, Unlock } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, FileText, User, Briefcase, GraduationCap, Upload, Eye, Search, Lock, Unlock, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -103,9 +103,24 @@ const NewApplicationPage = () => {
   const [appIsLocked, setAppIsLocked] = useState(false);
   const [appStatus, setAppStatus] = useState('draft');
   const [autoPopulated, setAutoPopulated] = useState(false);
+  const [bursaryClosed, setBursaryClosed] = useState(false);
   const isAdmin = user?.roles?.some(r => ['super_admin', 'admin'].includes(r));
   const isAdminOrHead = isAdmin || !!user?.is_head;
   const apClass = autoPopulated ? 'bg-slate-50 text-slate-700' : '';
+
+  // Check bursary period on load
+  useEffect(() => {
+    applicationsAPI.getSettings().then(res => {
+      const s = res.data;
+      if (!s) return;
+      if (!s.bursary_open) { setBursaryClosed(true); return; }
+      if (s.bursary_deadline) {
+        const dl = new Date(s.bursary_deadline);
+        dl.setHours(23, 59, 59, 999);
+        if (new Date() > dl) setBursaryClosed(true);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Load existing application data when editing
   useEffect(() => {
@@ -421,6 +436,28 @@ const NewApplicationPage = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-slate-600">Loading application...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (bursaryClosed && !isEditing) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]" data-testid="bursary-closed-block">
+        <div className="text-center max-w-md space-y-4">
+          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto">
+            <XCircle className="w-8 h-8 text-rose-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-rose-700">Applications Closed</h2>
+          <p className="text-rose-600">
+            The bursary application period has ended. New applications are no longer being accepted.
+          </p>
+          <p className="text-sm text-slate-500">
+            Please contact L&D or your line manager for any queries.
+          </p>
+          <Link to="/applications">
+            <Button variant="outline" className="mt-4">Back to Applications</Button>
+          </Link>
         </div>
       </div>
     );
