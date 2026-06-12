@@ -343,18 +343,6 @@ async def update_application_settings(body: dict, current_user: dict = Depends(g
     body["updated_at"] = now
     body["updated_by"] = current_user["id"]
     await db.application_settings.update_one({"id": "app_settings"}, {"$set": body}, upsert=True)
-    if body.get("bursary_open") or body.get("training_open"):
-        app_type = "Bursary" if body.get("bursary_open") else "Training"
-        users = await db.users.find({"is_active": True}, {"_id": 0, "id": 1}).to_list(10000)
-        for u in users:
-            if u["id"] == current_user["id"]:
-                continue
-            await notify_and_email(
-                u["id"],
-                f"{app_type} Applications Now Open",
-                f"{app_type} applications are now accepting submissions. Apply before the deadline.",
-                "", "announcement", f"/{app_type.lower().replace(' ', '-')}-applications",
-            )
     return await db.application_settings.find_one({"id": "app_settings"}, {"_id": 0})
 
 

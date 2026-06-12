@@ -1065,7 +1065,7 @@ const ApplicationsPage = () => {
       <Dialog open={settingsDialog} onOpenChange={setSettingsDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" /> Application Period Settings</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Settings2 className="w-5 h-5 text-primary" /> Bursary Period Settings</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-2">
             {/* Bursary */}
@@ -1082,30 +1082,6 @@ const ApplicationsPage = () => {
               <div className="space-y-2">
                 <Label className="text-xs">Deadline Date</Label>
                 <Input type="date" value={settingsForm.bursary_deadline || ''} onChange={(e) => setSettingsForm(f => ({...f, bursary_deadline: e.target.value}))} data-testid="bursary-deadline" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Close submissions X days before deadline</Label>
-                <Input type="number" min="0" value={settingsForm.bursary_close_days_before || 8} onChange={(e) => setSettingsForm(f => ({...f, bursary_close_days_before: parseInt(e.target.value)}))} data-testid="bursary-close-days" />
-              </div>
-            </div>
-            {/* Training */}
-            <div className="space-y-3 p-4 border rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-sm">Training Applications</span>
-                <button onClick={() => setSettingsForm(f => ({...f, training_open: !f.training_open}))}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${settingsForm.training_open ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}
-                  data-testid="toggle-training-open"
-                >
-                  {settingsForm.training_open ? 'Open' : 'Closed'}
-                </button>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Deadline Date</Label>
-                <Input type="date" value={settingsForm.training_deadline || ''} onChange={(e) => setSettingsForm(f => ({...f, training_deadline: e.target.value}))} data-testid="training-deadline" />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Close submissions X days before deadline</Label>
-                <Input type="number" min="0" value={settingsForm.training_close_days_before || 8} onChange={(e) => setSettingsForm(f => ({...f, training_close_days_before: parseInt(e.target.value)}))} data-testid="training-close-days" />
               </div>
             </div>
           </div>

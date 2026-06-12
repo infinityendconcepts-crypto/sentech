@@ -147,18 +147,8 @@ const TrainingApplicationsPage = () => {
     } catch { toast.error('Failed to save settings'); }
   };
 
-  // Check if submissions are closed based on deadline
-  const isSubmissionClosed = () => {
-    if (!appSettings) return false;
-    if (!appSettings.training_open) return true;
-    if (appSettings.training_deadline && appSettings.training_close_days_before) {
-      const deadline = new Date(appSettings.training_deadline);
-      const closeDays = appSettings.training_close_days_before || 0;
-      const closeDate = new Date(deadline.getTime() - closeDays * 86400000);
-      if (new Date() > closeDate) return true;
-    }
-    return false;
-  };
+  // Training applications are not restricted by period settings
+  const isSubmissionClosed = () => false;
 
   const openExpensesDialog = (app) => {
     setExpensesApp(app);
@@ -356,35 +346,13 @@ const TrainingApplicationsPage = () => {
           <p className="text-slate-600 mt-1">Manage and track training applications</p>
         </div>
         <div className="flex items-center gap-2">
-          {isAdminOrHead && (
-            <Button variant="outline" className="gap-2" onClick={() => { setSettingsForm(appSettings || {}); setSettingsDialog(true); }} data-testid="training-app-settings-btn">
-              <Settings2 className="w-4 h-4" /> Period Settings
-            </Button>
-          )}
-          {submissionClosed && !isAdminOrHead ? (
-            <Button className="gap-2 opacity-50 cursor-not-allowed" disabled data-testid="new-training-application-btn">
+          <Link to="/training-applications/new">
+            <Button className="gap-2" data-testid="new-training-application-btn">
               <Plus className="w-4 h-4" /> New Application
             </Button>
-          ) : (
-            <Link to="/training-applications/new">
-              <Button className="gap-2" data-testid="new-training-application-btn">
-                <Plus className="w-4 h-4" /> New Application
-              </Button>
-            </Link>
-          )}
+          </Link>
         </div>
       </div>
-
-      {/* Application Status Banner */}
-      {appSettings && (
-        <div className={`flex items-center gap-3 p-3 rounded-lg border ${appSettings.training_open ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'}`} data-testid="training-status-banner">
-          {appSettings.training_open ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-          <span className="text-sm font-medium">
-            Training applications are {appSettings.training_open ? 'open' : 'closed'}
-            {appSettings.training_deadline && ` — Deadline: ${new Date(appSettings.training_deadline).toLocaleDateString()}`}
-          </span>
-        </div>
-      )}
 
       {/* Batch Actions */}
       {selectedIds.length > 0 && isAdminOrHead && (
