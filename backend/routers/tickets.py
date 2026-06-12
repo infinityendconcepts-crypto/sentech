@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from routers import (
     db, get_current_user, generate_uuid, is_admin_user, notify_and_email,
+    send_email_notification, get_app_url, logger,
 )
 
 router = APIRouter(prefix="/api", tags=["tickets"])
@@ -86,100 +87,67 @@ def _is_admin_or_support(user: dict) -> bool:
 # ── Auto-routing helpers ──
 
 async def _find_ticket_assignee(creator_user: dict, category: str):
-    """Find who the ticket should be assigned to based on category.
-    - training_application / bursary_application → subgroup head or division head
-    - hr_query / technical_support → None (admin pool)
+    """Find who the ticket should be assigned to.
+    All 3 user categories (hr_query, training_query, general_query) → route to admins (no specific assignee).
+    technical_support → admin pool.
     """
-    if category in ("training_application", "bursary_application"):
-        division = creator_user.get("division", "")
-        department = creator_user.get("department") or creator_user.get("subgroup", "")
-
-        # Check subgroup head first
-        if department and division:
-            sg = await db.subgroups.find_one(
-                {"division_name": division, "name": department}, {"_id": 0}
-            )
-            if sg and sg.get("leader_id"):
-                return sg["leader_id"]
-
-        # Fall back to division head
-        if division:
-            config = await db.division_group_configs.find_one(
-                {"division_name": division}, {"_id": 0}
-            )
-            if config and config.get("leader_id"):
-                return config["leader_id"]
-
     return None
 
 
 async def _notify_ticket_recipients(ticket_dict: dict, creator: dict, category: str):
-    """Send notifications to the right people based on ticket category."""
-    now = datetime.now(timezone.utc).isoformat()
+    """Send notifications + emails based on ticket category.
+    HR/Training/General → hrd@sentech.co.za
+    Technical Support → rorim@moonlightergroup.co.za (only via escalation)
+    """
+    import asyncio
     title_short = ticket_dict.get("title", "")[:60]
     creator_name = creator.get("full_name", "Unknown")
+    link = f"{get_app_url()}/tickets"
 
-    notifs = []
-
-    if category in ("training_application", "bursary_application"):
-        # Notify the assigned head
-        assigned = ticket_dict.get("assigned_to")
-        if assigned and assigned != creator["id"]:
-            label = "Training Application" if category == "training_application" else "Bursary Application"
-            notifs.append({
-                "id": generate_uuid(),
-                "user_id": assigned,
-                "type": "ticket_assigned",
-                "title": f"New {label} Ticket",
-                "message": f"{creator_name} submitted: {title_short}",
-                "reference_id": ticket_dict["id"],
-                "reference_type": "ticket",
-                "is_read": False,
-                "created_at": now,
-            })
-
-    elif category == "hr_query":
-        # Notify all admins
+    if category in ("hr_query", "training_query", "general_query"):
+        # Notify admins in-app
         admins = await db.users.find(
             {"roles": {"$in": ["admin", "super_admin"]}, "is_active": True},
             {"_id": 0, "id": 1}
         ).to_list(200)
         for adm in admins:
             if adm["id"] != creator["id"]:
-                notifs.append({
-                    "id": generate_uuid(),
-                    "user_id": adm["id"],
-                    "type": "ticket_assigned",
-                    "title": "New HR Query Ticket",
-                    "message": f"{creator_name} submitted: {title_short}",
-                    "reference_id": ticket_dict["id"],
-                    "reference_type": "ticket",
-                    "is_read": False,
-                    "created_at": now,
-                })
+                await notify_and_email(
+                    adm["id"],
+                    f"New {category.replace('_', ' ').title()} Ticket",
+                    f"{creator_name} submitted: {title_short}",
+                    ticket_dict["id"], "ticket", "/tickets",
+                )
+        # Also email hrd@sentech.co.za directly
+        label = category.replace('_', ' ').title()
+        asyncio.create_task(send_email_notification(
+            "hrd@sentech.co.za",
+            f"New {label} Ticket: {title_short}",
+            f"<p><strong>{creator_name}</strong> submitted a new {label} ticket.</p><p>{ticket_dict.get('description', '')[:200]}</p>",
+            link,
+        ))
 
     elif category == "technical_support":
-        # Notify all super_admins and admins
+        # Email rorim@moonlightergroup.co.za directly
+        asyncio.create_task(send_email_notification(
+            "rorim@moonlightergroup.co.za",
+            f"Escalated Technical Support Ticket: {title_short}",
+            f"<p>A ticket has been escalated to Technical Support.</p><p><strong>From:</strong> {creator_name}</p><p>{ticket_dict.get('description', '')[:200]}</p>",
+            link,
+        ))
+        # Also notify admins in-app
         admins = await db.users.find(
             {"roles": {"$in": ["admin", "super_admin"]}, "is_active": True},
             {"_id": 0, "id": 1}
         ).to_list(200)
         for adm in admins:
             if adm["id"] != creator["id"]:
-                notifs.append({
-                    "id": generate_uuid(),
-                    "user_id": adm["id"],
-                    "type": "ticket_assigned",
-                    "title": "New Technical Support Ticket",
-                    "message": f"{creator_name} submitted: {title_short}",
-                    "reference_id": ticket_dict["id"],
-                    "reference_type": "ticket",
-                    "is_read": False,
-                    "created_at": now,
-                })
-
-    if notifs:
-        await db.notifications.insert_many([{**n} for n in notifs])
+                await notify_and_email(
+                    adm["id"],
+                    "Technical Support Ticket Escalated",
+                    f"Ticket '{title_short}' has been escalated to Technical Support.",
+                    ticket_dict["id"], "ticket", "/tickets",
+                )
 
 
 # ── Routes ──

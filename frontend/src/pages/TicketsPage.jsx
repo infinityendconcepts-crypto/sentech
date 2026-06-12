@@ -54,23 +54,25 @@ const TicketsPage = () => {
   const [newTicket, setNewTicket] = useState({
     title: '',
     description: '',
-    category: 'training_application',
+    category: 'hr_query',
     priority: 'medium',
   });
 
   const isAdminUser = isAdmin || isSuperAdmin || user?.roles?.includes('support');
 
   const categories = [
-    { value: 'training_application', label: 'Training Application' },
-    { value: 'bursary_application', label: 'Bursary Application' },
     { value: 'hr_query', label: 'HR Query' },
+    { value: 'training_query', label: 'Training Query' },
+    { value: 'general_query', label: 'General Query' },
     { value: 'technical_support', label: 'Technical Support' },
   ];
 
-  // Escalation categories (for heads to re-route tickets)
+  // Only 3 categories visible to regular users when creating tickets
+  const userCategories = categories.filter(c => c.value !== 'technical_support');
+
+  // Escalation option for admins/heads — Technical Support only
   const escalationCategories = [
-    { value: 'hr_query', label: 'Escalate to HR Query (Admin)' },
-    { value: 'technical_support', label: 'Escalate to Technical Support (Admin)' },
+    { value: 'technical_support', label: 'Escalate to Technical Support' },
   ];
 
   const priorities = [
@@ -130,7 +132,7 @@ const TicketsPage = () => {
       await ticketsAPI.create(newTicket);
       toast.success('Ticket created successfully');
       setNewTicketDialog(false);
-      setNewTicket({ title: '', description: '', category: 'training_application', priority: 'medium' });
+      setNewTicket({ title: '', description: '', category: 'hr_query', priority: 'medium' });
       fetchTickets();
       fetchStats();
     } catch (error) {
@@ -260,7 +262,7 @@ const TicketsPage = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((cat) => (
+                      {userCategories.map((cat) => (
                         <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
                       ))}
                     </SelectContent>
@@ -459,19 +461,18 @@ const TicketsPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    {/* Escalation for assigned heads (non-admin, assigned_to = current user) */}
-                    {ticket.assigned_to === user?.id && !isAdminUser &&
-                      (ticket.category === 'training_application' || ticket.category === 'bursary_application') && (
-                      <Select onValueChange={(value) => handleEscalateTicket(ticket.id, value)}>
-                        <SelectTrigger className="w-44 text-xs h-8" data-testid={`escalate-ticket-${ticket.id}`}>
-                          <SelectValue placeholder="Escalate..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {escalationCategories.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    {/* Escalation button for admins and heads — only for non-technical tickets */}
+                    {(isAdminUser || user?.is_head) && ticket.category !== 'technical_support' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs h-8 border-amber-300 text-amber-700 hover:bg-amber-50"
+                        onClick={() => handleEscalateTicket(ticket.id, 'technical_support')}
+                        data-testid={`escalate-ticket-${ticket.id}`}
+                      >
+                        <ArrowUpRight className="w-3 h-3 mr-1" />
+                        Escalate to Tech
+                      </Button>
                     )}
                     {isAdminUser && (
                       <Select
@@ -534,32 +535,24 @@ const TicketsPage = () => {
                   )}
                 </div>
 
-                {/* Escalation controls for assigned head */}
-                {selectedTicket.assigned_to === user?.id && !isAdminUser &&
-                  (selectedTicket.category === 'training_application' || selectedTicket.category === 'bursary_application') && (
+                {/* Escalation controls for admins and heads */}
+                {(isAdminUser || user?.is_head) && selectedTicket.category !== 'technical_support' && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                     <p className="text-sm text-amber-800 mb-2 font-medium flex items-center gap-1">
                       <ArrowUpRight className="w-4 h-4" />
-                      Escalate this ticket
+                      Escalate this ticket to Technical Support
                     </p>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEscalateTicket(selectedTicket.id, 'hr_query')}
-                        data-testid="escalate-to-hr"
-                      >
-                        HR Query
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEscalateTicket(selectedTicket.id, 'technical_support')}
-                        data-testid="escalate-to-tech"
-                      >
-                        Technical Support
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-amber-300 text-amber-700 hover:bg-amber-100"
+                      onClick={() => handleEscalateTicket(selectedTicket.id, 'technical_support')}
+                      data-testid="escalate-to-tech"
+                    >
+                      <ArrowUpRight className="w-4 h-4 mr-1" />
+                      Escalate to Technical Support
+                    </Button>
+                    <p className="text-xs text-amber-600 mt-2">This will notify rorim@moonlightergroup.co.za</p>
                   </div>
                 )}
 
