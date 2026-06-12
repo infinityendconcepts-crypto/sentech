@@ -781,7 +781,7 @@ const TrainingApplicationPage = () => {
                   <option value="4">4</option>
                   <option value="5">5</option>
                 </select>
-                <p className="text-xs text-slate-600">Select your most recent performance evaluation score (optional)</p>
+                <p className="text-xs text-slate-600">Select your most recent performance evaluation score</p>
                 {formData.employment_info.type_of_employment === 'Temporary Contract' && (
                   <p className="text-xs text-rose-600 font-medium">Temporary Contract employees are not eligible to apply</p>
                 )}
