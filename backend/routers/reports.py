@@ -631,10 +631,8 @@ async def export_filtered_data(
         uid = u.get("id", "")
         user_trainings = training_by_user.get(uid, [])
         user_bursaries = bursary_by_user.get(uid, [])
-        # Only include users linked to applications
-        if not user_trainings and not user_bursaries:
-            continue
         learner = f"{u.get('full_name', '')} {u.get('surname', '')}".strip()
+        has_apps = bool(user_trainings or user_bursaries)
 
         if user_trainings:
             for a in user_trainings:
@@ -698,6 +696,34 @@ async def export_filtered_data(
                 float(exp.get("catering") or 0),
                 0,
                 ei.get("division") or u.get("division") or "",
+                u.get("ofo_major_group") or "",
+                u.get("ofo_sub_major_group") or "",
+                u.get("ofo_occupation") or "",
+                u.get("ofo_code") or "",
+            ]
+            for ci, val in enumerate(row_vals, 1):
+                cell = ws1.cell(row=row_idx, column=ci, value=val)
+                cell.border = thin_border
+                if row_idx % 2 == 0:
+                    cell.fill = alt
+                if sd_headers[ci - 1] in ("Course Cost", "Travel Cost", "Accommodation Cost", "Catering Cost", "Stationery Cost"):
+                    cell.alignment = Alignment(horizontal="right")
+                    cell.number_format = '#,##0.00'
+            row_idx += 1
+
+        # Users with no applications — still include personal info
+        if not has_apps:
+            row_vals = [
+                "", "", "", "",
+                learner,
+                u.get("id_number") or "",
+                u.get("gender") or "",
+                u.get("race") or "",
+                "No",
+                u.get("age") or "",
+                "",
+                0, 0, 0, 0, 0,
+                u.get("division") or "",
                 u.get("ofo_major_group") or "",
                 u.get("ofo_sub_major_group") or "",
                 u.get("ofo_occupation") or "",

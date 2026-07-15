@@ -1,0 +1,16 @@
+{
+  "summary": "Verified export-filtered bug fix. All 5 tests passed: unfiltered export returns 394 rows (>= 389 users), Female=65, Male=44, app_type=training returns 389 rows with 0 bursary rows, both sheets present.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/test_export_filtered.py", "/app/test_reports/pytest/export_filtered.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": ["/app/backend/tests/test_export_filtered.py"],
+  "success_rate": {"backend": "100%", "frontend": "not tested"},
+  "test_credentials": "jane.smith@uct.ac.za / securepass123",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Bug fix confirmed. Unfiltered export now includes all users (394 SD rows vs 389 users - some users have multiple applications). Gender filters match expected counts. app_type=training correctly excludes bursary rows.",
+  "rca of the issue": "Previously a `continue` statement skipped users without applications. Fix removed skip and added a personal-info-only row for users without applications."
+}
