@@ -66,6 +66,13 @@ Build a comprehensive bursary management system named "Sentech" using React, Fas
   - Training: Signed Performance Contract removed from documents entirely
   - Training: International suppliers no longer require CSD Report or BBBEE Certificate
   - Reports: Added Application Type filter (Bursary/Training) to filter panel
+- **PDP, Reports & Notification Updates** (April 24, 2026):
+  - Reports gender filter bug fixed: "Unspecified" option added for 280 users with no gender. F+M+U = 389 total
+  - PDP: Added Division/Department filters for admins and heads
+  - PDP: Heads see only their division's PDP entries (RBAC scoping)
+  - Email notifications now go to division heads + admins when applications/PDP submitted
+  - Bursary period settings only affect bursary (training always open)
+  - Period closed: red banner + disabled "New Application" button for everyone
 
 ## PDP Workflow
 1. Employee creates PDP entry (status: not_started)
