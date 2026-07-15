@@ -107,17 +107,18 @@ async def lookup_user_by_id_number(id_number: str, current_user: dict = Depends(
     if not user:
         raise HTTPException(status_code=404, detail="No employee found with this ID number")
     surname = user.get("surname", "")
-    full_name = user.get("full_name", "")
-    # Extract first name(s) by removing surname from full_name
-    name = full_name
-    if surname and full_name.endswith(surname):
-        name = full_name[: -len(surname)].strip()
-    elif surname and full_name.startswith(surname):
-        name = full_name[len(surname):].strip()
+    name = user.get("name", "")
+    if not name:
+        full_name = user.get("full_name", "")
+        name = full_name
+        if surname and full_name.endswith(surname):
+            name = full_name[: -len(surname)].strip()
+        elif surname and full_name.startswith(surname):
+            name = full_name[len(surname):].strip()
     return {
         "found": True,
         "surname": surname,
-        "name": name or full_name,
+        "name": name,
         "division": user.get("division", ""),
         "department": user.get("department", ""),
         "position": user.get("position", ""),

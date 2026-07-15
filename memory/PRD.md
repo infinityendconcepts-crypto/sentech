@@ -82,6 +82,15 @@ Build a comprehensive bursary management system named "Sentech" using React, Fas
 5. Admin (L&D) clicks **L&D Track** to monitor progress
 6. Admin marks **Completed** when done
 
+## Bulk User Data Update (July 15, 2026)
+- Imported employee data from 2 Excel files (10 divisions: Exec_and_Head, Finance, Internal Audit, Satellite BU, R&I, SCM, HR, Company Secretary, Legal, Risk)
+- Populated `name` field for ALL 389 users (was 0/389) — separated from surname
+- Populated `surname` for 388/389 users (99%)
+- Populated `date_of_appointment` for 113/389 users from Excel start dates
+- Filled `id_number`, `gender`, `race` for all users covered by the Excel files (119 employees)
+- 262 users from Managed Infrastructure Business division still lack personal data (not covered in provided Excel files)
+- Updated `/api/users/lookup-by-id` endpoint to use `name` field directly
+
 ## P1 Backlog
 1. Microsoft SSO (requires Azure AD app registration credentials from user)
 
@@ -91,11 +100,11 @@ Build a comprehensive bursary management system named "Sentech" using React, Fas
 3. Scheduled auto-export weekly XLSX reports
 
 ## Test Credentials
-- Super Admin: jane.smith@uct.ac.za / securepass123
+- Super Admin: t-karooz@hotmail.com / password
+- Admin & Head: rorim@moonlightergroup.co.za / password
 - Admin: test.admin@sentech.co.za / password
 - Employee: test.employee@sentech.co.za / password
-- Head (MIB): mothibik@sentech.co.za / password
 - Test ID for lookup: 7503235923089
 
 ## Mocked Services
-- Email delivery (SMTP) is simulated
+- None (SMTP is live)
