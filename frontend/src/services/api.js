@@ -312,6 +312,7 @@ export const groupMessagesAPI = {
 
 export const pdpAPI = {
   getAll: (params) => api.get('/pdp', { params }),
+  getFilters: () => api.get('/pdp/filters'),
   getById: (id) => api.get(`/pdp/${id}`),
   create: (data) => api.post('/pdp', data),
   update: (id, data) => api.put(`/pdp/${id}`, data),

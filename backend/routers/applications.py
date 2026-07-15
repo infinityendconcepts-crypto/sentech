@@ -145,6 +145,7 @@ async def create_application(app_data: ApplicationCreate, current_user: dict = D
             f"{applicant_name} has submitted a new bursary application for review.",
             app_dict["id"], "bursary_application", f"/applications/{app_dict['id']}",
             exclude_user_id=current_user["id"],
+            submitter_division=current_user.get("division", ""),
         )
     return app_dict
 
@@ -201,6 +202,7 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
             f"{applicant_name} has submitted a bursary application for review.",
             application_id, "bursary_application", f"/applications/{application_id}",
             exclude_user_id=current_user["id"],
+            submitter_division=current_user.get("division", ""),
         )
     return await db.applications.find_one({"id": application_id}, {"_id": 0})
 
@@ -400,6 +402,7 @@ async def create_training_application(app_data: TrainingApplicationCreate, curre
             f"{applicant_name} has submitted a new training application for review.",
             app_dict["id"], "training_application", f"/training-applications/{app_dict['id']}",
             exclude_user_id=current_user["id"],
+            submitter_division=current_user.get("division", ""),
         )
     return app_dict
 
@@ -445,6 +448,7 @@ async def update_training_application(application_id: str, update_data: Training
             f"{applicant_name} has submitted a training application for review.",
             application_id, "training_application", f"/training-applications/{application_id}",
             exclude_user_id=current_user["id"],
+            submitter_division=current_user.get("division", ""),
         )
     return await db.training_applications.find_one({"id": application_id}, {"_id": 0})
 

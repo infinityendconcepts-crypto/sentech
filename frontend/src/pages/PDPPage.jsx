@@ -117,6 +117,9 @@ const PDPPage = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterUser, setFilterUser] = useState('all');
+  const [filterDivision, setFilterDivision] = useState('all');
+  const [filterDepartment, setFilterDepartment] = useState('all');
+  const [pdpFilters, setPdpFilters] = useState({ divisions: [], departments: [] });
   const [activeStep, setActiveStep] = useState(0); // wizard step in dialog
   
   // Excel import state
@@ -125,17 +128,28 @@ const PDPPage = () => {
   const [importPreview, setImportPreview] = useState([]);
   const fileInputRef = useRef(null);
 
+  const isHead = !!user?.is_head;
+  const isAdminOrHead = isAdmin || isHead;
+
   useEffect(() => { 
     fetchEntries(); 
-    if (isAdmin) {
+    if (isAdminOrHead) {
       fetchUsers();
+      fetchFilters();
     }
-  }, [isAdmin]);
+  }, [isAdmin, isHead]);
+
+  useEffect(() => {
+    fetchEntries();
+  }, [filterDivision, filterDepartment]);
 
   const fetchEntries = async () => {
     setLoading(true);
     try {
-      const res = await pdpAPI.getAll();
+      const params = {};
+      if (filterDivision !== 'all') params.division = filterDivision;
+      if (filterDepartment !== 'all') params.department = filterDepartment;
+      const res = await pdpAPI.getAll(params);
       setEntries(res.data);
     } catch {
       toast.error('Failed to load development plan entries');
@@ -151,6 +165,13 @@ const PDPPage = () => {
     } catch (err) {
       console.error('Failed to fetch users:', err);
     }
+  };
+
+  const fetchFilters = async () => {
+    try {
+      const res = await pdpAPI.getFilters();
+      setPdpFilters(res.data);
+    } catch { /* ignore */ }
   };
 
   // Excel Import Functions
@@ -388,9 +409,6 @@ const PDPPage = () => {
     }
   };
 
-  const isHead = user?.is_head || false;
-  const isAdminOrHead = isAdmin || isHead;
-
   const filtered = entries.filter(e => {
     if (filterStatus !== 'all' && e.status !== filterStatus) return false;
     if (filterPriority !== 'all' && e.priority !== filterPriority) return false;
@@ -551,6 +569,32 @@ const PDPPage = () => {
             </SelectContent>
           </Select>
         )}
+        {isAdminOrHead && pdpFilters.divisions.length > 0 && (
+          <Select value={filterDivision} onValueChange={setFilterDivision}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Division" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Divisions</SelectItem>
+              {pdpFilters.divisions.map(d => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {isAdminOrHead && pdpFilters.departments.length > 0 && (
+          <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Department" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Departments</SelectItem>
+              {pdpFilters.departments.map(d => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={filterStatus} onValueChange={setFilterStatus}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Status" />
@@ -573,8 +617,8 @@ const PDPPage = () => {
             ))}
           </SelectContent>
         </Select>
-        {(filterStatus !== 'all' || filterPriority !== 'all' || filterUser !== 'all' || search) && (
-          <Button variant="ghost" size="sm" className="gap-1 text-slate-500" onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterUser('all'); setSearch(''); }}>
+        {(filterStatus !== 'all' || filterPriority !== 'all' || filterUser !== 'all' || filterDivision !== 'all' || filterDepartment !== 'all' || search) && (
+          <Button variant="ghost" size="sm" className="gap-1 text-slate-500" onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setFilterUser('all'); setFilterDivision('all'); setFilterDepartment('all'); setSearch(''); }}>
             <X className="w-3 h-3" /> Clear
           </Button>
         )}

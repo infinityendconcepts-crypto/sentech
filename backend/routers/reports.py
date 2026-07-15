@@ -66,7 +66,12 @@ async def get_interactive_report_data(
     elif gender:
         gender_list = [gender]
     if gender_list:
-        user_query["gender"] = {"$in": gender_list} if len(gender_list) > 1 else gender_list[0]
+        # Include users with empty/null gender when filtering (Unspecified)
+        gender_or = [{"gender": {"$in": gender_list}}]
+        if "Unspecified" in gender_list:
+            gender_or.append({"gender": {"$in": [None, ""]}})
+            gender_or.append({"gender": {"$exists": False}})
+        user_query.setdefault("$and", []).append({"$or": gender_or})
 
     # Age range filter
     if age_min is not None or age_max is not None:
@@ -258,6 +263,10 @@ async def get_interactive_report_data(
     all_races = [r for r in all_races if r]
     all_genders = await db.users.distinct("gender")
     all_genders = [g for g in all_genders if g]
+    # Add "Unspecified" for users with empty/null gender
+    empty_gender_count = await db.users.count_documents({"$or": [{"gender": ""}, {"gender": None}, {"gender": {"$exists": False}}]})
+    if empty_gender_count > 0:
+        all_genders.append("Unspecified")
 
     return {
         "filters": {
@@ -548,7 +557,11 @@ async def export_filtered_data(
     if race_list:
         user_query["race"] = {"$in": race_list} if len(race_list) > 1 else race_list[0]
     if gender_list:
-        user_query["gender"] = {"$in": gender_list} if len(gender_list) > 1 else gender_list[0]
+        gender_or = [{"gender": {"$in": gender_list}}]
+        if "Unspecified" in gender_list:
+            gender_or.append({"gender": {"$in": [None, ""]}})
+            gender_or.append({"gender": {"$exists": False}})
+        user_query.setdefault("$and", []).append({"$or": gender_or})
     if age_min is not None or age_max is not None:
         age_q = {}
         if age_min is not None:

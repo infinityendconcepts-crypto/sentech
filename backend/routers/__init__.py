@@ -152,16 +152,29 @@ async def notify_and_email(user_id: str, title: str, message: str, ref_id: str =
         link = f"{get_app_url()}{link_path}" if link_path else f"{get_app_url()}/notifications"
         asyncio.create_task(send_email_notification(user["email"], title, f"<p>{message}</p>", link))
 
-async def notify_admins_and_heads(title: str, message: str, ref_id: str = "", ref_type: str = "", link_path: str = "", exclude_user_id: str = ""):
-    """Send notification + email to all admins, super_admins, and heads."""
+async def notify_admins_and_heads(title: str, message: str, ref_id: str = "", ref_type: str = "", link_path: str = "", exclude_user_id: str = "", submitter_division: str = ""):
+    """Send notification + email to all admins, super_admins, and heads.
+    If submitter_division is provided, also notify division/subgroup leaders."""
     recipients = await db.users.find(
         {"$or": [{"roles": {"$in": ["admin", "super_admin"]}}, {"is_head": True}]},
         {"_id": 0, "id": 1, "email": 1}
     ).to_list(500)
+    notified_ids = set()
     for r in recipients:
         if r["id"] == exclude_user_id:
             continue
         await notify_and_email(r["id"], title, message, ref_id, ref_type, link_path)
+        notified_ids.add(r["id"])
+
+    # Also notify division/subgroup leaders specifically
+    if submitter_division:
+        config = await db.division_groups.find_one({"division_name": submitter_division}, {"_id": 0, "leader_id": 1})
+        if config and config.get("leader_id") and config["leader_id"] not in notified_ids and config["leader_id"] != exclude_user_id:
+            await notify_and_email(config["leader_id"], title, message, ref_id, ref_type, link_path)
+        subgroups = await db.subgroups.find({"division_name": submitter_division}, {"_id": 0, "leader_id": 1}).to_list(100)
+        for sg in subgroups:
+            if sg.get("leader_id") and sg["leader_id"] not in notified_ids and sg["leader_id"] != exclude_user_id:
+                await notify_and_email(sg["leader_id"], title, message, ref_id, ref_type, link_path)
 
 def generate_excel(data: list, title: str = "Export") -> io.BytesIO:
     """Generate an Excel file from a list of dicts"""
