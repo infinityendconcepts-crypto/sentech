@@ -640,8 +640,35 @@ async def export_filtered_data(
         if uid:
             bursary_by_user.setdefault(uid, []).append(a)
 
-    # For applications/expenses/tickets tabs, only include users with matching data
+    # For applications/expenses tabs, only include users with matching app data
+    # For tickets tab, only include users with tickets
     only_with_apps = data_type in ("applications", "expenses")
+
+    # For tickets export, fetch ticket data and build a dedicated Tickets sheet
+    tickets_data = []
+    if data_type == "tickets":
+        ticket_query = {}
+        if user_ids and has_user_filter:
+            ticket_query["created_by"] = {"$in": user_ids}
+        if date_from:
+            ticket_query.setdefault("created_at", {})["$gte"] = date_from
+        if date_to:
+            ticket_query.setdefault("created_at", {})["$lte"] = date_to + "T23:59:59"
+        tickets_data = await db.tickets.find(ticket_query, {"_id": 0}).to_list(10000)
+
+    # For expenses export, filter to only users with expense data
+    users_with_expenses = set()
+    if data_type == "expenses":
+        for uid, apps_list in training_by_user.items():
+            for a in apps_list:
+                exp = a.get("additional_expenses", {})
+                if exp and any(float(exp.get(k) or 0) > 0 for k in ["flights", "accommodation", "car_hire_or_shuttle", "catering"]):
+                    users_with_expenses.add(uid)
+        for uid, apps_list in bursary_by_user.items():
+            for a in apps_list:
+                exp = a.get("additional_expenses", {})
+                if exp and any(float(exp.get(k) or 0) > 0 for k in ["flights", "accommodation", "car_hire_or_shuttle", "catering"]):
+                    users_with_expenses.add(uid)
 
     row_idx = 3
     for u in users:
@@ -650,6 +677,14 @@ async def export_filtered_data(
         user_bursaries = bursary_by_user.get(uid, [])
         learner = f"{u.get('name', '')} {u.get('surname', '')}".strip()
         has_apps = bool(user_trainings or user_bursaries)
+
+        # Skip users without relevant data for non-demographics exports
+        if only_with_apps and not has_apps:
+            continue
+        if data_type == "expenses" and uid not in users_with_expenses:
+            continue
+        if data_type == "tickets":
+            continue  # Tickets tab uses a separate Tickets sheet, skip Skills Dev rows
 
         if user_trainings:
             for a in user_trainings:
@@ -729,7 +764,7 @@ async def export_filtered_data(
             row_idx += 1
 
         # Users with no applications — only include for demographics/all exports
-        if not has_apps and not only_with_apps:
+        if not has_apps:
             row_vals = [
                 "", "", "", "",
                 learner,
@@ -787,6 +822,39 @@ async def export_filtered_data(
 
     for ci in range(1, 10):
         ws2.column_dimensions[get_column_letter(ci)].width = 20
+
+    # ── Sheet 3: Tickets (only when data_type=tickets) ──
+    if data_type == "tickets" and tickets_data:
+        ws3 = wb.create_sheet("Tickets")
+        user_map = {u["id"]: u for u in users}
+        tkt_headers = ["Title", "Category", "Status", "Priority", "Created By", "Division", "Department", "Created At", "Description"]
+        for ci, h in enumerate(tkt_headers, 1):
+            cell = ws3.cell(row=1, column=ci, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center")
+            cell.border = thin_border
+        for ri, t in enumerate(tickets_data, 2):
+            creator = user_map.get(t.get("created_by"), {})
+            row_vals = [
+                t.get("title", ""),
+                t.get("category", ""),
+                t.get("status", ""),
+                t.get("priority", ""),
+                f"{creator.get('name', '')} {creator.get('surname', '')}".strip() or creator.get("email", ""),
+                creator.get("division", ""),
+                creator.get("department", ""),
+                str(t.get("created_at", ""))[:19],
+                t.get("description", ""),
+            ]
+            for ci, val in enumerate(row_vals, 1):
+                cell = ws3.cell(row=ri, column=ci, value=val)
+                cell.border = thin_border
+                if ri % 2 == 0:
+                    cell.fill = alt
+        for ci in range(1, len(tkt_headers) + 1):
+            ws3.column_dimensions[get_column_letter(ci)].width = min(len(tkt_headers[ci - 1]) + 10, 35)
+
 
     output = io.BytesIO()
     wb.save(output)
