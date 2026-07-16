@@ -608,13 +608,25 @@ async def export_filtered_data(
         cell.alignment = Alignment(horizontal="center", wrap_text=True)
         cell.border = thin_border
 
-    # Fetch training/bursary applications based on app_type filter
+    # Build application query with same filters as interactive-data
+    user_ids = [u["id"] for u in users]
+    has_user_filter = bool(div_list or dept_list or race_list or gender_list or age_min is not None or age_max is not None)
+    app_query = {}
+    if user_ids and has_user_filter:
+        app_query["user_id"] = {"$in": user_ids}
+    if status:
+        app_query["status"] = status
+    if date_from:
+        app_query.setdefault("created_at", {})["$gte"] = date_from
+    if date_to:
+        app_query.setdefault("created_at", {})["$lte"] = date_to + "T23:59:59"
+
     training = []
     bursary = []
     if app_type != "bursary":
-        training = await db.training_applications.find({}, {"_id": 0}).to_list(10000)
+        training = await db.training_applications.find(app_query, {"_id": 0}).to_list(10000)
     if app_type != "training":
-        bursary = await db.applications.find({}, {"_id": 0}).to_list(10000)
+        bursary = await db.applications.find(app_query, {"_id": 0}).to_list(10000)
 
     training_by_user = {}
     for a in training:
@@ -627,6 +639,9 @@ async def export_filtered_data(
         uid = a.get("user_id")
         if uid:
             bursary_by_user.setdefault(uid, []).append(a)
+
+    # For applications/expenses/tickets tabs, only include users with matching data
+    only_with_apps = data_type in ("applications", "expenses")
 
     row_idx = 3
     for u in users:
@@ -713,8 +728,8 @@ async def export_filtered_data(
                     cell.number_format = '#,##0.00'
             row_idx += 1
 
-        # Users with no applications — still include personal info
-        if not has_apps:
+        # Users with no applications — only include for demographics/all exports
+        if not has_apps and not only_with_apps:
             row_vals = [
                 "", "", "", "",
                 learner,
