@@ -83,11 +83,14 @@ Build a comprehensive bursary management system named "Sentech" using React, Fas
 6. Admin marks **Completed** when done
 
 ## Bulk User Data Update (July 15-16, 2026)
-- Imported employee data from 3 Excel files covering ALL 15 divisions (Exec_and_Head, Finance, Internal Audit, Satellite BU, Strategy, IT, R&I, Broadband, Media Business, MIB, SCM, HR, Company Secretary, Legal, Risk)
-- Populated `name` field for ALL 389 users (was 0/389) — separated from surname (100%)
-- Populated `surname` for 388/389 (99%), `id_number` 385/389 (98%), `gender` 386/389 (99%), `race` 386/389 (99%), `date_of_appointment` 379/389 (97%), `level` 385/389 (98%)
-- Updated `/api/users/lookup-by-id` endpoint to use `name` field directly
-- Only system/test accounts remain without personal data (expected)
+- Imported employee data from 3 Excel files covering ALL 15 divisions
+- **Name/Surname**: 389/389 (100%) / 388/389 (99%) — correctly separated
+- **ID Number**: 385/389 (98%), **Gender**: 386/389 (99%), **Race**: 386/389 (99%)
+- **Date of Appointment**: 379/389 (97%), **Level**: 385/389 (98%)
+- **OFO data** (code, major group, sub major group, occupation): 384/389 (98%)
+- **Age** calculated from SA ID first 6 digits (YYMMDD): 382/389 (98%)
+- **Years of service** calculated from start date: 383/389 (98%)
+- Updated `/api/users/lookup-by-id` to use `name` field directly
 
 ## P1 Backlog
 1. Microsoft SSO (requires Azure AD app registration credentials from user)
