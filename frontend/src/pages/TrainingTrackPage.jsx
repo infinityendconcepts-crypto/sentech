@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -173,14 +173,19 @@ const DroppableColumn = ({ id, title, count, children }) => {
 
 const TrainingTrackPage = () => {
   const { user, isAdmin } = useAuth();
+  const isHead = user?.is_head;
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState('list');
   const [activeId, setActiveId] = useState(null);
+  const [divisions, setDivisions] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
     assignee: 'all',
+    division: 'all',
+    department: 'all',
     search: '',
     dateFrom: '',
     dateTo: '',
@@ -194,6 +199,8 @@ const TrainingTrackPage = () => {
     status: 'todo',
     priority: 'medium',
     assignee_name: '',
+    division: '',
+    department: '',
     due_date: '',
     project_name: '',
     tags: '',
@@ -233,12 +240,29 @@ const TrainingTrackPage = () => {
 
   useEffect(() => {
     fetchModules();
+    fetchDivisions();
   }, []);
+
+  const fetchDivisions = async () => {
+    try {
+      const allRes = await usersAPI.getAll({ limit: 500 });
+      const users = allRes.data || [];
+      const divs = [...new Set(users.map(u => u.division).filter(Boolean))].sort();
+      const depts = [...new Set(users.map(u => u.department).filter(Boolean))].sort();
+      setDivisions(divs);
+      setDepartments(depts);
+    } catch (e) {
+      console.error('Failed to load divisions:', e);
+    }
+  };
 
   const fetchModules = async () => {
     setLoading(true);
     try {
-      const response = await tasksAPI.getAll();
+      const params = {};
+      if (filters.division !== 'all') params.division = filters.division;
+      if (filters.department !== 'all') params.department = filters.department;
+      const response = await tasksAPI.getAll(params);
       const modulesWithDefaults = response.data.map(m => ({
         ...m,
         attendance: m.attendance || [],
@@ -267,6 +291,8 @@ const TrainingTrackPage = () => {
         status: newModule.status,
         priority: newModule.priority,
         assignee_name: newModule.assignee_name || null,
+        division: newModule.division || null,
+        department: newModule.department || null,
         due_date: newModule.due_date ? new Date(newModule.due_date).toISOString() : null,
         project_name: newModule.project_name || null,
         tags: newModule.tags ? newModule.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
@@ -277,7 +303,7 @@ const TrainingTrackPage = () => {
       await tasksAPI.create(moduleData);
       toast.success('Training module created successfully');
       setAddModuleDialog(false);
-      setNewModule({ title: '', description: '', status: 'todo', priority: 'medium', assignee_name: '', due_date: '', project_name: '', tags: '', progress: 0 });
+      setNewModule({ title: '', description: '', status: 'todo', priority: 'medium', assignee_name: '', division: '', department: '', due_date: '', project_name: '', tags: '', progress: 0 });
       fetchModules();
     } catch (error) {
       toast.error('Failed to create training module');
@@ -329,6 +355,8 @@ const TrainingTrackPage = () => {
         status: editingModule.status,
         priority: editingModule.priority,
         assignee_name: editingModule.assignee_name || null,
+        division: editingModule.division || null,
+        department: editingModule.department || null,
         due_date: editingModule.due_date ? new Date(editingModule.due_date).toISOString() : null,
         project_name: editingModule.project_name || null,
         tags: editingModule.tags ? editingModule.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
@@ -533,6 +561,18 @@ const TrainingTrackPage = () => {
     }
   };
 
+  // Re-fetch when division/department filter changes
+  useEffect(() => {
+    fetchModules();
+  }, [filters.division, filters.department]);
+
+  // Compute departments filtered by selected division
+  const filteredDepartments = useMemo(() => {
+    if (filters.division === 'all') return departments;
+    // If we have full user list we could filter, but for simplicity show all
+    return departments;
+  }, [filters.division, departments]);
+
   const filteredModules = modules.filter(module => {
     const moduleDueDate = module.due_date || module.dueDate || '';
     const moduleAssignee = module.assignee_name || module.assignee || '';
@@ -645,7 +685,7 @@ const TrainingTrackPage = () => {
       {/* Filters */}
       <Card className="bg-white border-slate-200">
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-3">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
@@ -656,6 +696,32 @@ const TrainingTrackPage = () => {
                 data-testid="search-modules-input"
               />
             </div>
+            {(isAdmin || isHead) && (
+              <Select value={filters.division} onValueChange={(value) => setFilters({ ...filters, division: value, department: 'all' })}>
+                <SelectTrigger data-testid="filter-division">
+                  <SelectValue placeholder="All Divisions" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Divisions</SelectItem>
+                  {divisions.map(d => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {(isAdmin || isHead) && (
+              <Select value={filters.department} onValueChange={(value) => setFilters({ ...filters, department: value })}>
+                <SelectTrigger data-testid="filter-department">
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {filteredDepartments.map(d => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
               <SelectTrigger data-testid="filter-status">
                 <SelectValue placeholder="All Status" />
@@ -719,7 +785,7 @@ const TrainingTrackPage = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setFilters({ status: 'all', priority: 'all', assignee: 'all', search: '', dateFrom: '', dateTo: '' })}
+              onClick={() => setFilters({ status: 'all', priority: 'all', assignee: 'all', division: 'all', department: 'all', search: '', dateFrom: '', dateTo: '' })}
               data-testid="clear-filters-btn"
             >
               Clear Filters
@@ -779,6 +845,12 @@ const TrainingTrackPage = () => {
                               <User className="w-4 h-4" />
                               {module.assignee_name || module.assignee || 'Unassigned'}
                             </div>
+                            {module.division && (
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">{module.division}</Badge>
+                            )}
+                            {module.department && (
+                              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">{module.department}</Badge>
+                            )}
                             <div className="flex items-center gap-2 text-sm text-slate-600">
                               <Calendar className="w-4 h-4" />
                               Due: {(module.due_date || module.dueDate) ? new Date(module.due_date || module.dueDate).toLocaleDateString() : 'No date'}
@@ -1033,6 +1105,28 @@ const TrainingTrackPage = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <Label>Division</Label>
+                <Select value={newModule.division || '_none'} onValueChange={(v) => setNewModule({ ...newModule, division: v === '_none' ? '' : v })}>
+                  <SelectTrigger data-testid="new-module-division"><SelectValue placeholder="Select Division" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">No Division</SelectItem>
+                    {divisions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Department</Label>
+                <Select value={newModule.department || '_none'} onValueChange={(v) => setNewModule({ ...newModule, department: v === '_none' ? '' : v })}>
+                  <SelectTrigger data-testid="new-module-department"><SelectValue placeholder="Select Department" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">No Department</SelectItem>
+                    {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <Label>Assignee</Label>
                 <Input
                   placeholder="Assignee name"
@@ -1118,6 +1212,28 @@ const TrainingTrackPage = () => {
                       <SelectItem value="high">High</SelectItem>
                       <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Division</Label>
+                  <Select value={editingModule.division || '_none'} onValueChange={(v) => setEditingModule({ ...editingModule, division: v === '_none' ? '' : v })}>
+                    <SelectTrigger data-testid="edit-module-division"><SelectValue placeholder="Select Division" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">No Division</SelectItem>
+                      {divisions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Department</Label>
+                  <Select value={editingModule.department || '_none'} onValueChange={(v) => setEditingModule({ ...editingModule, department: v === '_none' ? '' : v })}>
+                    <SelectTrigger data-testid="edit-module-department"><SelectValue placeholder="Select Department" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">No Department</SelectItem>
+                      {departments.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

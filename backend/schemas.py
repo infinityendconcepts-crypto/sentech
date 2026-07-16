@@ -508,6 +508,8 @@ class Task(BaseModel):
     priority: str = "medium"
     assigned_to: Optional[str] = None
     assignee_name: Optional[str] = None
+    division: Optional[str] = None
+    department: Optional[str] = None
     due_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     completed_at: Optional[datetime] = None
@@ -530,6 +532,8 @@ class TaskCreate(BaseModel):
     priority: str = "medium"
     assigned_to: Optional[str] = None
     assignee_name: Optional[str] = None
+    division: Optional[str] = None
+    department: Optional[str] = None
     due_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     project_id: Optional[str] = None
@@ -545,6 +549,8 @@ class TaskUpdate(BaseModel):
     status: Optional[str] = None
     priority: Optional[str] = None
     assigned_to: Optional[str] = None
+    division: Optional[str] = None
+    department: Optional[str] = None
     due_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     project_id: Optional[str] = None

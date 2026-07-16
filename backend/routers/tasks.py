@@ -16,11 +16,14 @@ async def get_tasks(
     priority: Optional[str] = None,
     assigned_to: Optional[str] = None,
     project_id: Optional[str] = None,
+    division: Optional[str] = None,
+    department: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     is_admin = "admin" in current_user.get("roles", []) or "super_admin" in current_user.get("roles", [])
+    is_head = current_user.get("is_head", False)
     query = {}
     if status:
         query["status"] = status
@@ -30,7 +33,29 @@ async def get_tasks(
         query["assigned_to"] = assigned_to
     if project_id:
         query["project_id"] = project_id
-    if not is_admin:
+
+    # Division/department filters for admins
+    if division:
+        query["division"] = division
+    if department:
+        query["department"] = department
+
+    # RBAC scoping
+    if is_admin:
+        pass  # Admins see all (with optional filters above)
+    elif is_head:
+        # Heads see modules for their own division/department OR assigned to them
+        head_division = current_user.get("division", "")
+        head_department = current_user.get("department", "")
+        query["$or"] = [
+            {"division": head_division},
+            {"department": head_department},
+            {"assigned_to": current_user["id"]},
+            {"assigned_users.user_id": current_user["id"]},
+            {"created_by": current_user["id"]},
+        ]
+    else:
+        # Regular employees see only their own
         query["$or"] = [
             {"assigned_to": current_user["id"]},
             {"assigned_users.user_id": current_user["id"]},
