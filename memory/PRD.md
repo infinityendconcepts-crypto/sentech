@@ -82,14 +82,12 @@ Build a comprehensive bursary management system named "Sentech" using React, Fas
 5. Admin (L&D) clicks **L&D Track** to monitor progress
 6. Admin marks **Completed** when done
 
-## Bulk User Data Update (July 15, 2026)
-- Imported employee data from 2 Excel files (10 divisions: Exec_and_Head, Finance, Internal Audit, Satellite BU, R&I, SCM, HR, Company Secretary, Legal, Risk)
-- Populated `name` field for ALL 389 users (was 0/389) — separated from surname
-- Populated `surname` for 388/389 users (99%)
-- Populated `date_of_appointment` for 113/389 users from Excel start dates
-- Filled `id_number`, `gender`, `race` for all users covered by the Excel files (119 employees)
-- 262 users from Managed Infrastructure Business division still lack personal data (not covered in provided Excel files)
+## Bulk User Data Update (July 15-16, 2026)
+- Imported employee data from 3 Excel files covering ALL 15 divisions (Exec_and_Head, Finance, Internal Audit, Satellite BU, Strategy, IT, R&I, Broadband, Media Business, MIB, SCM, HR, Company Secretary, Legal, Risk)
+- Populated `name` field for ALL 389 users (was 0/389) — separated from surname (100%)
+- Populated `surname` for 388/389 (99%), `id_number` 385/389 (98%), `gender` 386/389 (99%), `race` 386/389 (99%), `date_of_appointment` 379/389 (97%), `level` 385/389 (98%)
 - Updated `/api/users/lookup-by-id` endpoint to use `name` field directly
+- Only system/test accounts remain without personal data (expected)
 
 ## P1 Backlog
 1. Microsoft SSO (requires Azure AD app registration credentials from user)
