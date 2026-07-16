@@ -364,7 +364,9 @@ async def _build_training_report_rows(division: Optional[str] = None):
         if division and biz_unit != division:
             continue
 
-        learner_name = f"{pi.get('name', '') or u.get('full_name', '')} {pi.get('surname', '') or u.get('surname', '')}".strip()
+        first = pi.get('name', '') or u.get('name', '')
+        last = pi.get('surname', '') or u.get('surname', '')
+        learner_name = f"{first} {last}".strip()
 
         rows.append({
             "course_name": ti.get("training_type", ""),
@@ -631,7 +633,7 @@ async def export_filtered_data(
         uid = u.get("id", "")
         user_trainings = training_by_user.get(uid, [])
         user_bursaries = bursary_by_user.get(uid, [])
-        learner = f"{u.get('full_name', '')} {u.get('surname', '')}".strip()
+        learner = f"{u.get('name', '')} {u.get('surname', '')}".strip()
         has_apps = bool(user_trainings or user_bursaries)
 
         if user_trainings:
