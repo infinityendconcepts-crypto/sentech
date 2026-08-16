@@ -65,10 +65,10 @@ const Layout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
-  const { user, logout, isAdmin, isHead } = useAuth();
+  const { user, logout, isAdmin, isHead, isManagerOrAdmin } = useAuth();
   const isSuperAdmin = user?.roles?.includes('super_admin') ?? false;
-  const isAdminOrHead = isAdmin || isHead;
-  const isEmployee = !isAdmin && !isHead;
+  const isAdminOrHead = isManagerOrAdmin || isHead;
+  const isEmployee = !isManagerOrAdmin && !isHead;
 
   // Get user's permissions from their roles
   const userPermissions = user?.role_permissions || {};
@@ -81,7 +81,7 @@ const Layout = () => {
   // Check if user has at least read access to a module
   const hasModuleAccess = (rbacModule) => {
     if (!rbacModule) return true;
-    if (isAdmin) return true;
+    if (isManagerOrAdmin) return true;
     if (isHead && headAccessibleModules.includes(rbacModule)) return true;
     if (employeeAccessibleModules.includes(rbacModule)) return true;
     const perms = userPermissions[rbacModule] || [];

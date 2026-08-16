@@ -32,8 +32,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 const TrainingApplicationsPage = () => {
-  const { isAdmin, isHead } = useAuth();
-  const isAdminOrHead = isAdmin || isHead;
+  const { isAdmin, isHead, isManagerOrAdmin } = useAuth();
+  const isAdminOrHead = isManagerOrAdmin || isHead;
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');

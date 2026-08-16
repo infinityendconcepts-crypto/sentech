@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime, timezone, timedelta
 
 from routers import (
-    db, get_current_user, generate_uuid, is_admin_user,
+    db, get_current_user, generate_uuid, is_admin_user, is_manager_or_admin,
     send_email_notification, logger, notify_and_email, notify_admins_and_heads,
 )
 
@@ -34,6 +34,25 @@ async def can_approve_application(current_user: dict, applicant_user_id: str) ->
                 if applicant_user_id in member_ids:
                     return True
     return False
+
+
+async def get_division_user_ids(user: dict):
+    """Get all user IDs within the head's division (and sub-divisions via subgroups)."""
+    head_div = user.get("division", "")
+    if not head_div:
+        return []
+    div_users = await db.users.find({"division": head_div}, {"id": 1, "_id": 0}).to_list(10000)
+    user_ids = [u["id"] for u in div_users if u.get("id")]
+    subgroups = await db.subgroups.find(
+        {"$or": [{"head_id": user["id"]}, {"leader_id": user["id"]}, {"division_name": head_div}]},
+        {"members": 1, "_id": 0}
+    ).to_list(100)
+    for sg in subgroups:
+        for m in sg.get("members", []):
+            mid = m.get("user_id") if isinstance(m, dict) else m
+            if mid and mid not in user_ids:
+                user_ids.append(mid)
+    return user_ids
 
 # --- Pydantic Models ---
 
@@ -82,8 +101,16 @@ class TrainingApplicationUpdate(BaseModel):
 
 @router.get("/applications")
 async def get_applications(current_user: dict = Depends(get_current_user)):
-    if is_admin_user(current_user):
+    if is_manager_or_admin(current_user):
+        # Admins and managers see all applications
         applications = await db.applications.find({}, {"_id": 0}).to_list(1000)
+    elif current_user.get("is_head"):
+        # Heads see only applications from their division/subdivision
+        div_user_ids = await get_division_user_ids(current_user)
+        if div_user_ids:
+            applications = await db.applications.find({"user_id": {"$in": div_user_ids}}, {"_id": 0}).to_list(1000)
+        else:
+            applications = await db.applications.find({"user_id": current_user["id"]}, {"_id": 0}).to_list(1000)
     else:
         applications = await db.applications.find({"user_id": current_user["id"]}, {"_id": 0}).to_list(1000)
     return applications
@@ -93,9 +120,14 @@ async def get_application(application_id: str, current_user: dict = Depends(get_
     application = await db.applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
-    if application["user_id"] != current_user["id"] and not is_admin_user(current_user):
-        raise HTTPException(status_code=403, detail="Access denied")
-    return application
+    if application["user_id"] == current_user["id"] or is_manager_or_admin(current_user):
+        return application
+    # Heads can view applications from their division
+    if current_user.get("is_head"):
+        div_user_ids = await get_division_user_ids(current_user)
+        if application["user_id"] in div_user_ids:
+            return application
+    raise HTTPException(status_code=403, detail="Access denied")
 
 @router.post("/applications")
 async def create_application(app_data: ApplicationCreate, current_user: dict = Depends(get_current_user)):
@@ -352,8 +384,16 @@ async def update_application_settings(body: dict, current_user: dict = Depends(g
 
 @router.get("/training-applications")
 async def get_training_applications(current_user: dict = Depends(get_current_user)):
-    if is_admin_user(current_user):
+    if is_manager_or_admin(current_user):
+        # Admins and managers see all training applications
         applications = await db.training_applications.find({}, {"_id": 0}).to_list(1000)
+    elif current_user.get("is_head"):
+        # Heads see only training applications from their division/subdivision
+        div_user_ids = await get_division_user_ids(current_user)
+        if div_user_ids:
+            applications = await db.training_applications.find({"user_id": {"$in": div_user_ids}}, {"_id": 0}).to_list(1000)
+        else:
+            applications = await db.training_applications.find({"user_id": current_user["id"]}, {"_id": 0}).to_list(1000)
     else:
         applications = await db.training_applications.find({"user_id": current_user["id"]}, {"_id": 0}).to_list(1000)
     return applications
@@ -363,9 +403,14 @@ async def get_training_application(application_id: str, current_user: dict = Dep
     application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Training application not found")
-    if application["user_id"] != current_user["id"] and not is_admin_user(current_user):
-        raise HTTPException(status_code=403, detail="Access denied")
-    return application
+    if application["user_id"] == current_user["id"] or is_manager_or_admin(current_user):
+        return application
+    # Heads can view training applications from their division
+    if current_user.get("is_head"):
+        div_user_ids = await get_division_user_ids(current_user)
+        if application["user_id"] in div_user_ids:
+            return application
+    raise HTTPException(status_code=403, detail="Access denied")
 
 @router.post("/training-applications")
 async def create_training_application(app_data: TrainingApplicationCreate, current_user: dict = Depends(get_current_user)):

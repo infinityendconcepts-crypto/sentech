@@ -50,6 +50,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     isAuthenticated: !!token,
     isAdmin: (user?.roles?.includes('admin') || user?.roles?.includes('super_admin')) ?? false,
+    isManager: user?.roles?.includes('manager') ?? false,
+    isManagerOrAdmin: (user?.roles?.includes('admin') || user?.roles?.includes('super_admin') || user?.roles?.includes('manager')) ?? false,
     isSuperAdmin: user?.roles?.includes('super_admin') ?? false,
     isEmployee: (!user?.roles?.includes('admin') && !user?.roles?.includes('super_admin')) ?? true,
     isStudent: !(user?.roles?.includes('admin') || user?.roles?.includes('super_admin')),
