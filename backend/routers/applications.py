@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api", tags=["applications"])
 
 async def can_approve_application(current_user: dict, applicant_user_id: str) -> bool:
     """Check if current user can approve: admin, super_admin, or division/subgroup head of applicant"""
-    if is_admin_user(current_user):
+    if is_manager_or_admin(current_user):
         return True
     # Check if current user is the division leader or subgroup leader of the applicant
     applicant = await db.users.find_one({"id": applicant_user_id}, {"_id": 0, "division": 1, "department": 1})
@@ -186,7 +186,7 @@ async def update_application(application_id: str, update_data: ApplicationUpdate
     application = await db.applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
-    admin = is_admin_user(current_user)
+    admin = is_manager_or_admin(current_user)
     is_head = await can_approve_application(current_user, application["user_id"])
     if application["user_id"] != current_user["id"] and not admin and not is_head:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -264,7 +264,7 @@ async def request_bursary_re_edit(application_id: str, body: dict = {}, current_
 
 @router.put("/applications/{application_id}/allow-re-edit")
 async def allow_bursary_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
-    if not is_admin_user(current_user):
+    if not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admins can approve re-edits")
     application = await db.applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
@@ -289,7 +289,7 @@ async def lock_bursary_application(application_id: str, current_user: dict = Dep
     application = await db.applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
-    if not is_admin_user(current_user) and not await can_approve_application(current_user, application["user_id"]):
+    if not is_manager_or_admin(current_user) and not await can_approve_application(current_user, application["user_id"]):
         raise HTTPException(status_code=403, detail="Only admins or group leaders can lock applications")
     now = datetime.now(timezone.utc).isoformat()
     await db.applications.update_one({"id": application_id}, {"$set": {"is_locked": True, "locked_at": now, "locked_by": current_user["id"], "updated_at": now}})
@@ -302,7 +302,7 @@ async def unlock_bursary_application(application_id: str, current_user: dict = D
     application = await db.applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
-    if not is_admin_user(current_user) and not await can_approve_application(current_user, application["user_id"]):
+    if not is_manager_or_admin(current_user) and not await can_approve_application(current_user, application["user_id"]):
         raise HTTPException(status_code=403, detail="Only admins or group leaders can unlock applications")
     now = datetime.now(timezone.utc).isoformat()
     await db.applications.update_one({"id": application_id}, {"$set": {"is_locked": False, "unlocked_at": now, "unlocked_by": current_user["id"], "updated_at": now}})
@@ -318,7 +318,7 @@ async def unlock_bursary_application(application_id: str, current_user: dict = D
 @router.post("/applications/batch-unlock")
 async def batch_unlock_bursary_applications(body: dict, current_user: dict = Depends(get_current_user)):
     """Batch unlock bursary applications."""
-    if not is_admin_user(current_user):
+    if not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admins can batch unlock")
     ids = body.get("application_ids", [])
     if not ids:
@@ -338,7 +338,7 @@ async def batch_unlock_bursary_applications(body: dict, current_user: dict = Dep
 
 @router.delete("/applications/{application_id}")
 async def delete_application(application_id: str, current_user: dict = Depends(get_current_user)):
-    if not is_admin_user(current_user):
+    if not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admins can delete applications")
     result = await db.applications.delete_one({"id": application_id})
     if result.deleted_count == 0:
@@ -347,7 +347,7 @@ async def delete_application(application_id: str, current_user: dict = Depends(g
 
 @router.post("/applications/batch-delete")
 async def batch_delete_applications(body: dict, current_user: dict = Depends(get_current_user)):
-    if not is_admin_user(current_user):
+    if not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admins can delete applications")
     ids = body.get("application_ids", [])
     if not ids:
@@ -371,7 +371,7 @@ async def get_application_settings(current_user: dict = Depends(get_current_user
 
 @router.put("/application-settings")
 async def update_application_settings(body: dict, current_user: dict = Depends(get_current_user)):
-    if not is_admin_user(current_user):
+    if not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admins can update application settings")
     now = datetime.now(timezone.utc).isoformat()
     body["updated_at"] = now
@@ -456,7 +456,7 @@ async def update_training_application(application_id: str, update_data: Training
     application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Training application not found")
-    admin = is_admin_user(current_user)
+    admin = is_manager_or_admin(current_user)
     is_head = await can_approve_application(current_user, application["user_id"])
     if application["user_id"] != current_user["id"] and not admin and not is_head:
         raise HTTPException(status_code=403, detail="Access denied")
@@ -502,7 +502,7 @@ async def update_training_application_status(application_id: str, status_data: d
     application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Training application not found")
-    if not is_admin_user(current_user) and not await can_approve_application(current_user, application["user_id"]):
+    if not is_manager_or_admin(current_user) and not await can_approve_application(current_user, application["user_id"]):
         raise HTTPException(status_code=403, detail="Only admins or division/subgroup heads can update application status")
     update_dict = {"status": status_data.get("status"), "updated_at": datetime.now(timezone.utc).isoformat()}
     if status_data.get("status_note"):
@@ -526,14 +526,14 @@ async def delete_training_application(application_id: str, current_user: dict = 
     application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Training application not found")
-    if application["user_id"] != current_user["id"] and not is_admin_user(current_user):
+    if application["user_id"] != current_user["id"] and not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Access denied")
     await db.training_applications.delete_one({"id": application_id})
     return {"message": "Training application deleted successfully"}
 
 @router.post("/training-applications/batch-delete")
 async def batch_delete_training_applications(body: dict, current_user: dict = Depends(get_current_user)):
-    if not is_admin_user(current_user):
+    if not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admins can delete applications")
     ids = body.get("application_ids", [])
     if not ids:
@@ -548,7 +548,7 @@ async def lock_training_application(application_id: str, current_user: dict = De
     application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Training application not found")
-    if not is_admin_user(current_user) and not await can_approve_application(current_user, application["user_id"]):
+    if not is_manager_or_admin(current_user) and not await can_approve_application(current_user, application["user_id"]):
         raise HTTPException(status_code=403, detail="Only admins or group leaders can lock applications")
     now = datetime.now(timezone.utc).isoformat()
     await db.training_applications.update_one({"id": application_id}, {"$set": {"is_locked": True, "locked_at": now, "locked_by": current_user["id"], "updated_at": now}})
@@ -561,7 +561,7 @@ async def unlock_training_application(application_id: str, current_user: dict = 
     application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Training application not found")
-    if not is_admin_user(current_user) and not await can_approve_application(current_user, application["user_id"]):
+    if not is_manager_or_admin(current_user) and not await can_approve_application(current_user, application["user_id"]):
         raise HTTPException(status_code=403, detail="Only admins or group leaders can unlock applications")
     now = datetime.now(timezone.utc).isoformat()
     await db.training_applications.update_one({"id": application_id}, {"$set": {"is_locked": False, "unlocked_at": now, "unlocked_by": current_user["id"], "updated_at": now}})
@@ -577,7 +577,7 @@ async def unlock_training_application(application_id: str, current_user: dict = 
 @router.post("/training-applications/batch-unlock")
 async def batch_unlock_training_applications(body: dict, current_user: dict = Depends(get_current_user)):
     """Batch unlock training applications."""
-    if not is_admin_user(current_user):
+    if not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admins can batch unlock")
     ids = body.get("application_ids", [])
     if not ids:
@@ -620,7 +620,7 @@ async def request_training_re_edit(application_id: str, body: dict = {}, current
 
 @router.put("/training-applications/{application_id}/allow-re-edit")
 async def allow_training_re_edit(application_id: str, body: dict = {}, current_user: dict = Depends(get_current_user)):
-    if not is_admin_user(current_user):
+    if not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admins can approve re-edits")
     application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
@@ -647,7 +647,7 @@ async def add_bursary_application_expenses(application_id: str, expenses_data: d
     application = await db.applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Application not found")
-    if application["user_id"] != current_user["id"] and not is_admin_user(current_user):
+    if application["user_id"] != current_user["id"] and not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Access denied")
     now = datetime.now(timezone.utc).isoformat()
     additional_expenses = {
@@ -664,7 +664,7 @@ async def add_training_application_expenses(application_id: str, expenses_data: 
     application = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
     if not application:
         raise HTTPException(status_code=404, detail="Training application not found")
-    if application["user_id"] != current_user["id"] and not is_admin_user(current_user):
+    if application["user_id"] != current_user["id"] and not is_manager_or_admin(current_user):
         raise HTTPException(status_code=403, detail="Access denied")
     now = datetime.now(timezone.utc).isoformat()
     additional_expenses = {
