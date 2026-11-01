@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from datetime import datetime, timezone
 from models.ticket import Ticket, TicketCreate, TicketUpdate, TicketComment, TicketCommentCreate

@@ -11,9 +11,10 @@ from routers import (
 
 router = APIRouter(prefix="/api", tags=["applications"])
 
-# Sandisiwe Jingisa — final approver for training applications
-FINAL_APPROVER_ID = "568a3652-0662-4b85-a8fe-a033334c6caf"
-FINAL_APPROVER_EMAIL = "jingisas@sentech.co.za"
+
+def is_hr_admin(user: dict) -> bool:
+    """Check if user has hr_admin role — can give final approval on training applications."""
+    return "hr_admin" in user.get("roles", [])
 
 
 async def can_approve_application(current_user: dict, applicant_user_id: str) -> bool:
@@ -485,9 +486,7 @@ async def update_training_application(application_id: str, update_data: Training
         update_dict["is_locked"] = True
     # Two-step approval: if status is being set to "approved" via general update
     if update_data.status == "approved" and (admin or is_head):
-        is_final_approver = current_user["id"] == FINAL_APPROVER_ID
-        is_super_admin = is_admin_user(current_user)
-        if not is_final_approver and not is_super_admin:
+        if not is_hr_admin(current_user) and not is_admin_user(current_user):
             update_dict["status"] = "manager_approved"
             update_dict["manager_approved_by"] = current_user["id"]
             update_dict["manager_approved_at"] = datetime.now(timezone.utc).isoformat()
@@ -526,16 +525,13 @@ async def update_training_application_status(application_id: str, status_data: d
 
     # Two-step approval logic for training applications
     if new_status == "approved":
-        is_final_approver = current_user["id"] == FINAL_APPROVER_ID
-        is_admin = is_admin_user(current_user)
-
-        if is_final_approver or is_admin:
-            # Final approver or admin — set to approved
+        if is_hr_admin(current_user) or is_admin_user(current_user):
+            # HR Admin or system admin — set to approved
             update_dict["status"] = "approved"
             update_dict["final_approved_by"] = current_user["id"]
             update_dict["final_approved_at"] = datetime.now(timezone.utc).isoformat()
         else:
-            # Manager (non-Sandisiwe) — set to manager_approved, stays "pending" to user
+            # Regular manager — set to manager_approved, stays "pending" to user
             update_dict["status"] = "manager_approved"
             update_dict["manager_approved_by"] = current_user["id"]
             update_dict["manager_approved_at"] = datetime.now(timezone.utc).isoformat()
@@ -559,13 +555,19 @@ async def update_training_application_status(application_id: str, status_data: d
                 "Your training application has been reviewed by your manager and is now awaiting final approval.",
                 application_id, "training_application", f"/training-applications/{application_id}",
             )
-            # Notify Sandisiwe for final approval
-            await notify_and_email(
-                FINAL_APPROVER_ID,
-                "Training Application Awaiting Final Approval",
-                f"A training application has been approved by a manager and requires your final approval.",
-                application_id, "training_application", f"/training-applications/{application_id}",
-            )
+            # Notify all hr_admin users for final approval
+            hr_admins = await db.users.find(
+                {"roles": "hr_admin", "is_active": True},
+                {"_id": 0, "id": 1}
+            ).to_list(50)
+            for ha in hr_admins:
+                if ha["id"] != current_user["id"]:
+                    await notify_and_email(
+                        ha["id"],
+                        "Training Application Awaiting Final Approval",
+                        "A training application has been approved by a manager and requires your final approval.",
+                        application_id, "training_application", f"/training-applications/{application_id}",
+                    )
         elif actual_new_status == "approved":
             await notify_and_email(
                 application["user_id"],

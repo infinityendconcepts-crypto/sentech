@@ -476,7 +476,7 @@ class TestCleanup:
             try:
                 requests.delete(f"{BASE_URL}/api/meetings/{meeting_id}", headers=auth_headers)
                 cleanup_count += 1
-            except:
+            except Exception:
                 pass
         
         # Clean notes
@@ -484,7 +484,7 @@ class TestCleanup:
             try:
                 requests.delete(f"{BASE_URL}/api/notes/{note_id}", headers=auth_headers)
                 cleanup_count += 1
-            except:
+            except Exception:
                 pass
         
         # Clean expenses
@@ -492,7 +492,7 @@ class TestCleanup:
             try:
                 requests.delete(f"{BASE_URL}/api/expenses/{expense_id}", headers=auth_headers)
                 cleanup_count += 1
-            except:
+            except Exception:
                 pass
         
         # Clean tickets
@@ -500,7 +500,7 @@ class TestCleanup:
             try:
                 requests.delete(f"{BASE_URL}/api/tickets/{ticket_id}", headers=auth_headers)
                 cleanup_count += 1
-            except:
+            except Exception:
                 pass
         
         # Clean files
@@ -508,7 +508,7 @@ class TestCleanup:
             try:
                 requests.delete(f"{BASE_URL}/api/files/{file_id}", headers=auth_headers)
                 cleanup_count += 1
-            except:
+            except Exception:
                 pass
         
         # Clean folders
@@ -516,7 +516,7 @@ class TestCleanup:
             try:
                 requests.delete(f"{BASE_URL}/api/folders/{folder_id}", headers=auth_headers)
                 cleanup_count += 1
-            except:
+            except Exception:
                 pass
         
         print(f"PASS: Cleanup completed - removed {cleanup_count} items")

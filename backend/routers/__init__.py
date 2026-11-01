@@ -79,7 +79,7 @@ def is_admin_user(user: dict) -> bool:
 
 def is_manager_or_admin(user: dict) -> bool:
     roles = user.get("roles", [])
-    return "admin" in roles or "super_admin" in roles or "manager" in roles
+    return "admin" in roles or "super_admin" in roles or "manager" in roles or "hr_admin" in roles
 
 async def send_email_notification(to_email: str, subject: str, body_text: str, link: str = ""):
     smtp_host = os.getenv("SMTP_HOST")

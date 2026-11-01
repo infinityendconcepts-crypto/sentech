@@ -156,7 +156,7 @@ class TestPDPApprovalWorkflow:
                 f"{BASE_URL}/api/pdp/{entry['id']}",
                 headers={"Authorization": f"Bearer {admin_token}"}
             )
-        except:
+        except Exception:
             pass
     
     def test_pdp_status_update_to_pending_approval(self, api_client, admin_token, test_pdp_entry):

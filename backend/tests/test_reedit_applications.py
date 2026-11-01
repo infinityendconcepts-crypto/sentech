@@ -222,7 +222,7 @@ class Test24HourEditWindow:
                     submitted_dt = datetime.fromisoformat(submitted.replace("Z", "+00:00"))
                     if (now - submitted_dt).total_seconds() < 86400:
                         recent_apps.append(app)
-                except:
+                except Exception:
                     pass
         
         if not recent_apps:

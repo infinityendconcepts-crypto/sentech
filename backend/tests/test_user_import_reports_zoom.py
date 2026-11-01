@@ -152,7 +152,7 @@ class TestUserImportFeature:
                 for user in users:
                     if user.get("email", "").startswith("TEST_import_user"):
                         self.session.delete(f"{BASE_URL}/api/users/{user['id']}")
-        except:
+        except Exception:
             pass  # Cleanup is best effort
     
     def test_bulk_import_skips_duplicates(self):
