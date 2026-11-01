@@ -11,6 +11,10 @@ from routers import (
 
 router = APIRouter(prefix="/api", tags=["applications"])
 
+# Sandisiwe Jingisa — final approver for training applications
+FINAL_APPROVER_ID = "568a3652-0662-4b85-a8fe-a033334c6caf"
+FINAL_APPROVER_EMAIL = "jingisas@sentech.co.za"
+
 
 async def can_approve_application(current_user: dict, applicant_user_id: str) -> bool:
     """Check if current user can approve: admin, super_admin, or division/subgroup head of applicant"""
@@ -479,6 +483,14 @@ async def update_training_application(application_id: str, update_data: Training
                     raise HTTPException(status_code=400, detail="Training date must be at least 8 days from today to allow time for approval.")
         update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
         update_dict["is_locked"] = True
+    # Two-step approval: if status is being set to "approved" via general update
+    if update_data.status == "approved" and (admin or is_head):
+        is_final_approver = current_user["id"] == FINAL_APPROVER_ID
+        is_super_admin = is_admin_user(current_user)
+        if not is_final_approver and not is_super_admin:
+            update_dict["status"] = "manager_approved"
+            update_dict["manager_approved_by"] = current_user["id"]
+            update_dict["manager_approved_at"] = datetime.now(timezone.utc).isoformat()
     await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
     if update_data.status == "pending" and application.get("status") == "draft":
         applicant_name = current_user.get("full_name", "An employee")
@@ -504,21 +516,70 @@ async def update_training_application_status(application_id: str, status_data: d
         raise HTTPException(status_code=404, detail="Training application not found")
     if not is_manager_or_admin(current_user) and not await can_approve_application(current_user, application["user_id"]):
         raise HTTPException(status_code=403, detail="Only admins or division/subgroup heads can update application status")
-    update_dict = {"status": status_data.get("status"), "updated_at": datetime.now(timezone.utc).isoformat()}
+
+    new_status = status_data.get("status")
+    old_status = application.get("status")
+    update_dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
+
     if status_data.get("status_note"):
         update_dict["status_note"] = status_data.get("status_note")
+
+    # Two-step approval logic for training applications
+    if new_status == "approved":
+        is_final_approver = current_user["id"] == FINAL_APPROVER_ID
+        is_admin = is_admin_user(current_user)
+
+        if is_final_approver or is_admin:
+            # Final approver or admin — set to approved
+            update_dict["status"] = "approved"
+            update_dict["final_approved_by"] = current_user["id"]
+            update_dict["final_approved_at"] = datetime.now(timezone.utc).isoformat()
+        else:
+            # Manager (non-Sandisiwe) — set to manager_approved, stays "pending" to user
+            update_dict["status"] = "manager_approved"
+            update_dict["manager_approved_by"] = current_user["id"]
+            update_dict["manager_approved_at"] = datetime.now(timezone.utc).isoformat()
+    else:
+        update_dict["status"] = new_status
+
     await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
     updated_app = await db.training_applications.find_one({"id": application_id}, {"_id": 0})
-    new_status = status_data.get("status")
-    if new_status and new_status != "draft":
+    actual_new_status = update_dict.get("status", new_status)
+
+    if actual_new_status and actual_new_status != "draft":
         await db.training_applications.update_one({"id": application_id}, {"$set": {"is_locked": True}})
-    if new_status and new_status != application.get("status") and application["user_id"] != current_user["id"]:
-        await notify_and_email(
-            application["user_id"],
-            "Training Application Status Updated",
-            f"Your training application status changed to: {new_status}",
-            application_id, "training_application", f"/training-applications/{application_id}",
-        )
+
+    # Notifications
+    if actual_new_status and actual_new_status != old_status and application["user_id"] != current_user["id"]:
+        if actual_new_status == "manager_approved":
+            # Notify user that application is being reviewed (but don't say approved yet)
+            await notify_and_email(
+                application["user_id"],
+                "Training Application Under Review",
+                "Your training application has been reviewed by your manager and is now awaiting final approval.",
+                application_id, "training_application", f"/training-applications/{application_id}",
+            )
+            # Notify Sandisiwe for final approval
+            await notify_and_email(
+                FINAL_APPROVER_ID,
+                "Training Application Awaiting Final Approval",
+                f"A training application has been approved by a manager and requires your final approval.",
+                application_id, "training_application", f"/training-applications/{application_id}",
+            )
+        elif actual_new_status == "approved":
+            await notify_and_email(
+                application["user_id"],
+                "Training Application Approved",
+                "Your training application has been approved.",
+                application_id, "training_application", f"/training-applications/{application_id}",
+            )
+        else:
+            await notify_and_email(
+                application["user_id"],
+                "Training Application Status Updated",
+                f"Your training application status changed to: {actual_new_status}",
+                application_id, "training_application", f"/training-applications/{application_id}",
+            )
     return updated_app
 
 @router.delete("/training-applications/{application_id}")

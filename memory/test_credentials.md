@@ -1,10 +1,21 @@
 # Test Credentials
 
-## User Accounts
-- **Super Admin**: jane.smith@uct.ac.za / securepass123
+## Admin Accounts
+- **Super Admin**: t-karooz@hotmail.com / password
+- **Admin & Head**: rorim@moonlightergroup.co.za / password
 - **Admin**: test.admin@sentech.co.za / password
-- **Employee**: test.employee@sentech.co.za / password
-- **Admin (Rorim)**: rorim@moonlightergroup.co.za / password (admin + head)
 
-## Test Data
-- Test SA ID for lookup: 7503235923089
+## Employee Accounts
+- **Employee**: test.employee@sentech.co.za / password
+
+## Manager Accounts
+- **Manager (Exec_and_Head)**: leshopet@sentech.co.za / password
+- **Final Approver (Sandisiwe)**: jingisas@sentech.co.za / password
+
+## Training Application Approval Flow
+1. User submits → status = "pending"
+2. Any manager approves → status = "manager_approved" (user still sees "Pending")
+3. Sandisiwe (jingisas@sentech.co.za) approves → status = "approved"
+
+## Important Notes
+- On hosting: Set `APP_URL` in backend/.env to your domain (e.g., `APP_URL=https://yourdomain.com`) for correct email notification links

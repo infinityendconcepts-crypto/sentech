@@ -399,13 +399,13 @@ def run_migration(mongo_url, db_name):
             updated += 1
 
     # Step 4: Print summary
-    has_name = db.users.count_documents({"name": {"$exists": True, "$ne": None, "$ne": ""}})
-    has_surname = db.users.count_documents({"surname": {"$exists": True, "$ne": None, "$ne": ""}})
-    has_id = db.users.count_documents({"id_number": {"$exists": True, "$ne": None, "$ne": ""}})
-    has_gender = db.users.count_documents({"gender": {"$exists": True, "$ne": None, "$ne": ""}})
-    has_race = db.users.count_documents({"race": {"$exists": True, "$ne": None, "$ne": ""}})
-    has_appt = db.users.count_documents({"date_of_appointment": {"$exists": True, "$ne": None, "$ne": ""}})
-    has_ofo = db.users.count_documents({"ofo_code": {"$exists": True, "$ne": None, "$ne": ""}})
+    has_name = db.users.count_documents({"name": {"$exists": True, "$nin": [None, ""]}})
+    has_surname = db.users.count_documents({"surname": {"$exists": True, "$nin": [None, ""]}})
+    has_id = db.users.count_documents({"id_number": {"$exists": True, "$nin": [None, ""]}})
+    has_gender = db.users.count_documents({"gender": {"$exists": True, "$nin": [None, ""]}})
+    has_race = db.users.count_documents({"race": {"$exists": True, "$nin": [None, ""]}})
+    has_appt = db.users.count_documents({"date_of_appointment": {"$exists": True, "$nin": [None, ""]}})
+    has_ofo = db.users.count_documents({"ofo_code": {"$exists": True, "$nin": [None, ""]}})
     has_age = db.users.count_documents({"age": {"$exists": True, "$ne": None}})
     has_yrs = db.users.count_documents({"years_of_service": {"$exists": True, "$ne": None}})
 

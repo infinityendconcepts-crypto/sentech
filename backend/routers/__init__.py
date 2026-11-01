@@ -139,7 +139,11 @@ async def send_email_notification(to_email: str, subject: str, body_text: str, l
 
 
 def get_app_url():
-    return os.getenv("APP_URL", "https://rbac-forms-dev.preview.emergentagent.com")
+    """Get the frontend URL for email links. Checks APP_URL, FRONTEND_URL, then falls back."""
+    url = os.getenv("APP_URL") or os.getenv("FRONTEND_URL", "")
+    if url:
+        return url.rstrip("/")
+    return "https://rbac-forms-dev.preview.emergentagent.com"
 
 async def notify_and_email(user_id: str, title: str, message: str, ref_id: str = "", ref_type: str = "", link_path: str = ""):
     """Create an in-app notification AND send an email to the user."""

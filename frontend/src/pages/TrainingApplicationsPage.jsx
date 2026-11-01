@@ -193,6 +193,7 @@ const TrainingApplicationsPage = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved': return 'bg-emerald-100 text-emerald-700';
+      case 'manager_approved': return 'bg-sky-100 text-sky-700';
       case 'pending': return 'bg-amber-100 text-amber-700';
       case 'under_review': return 'bg-blue-100 text-blue-700';
       case 'rejected': return 'bg-rose-100 text-rose-700';
@@ -205,12 +206,21 @@ const TrainingApplicationsPage = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'approved': return <CheckCircle2 className="w-3 h-3" />;
+      case 'manager_approved': return <Clock className="w-3 h-3" />;
       case 'pending': return <Clock className="w-3 h-3" />;
       case 'under_review': return <AlertCircle className="w-3 h-3" />;
       case 'rejected': return <XCircle className="w-3 h-3" />;
       case 'on_hold': return <Loader2 className="w-3 h-3" />;
       default: return <Clock className="w-3 h-3" />;
     }
+  };
+
+  // Display label: employees see "Pending" for manager_approved, admins/managers see the real status
+  const getStatusLabel = (status) => {
+    if (status === 'manager_approved') {
+      return isAdminOrHead ? 'Manager Approved' : 'Pending';
+    }
+    return status?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || '';
   };
 
   const openSummaryDialog = (application) => {
@@ -434,7 +444,7 @@ const TrainingApplicationsPage = () => {
                             <div className="flex items-center gap-4 mt-2 flex-wrap">
                               <Badge className={`${getStatusColor(application.status)} gap-1 text-xs`}>
                                 {getStatusIcon(application.status)}
-                                {application.status?.replace('_', ' ')}
+                                {getStatusLabel(application.status)}
                               </Badge>
                               <span className="text-xs text-slate-500">Step {application.current_step || 1} of 4</span>
                               <span className="text-xs text-slate-500">{new Date(application.created_at).toLocaleDateString()}</span>
@@ -558,7 +568,7 @@ const TrainingApplicationsPage = () => {
                       <div className="flex items-center gap-3 mt-2">
                         <Badge className={`${getStatusColor(selectedApplication.status)} gap-1 text-sm px-3 py-1`}>
                           {getStatusIcon(selectedApplication.status)}
-                          {selectedApplication.status?.replace('_', ' ').toUpperCase()}
+                          {getStatusLabel(selectedApplication.status).toUpperCase()}
                         </Badge>
                         <span className="text-white/70 text-sm">Step {selectedApplication.current_step || 1} of 4</span>
                       </div>
@@ -628,7 +638,7 @@ const TrainingApplicationsPage = () => {
                 <Label>Current Status</Label>
                 <Badge className={`${getStatusColor(selectedApplication.status)} gap-1`}>
                   {getStatusIcon(selectedApplication.status)}
-                  {selectedApplication.status?.replace('_', ' ')}
+                  {getStatusLabel(selectedApplication.status)}
                 </Badge>
               </div>
               <div className="space-y-2">
