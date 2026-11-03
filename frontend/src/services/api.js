@@ -38,6 +38,10 @@ export const authAPI = {
   verifyOtp: (email, otp) => api.post('/auth/verify-otp', { email, otp }),
   checkPasswordSetup: (email) => api.post('/auth/check-password-setup', { email }),
   setupPassword: (email, newPassword) => api.post('/auth/setup-password', { email, new_password: newPassword }),
+  changePassword: (data) => api.put('/auth/change-password', data),
+  resetUserPassword: (userId, newPassword) => api.put('/auth/reset-user-password', { user_id: userId, new_password: newPassword }),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPasswordWithOtp: (email, otp, newPassword) => api.post('/auth/reset-password-with-otp', { email, otp, new_password: newPassword }),
 };
 
 export const usersAPI = {

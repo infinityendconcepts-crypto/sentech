@@ -12,7 +12,8 @@ import os
 
 from routers import (
     db, get_current_user, generate_uuid, create_access_token,
-    get_password_hash, verify_password, logger,
+    get_password_hash, verify_password, logger, is_admin_user, is_manager_or_admin,
+    send_email_notification, get_app_url,
     MICROSOFT_CLIENT_ID, MICROSOFT_TENANT_ID, MICROSOFT_CLIENT_SECRET,
     MICROSOFT_AUTHORITY, MICROSOFT_SCOPE, FRONTEND_URL,
 )
@@ -308,3 +309,170 @@ async def verify_otp(body: dict):
         user = {k: v for k, v in user_dict.items() if k not in ("_id",)}
     access_token = create_access_token(data={"sub": user["id"]})
     return {"access_token": access_token, "token_type": "bearer", "user": user}
+
+# --- Password Reset ---
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+class AdminResetPasswordRequest(BaseModel):
+    user_id: str
+    new_password: str
+
+
+@router.put("/auth/change-password")
+async def change_own_password(data: ChangePasswordRequest, current_user: dict = Depends(get_current_user)):
+    """Self password reset — user changes their own password."""
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not verify_password(data.current_password, user.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+    new_hash = get_password_hash(data.new_password)
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"password_hash": new_hash, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"message": "Password changed successfully"}
+
+
+@router.put("/auth/reset-user-password")
+async def reset_user_password(data: AdminResetPasswordRequest, current_user: dict = Depends(get_current_user)):
+    """Admin/manager resets another user's password.
+    - Super admins and hr_admin: can reset any user
+    - Managers: can only reset users in their own division/department
+    """
+    target_user = await db.users.find_one({"id": data.user_id}, {"_id": 0})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Permission checks
+    is_super = "super_admin" in current_user.get("roles", [])
+    is_hr = "hr_admin" in current_user.get("roles", [])
+    is_admin = "admin" in current_user.get("roles", [])
+    is_mgr = "manager" in current_user.get("roles", [])
+
+    if is_super or is_hr or is_admin:
+        # Super admins, admins, HR admin can reset anyone
+        pass
+    elif is_mgr:
+        # Managers can only reset users in their division
+        mgr_division = current_user.get("division", "")
+        target_division = target_user.get("division", "")
+        if not mgr_division or mgr_division != target_division:
+            raise HTTPException(status_code=403, detail="You can only reset passwords for users in your division")
+    else:
+        raise HTTPException(status_code=403, detail="You don't have permission to reset passwords")
+
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+
+    new_hash = get_password_hash(data.new_password)
+    await db.users.update_one(
+        {"id": data.user_id},
+        {"$set": {
+            "password_hash": new_hash,
+            "requires_password_setup": False,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }}
+    )
+
+    # Send email notification to the user
+    target_email = target_user.get("email", "")
+    if target_email:
+        asyncio.create_task(send_email_notification(
+            target_email,
+            "Password Reset",
+            f"<p>Your password has been reset by an administrator. Please log in with your new password.</p>",
+            f"{get_app_url()}/login",
+        ))
+
+    return {"message": f"Password reset for {target_user.get('full_name', target_email)}"}
+
+
+@router.post("/auth/forgot-password")
+async def forgot_password(body: dict):
+    """Request password reset via email OTP."""
+    email = body.get("email", "").strip().lower()
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    if not user:
+        # Don't reveal if email exists
+        return {"message": "If the email exists, a reset code has been sent."}
+
+    # Generate OTP — mark any existing reset OTP for this email as expired
+    otp_code = f"{secrets.randbelow(10**6):06d}"
+    await db.otps.update_many(
+        {"email": email, "type": "password_reset"},
+        {"$set": {"expired": True}}
+    )
+    await db.otps.insert_one({
+        "email": email,
+        "otp": otp_code,
+        "type": "password_reset",
+        "attempts": 0,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat(),
+    })
+
+    # Send OTP via email (async, non-blocking)
+    otp_html = f"""
+    <p>Your password reset code is:</p>
+    <div style="background:#E8F0FE;border:1px solid #0056B3;border-radius:8px;text-align:center;padding:24px;margin:20px 0;">
+      <h1 style="color:#0056B3;letter-spacing:12px;font-size:36px;margin:0">{otp_code}</h1>
+    </div>
+    <p>This code expires in <strong>15 minutes</strong>. Do not share it with anyone.</p>
+    """
+    asyncio.create_task(send_email_notification(email, "Password Reset Code", otp_html))
+    return {"message": "If the email exists, a reset code has been sent."}
+
+
+@router.post("/auth/reset-password-with-otp")
+async def reset_password_with_otp(body: dict):
+    """Reset password using OTP code."""
+    email = body.get("email", "").strip().lower()
+    otp = body.get("otp", "").strip()
+    new_password = body.get("new_password", "")
+
+    if not email or not otp or not new_password:
+        raise HTTPException(status_code=400, detail="Email, OTP, and new password are required")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    record = await db.otps.find_one({"email": email, "type": "password_reset", "expired": {"$ne": True}})
+    if not record:
+        raise HTTPException(status_code=400, detail="No reset request found. Please request a new code.")
+
+    # Check expiry
+    expires = record.get("expires_at", "")
+    if expires and datetime.fromisoformat(expires) < datetime.now(timezone.utc):
+        await db.otps.update_one({"_id": record["_id"]}, {"$set": {"expired": True}})
+        raise HTTPException(status_code=400, detail="Reset code has expired. Please request a new one.")
+
+    # Check attempts
+    if record.get("attempts", 0) >= 5:
+        await db.otps.update_one({"_id": record["_id"]}, {"$set": {"expired": True}})
+        raise HTTPException(status_code=400, detail="Too many attempts. Please request a new code.")
+
+    if record.get("otp") != otp:
+        await db.otps.update_one({"_id": record["_id"]}, {"$inc": {"attempts": 1}})
+        remaining = 4 - record.get("attempts", 0)
+        raise HTTPException(status_code=400, detail=f"Invalid code. {max(remaining, 0)} attempts remaining.")
+
+    # Reset password — mark OTP as used
+    await db.otps.update_one({"_id": record["_id"]}, {"$set": {"expired": True, "used": True}})
+    new_hash = get_password_hash(new_password)
+    await db.users.update_one(
+        {"email": email},
+        {"$set": {
+            "password_hash": new_hash,
+            "requires_password_setup": False,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }}
+    )
+    return {"message": "Password has been reset successfully. You can now log in."}
+

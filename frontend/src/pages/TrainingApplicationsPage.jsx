@@ -193,12 +193,12 @@ const TrainingApplicationsPage = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved': return 'bg-emerald-100 text-emerald-700';
-      case 'manager_approved': return 'bg-sky-100 text-sky-700';
-      case 'pending': return 'bg-amber-100 text-amber-700';
       case 'under_review': return 'bg-blue-100 text-blue-700';
+      case 'pending': return 'bg-amber-100 text-amber-700';
       case 'rejected': return 'bg-rose-100 text-rose-700';
       case 'draft': return 'bg-slate-100 text-slate-700';
       case 'on_hold': return 'bg-purple-100 text-purple-700';
+      case 'manager_approved': return 'bg-blue-100 text-blue-700';
       default: return 'bg-slate-100 text-slate-700';
     }
   };
@@ -206,21 +206,26 @@ const TrainingApplicationsPage = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'approved': return <CheckCircle2 className="w-3 h-3" />;
-      case 'manager_approved': return <Clock className="w-3 h-3" />;
-      case 'pending': return <Clock className="w-3 h-3" />;
       case 'under_review': return <AlertCircle className="w-3 h-3" />;
+      case 'pending': return <Clock className="w-3 h-3" />;
       case 'rejected': return <XCircle className="w-3 h-3" />;
       case 'on_hold': return <Loader2 className="w-3 h-3" />;
+      case 'manager_approved': return <AlertCircle className="w-3 h-3" />;
       default: return <Clock className="w-3 h-3" />;
     }
   };
 
-  // Display label: employees see "Pending" for manager_approved, admins/managers see the real status
   const getStatusLabel = (status) => {
-    if (status === 'manager_approved') {
-      return isAdminOrHead ? 'Manager Approved' : 'Pending';
+    switch (status) {
+      case 'pending': return 'Pending';
+      case 'under_review': return 'Under Review';
+      case 'approved': return 'Approved';
+      case 'rejected': return 'Rejected';
+      case 'draft': return 'Draft';
+      case 'on_hold': return 'On Hold';
+      case 'manager_approved': return 'Under Review';
+      default: return status?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || '';
     }
-    return status?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || '';
   };
 
   const openSummaryDialog = (application) => {

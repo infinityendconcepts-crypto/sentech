@@ -1,8 +1,10 @@
 """
 Sentech HR Admin Role Migration
 ================================
-Run this on your hosting server to add the hr_admin role
-and assign it to Sandisiwe. Does NOT modify any other data.
+Run this on your hosting server to:
+1. Add the hr_admin role
+2. Assign it to Sandisiwe
+Does NOT modify any other data.
 
 Usage:
   pip install pymongo

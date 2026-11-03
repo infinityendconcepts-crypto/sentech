@@ -15,22 +15,23 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '../contexts/AuthContext';
-import { usersAPI, divisionsAPI, departmentsAPI } from '../services/api';
+import { usersAPI, divisionsAPI, departmentsAPI, authAPI } from '../services/api';
 import {
   Users, Search, MoreVertical, Shield, ShieldOff,
   Trash2, Mail, Building2, CheckCircle, XCircle, UserCheck,
   Briefcase, Calendar, Hash, X, Eye, Pencil,
   Upload, Download, FileSpreadsheet, ChevronLeft, ChevronRight,
-  CheckSquare, Square, UserPlus,
+  CheckSquare, Square, UserPlus, KeyRound,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const ROLES = ['super_admin', 'manager', 'professional', 'technician', 'clerical', 'employee'];
+const ROLES = ['super_admin', 'hr_admin', 'manager', 'professional', 'technician', 'clerical', 'employee'];
 
 const getRoleColor = (role) => {
   switch (role) {
     case 'super_admin': return 'bg-purple-100 text-purple-700 border-purple-200';
     case 'admin': return 'bg-red-100 text-red-700 border-red-200';
+    case 'hr_admin': return 'bg-pink-100 text-pink-700 border-pink-200';
     case 'manager': return 'bg-blue-100 text-blue-700 border-blue-200';
     case 'professional': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     case 'technician': return 'bg-orange-100 text-orange-700 border-orange-200';
@@ -81,6 +82,8 @@ const UsersPage = () => {
   });
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [resetPasswordDialog, setResetPasswordDialog] = useState(null); // { id, name, email }
+  const [newPasswordForReset, setNewPasswordForReset] = useState('');
 
   // Import state
   const [importDialog, setImportDialog] = useState(false);
@@ -289,6 +292,25 @@ const UsersPage = () => {
       fetchUsers();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to update status');
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordDialog || !newPasswordForReset) return;
+    if (newPasswordForReset.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setSaving(true);
+    try {
+      await authAPI.resetUserPassword(resetPasswordDialog.id, newPasswordForReset);
+      toast.success(`Password reset for ${resetPasswordDialog.name || resetPasswordDialog.email}`);
+      setResetPasswordDialog(null);
+      setNewPasswordForReset('');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to reset password');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -784,6 +806,9 @@ const UsersPage = () => {
                             {isAdmin && u.id !== currentUser?.id && (
                               <>
                                 <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => { setResetPasswordDialog({ id: u.id, name: u.full_name || u.email, email: u.email }); setNewPasswordForReset(''); }}>
+                                  <KeyRound className="w-4 h-4 mr-2" />Reset Password
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleToggleStatus(u.id, u.is_active !== false)}>
                                   {u.is_active !== false ? (
                                     <><ShieldOff className="w-4 h-4 mr-2" />Deactivate</>
@@ -1033,6 +1058,39 @@ const UsersPage = () => {
             <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={saving}>Cancel</Button>
             <Button variant="destructive" onClick={() => handleDelete(deleteConfirm.id, deleteConfirm.name)} disabled={saving}>
               {saving ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={!!resetPasswordDialog} onOpenChange={() => setResetPasswordDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Reset Password
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-slate-600 text-sm">
+            Set a new password for <strong>{resetPasswordDialog?.name || resetPasswordDialog?.email}</strong>
+          </p>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label>New Password</Label>
+              <Input
+                type="password"
+                placeholder="Min 6 characters"
+                value={newPasswordForReset}
+                onChange={(e) => setNewPasswordForReset(e.target.value)}
+                data-testid="reset-password-input"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetPasswordDialog(null)} disabled={saving}>Cancel</Button>
+            <Button onClick={handleResetPassword} disabled={saving || newPasswordForReset.length < 6} data-testid="reset-password-confirm-btn">
+              {saving ? 'Resetting...' : 'Reset Password'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -25,6 +25,10 @@ const LoginPage = () => {
     newPassword: '', 
     confirmPassword: '' 
   });
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotStep, setForgotStep] = useState(1); // 1=email, 2=otp+new password
+  const [forgotData, setForgotData] = useState({ email: '', otp: '', newPassword: '', confirmPassword: '' });
+  const [forgotMessage, setForgotMessage] = useState('');
 
   const handleMicrosoftLogin = async () => {
     try {
@@ -113,6 +117,45 @@ const LoginPage = () => {
     setPasswordSetupData({ email: '', newPassword: '', confirmPassword: '' });
     setUserName('');
     setError('');
+  };
+
+  const handleForgotSubmitEmail = async () => {
+    setLoading(true);
+    setError('');
+    setForgotMessage('');
+    try {
+      await authAPI.forgotPassword(forgotData.email);
+      setForgotMessage('A reset code has been sent to your email.');
+      setForgotStep(2);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to send reset code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotResetPassword = async () => {
+    if (forgotData.newPassword !== forgotData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (forgotData.newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await authAPI.resetPasswordWithOtp(forgotData.email, forgotData.otp, forgotData.newPassword);
+      setForgotMessage('Password reset successfully! You can now log in.');
+      setForgotMode(false);
+      setForgotStep(1);
+      setForgotData({ email: '', otp: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to reset password');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -262,6 +305,11 @@ const LoginPage = () => {
                         data-testid="login-password-input"
                       />
                     </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button type="button" onClick={() => { setForgotMode(true); setError(''); setForgotMessage(''); setForgotStep(1); setForgotData({ ...forgotData, email: loginData.email }); }} className="text-sm text-primary hover:underline" data-testid="forgot-password-link">
+                      Forgot Password?
+                    </button>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading} data-testid="login-submit-btn">
                     {loading ? 'Signing in...' : 'Sign In'}
@@ -431,6 +479,87 @@ const LoginPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Forgot Password Dialog */}
+      {forgotMode && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" data-testid="forgot-password-dialog">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-primary" />
+                Reset Password
+              </CardTitle>
+              <CardDescription>
+                {forgotStep === 1 ? 'Enter your email to receive a reset code' : 'Enter the code sent to your email'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+              {forgotMessage && <Alert><AlertDescription className="text-emerald-700">{forgotMessage}</AlertDescription></Alert>}
+
+              {forgotStep === 1 && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Email Address</Label>
+                    <Input
+                      type="email"
+                      placeholder="your.email@sentech.co.za"
+                      value={forgotData.email}
+                      onChange={(e) => setForgotData({ ...forgotData, email: e.target.value })}
+                      data-testid="forgot-email-input"
+                    />
+                  </div>
+                  <Button className="w-full" onClick={handleForgotSubmitEmail} disabled={loading || !forgotData.email} data-testid="forgot-send-code-btn">
+                    {loading ? 'Sending...' : 'Send Reset Code'}
+                  </Button>
+                </>
+              )}
+
+              {forgotStep === 2 && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Reset Code</Label>
+                    <Input
+                      placeholder="Enter 6-digit code"
+                      value={forgotData.otp}
+                      onChange={(e) => setForgotData({ ...forgotData, otp: e.target.value })}
+                      maxLength={6}
+                      data-testid="forgot-otp-input"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>New Password</Label>
+                    <Input
+                      type="password"
+                      placeholder="Min 6 characters"
+                      value={forgotData.newPassword}
+                      onChange={(e) => setForgotData({ ...forgotData, newPassword: e.target.value })}
+                      data-testid="forgot-new-password-input"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Confirm Password</Label>
+                    <Input
+                      type="password"
+                      placeholder="Confirm new password"
+                      value={forgotData.confirmPassword}
+                      onChange={(e) => setForgotData({ ...forgotData, confirmPassword: e.target.value })}
+                      data-testid="forgot-confirm-password-input"
+                    />
+                  </div>
+                  <Button className="w-full" onClick={handleForgotResetPassword} disabled={loading || !forgotData.otp || !forgotData.newPassword} data-testid="forgot-reset-btn">
+                    {loading ? 'Resetting...' : 'Reset Password'}
+                  </Button>
+                </>
+              )}
+
+              <Button variant="outline" className="w-full" onClick={() => { setForgotMode(false); setError(''); setForgotMessage(''); }} data-testid="forgot-cancel-btn">
+                Back to Login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

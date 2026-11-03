@@ -484,10 +484,13 @@ async def update_training_application(application_id: str, update_data: Training
                     raise HTTPException(status_code=400, detail="Training date must be at least 8 days from today to allow time for approval.")
         update_dict["submitted_at"] = datetime.now(timezone.utc).isoformat()
         update_dict["is_locked"] = True
-    # Two-step approval: if status is being set to "approved" via general update
+    # Training approval flow: pending → under_review (head) → approved (hr_admin)
     if update_data.status == "approved" and (admin or is_head):
         if not is_hr_admin(current_user) and not is_admin_user(current_user):
-            update_dict["status"] = "manager_approved"
+            if application.get("status") == "pending":
+                update_dict["status"] = "under_review"
+            else:
+                update_dict["status"] = "under_review"
             update_dict["manager_approved_by"] = current_user["id"]
             update_dict["manager_approved_at"] = datetime.now(timezone.utc).isoformat()
     await db.training_applications.update_one({"id": application_id}, {"$set": update_dict})
@@ -523,16 +526,25 @@ async def update_training_application_status(application_id: str, status_data: d
     if status_data.get("status_note"):
         update_dict["status_note"] = status_data.get("status_note")
 
-    # Two-step approval logic for training applications
+    # Training application approval flow:
+    # pending → under_review (Head of Department approves) → approved (HR Admin final approval)
     if new_status == "approved":
         if is_hr_admin(current_user) or is_admin_user(current_user):
-            # HR Admin or system admin — set to approved
+            # HR Admin or system admin — final approval
             update_dict["status"] = "approved"
             update_dict["final_approved_by"] = current_user["id"]
             update_dict["final_approved_at"] = datetime.now(timezone.utc).isoformat()
+        elif old_status == "pending":
+            # Head/Manager approving from pending → move to under_review
+            update_dict["status"] = "under_review"
+            update_dict["manager_approved_by"] = current_user["id"]
+            update_dict["manager_approved_at"] = datetime.now(timezone.utc).isoformat()
+        elif old_status == "under_review":
+            # Non-HR-admin trying to approve from under_review — not allowed
+            raise HTTPException(status_code=403, detail="Only HR Admin can give final approval")
         else:
-            # Regular manager — set to manager_approved, stays "pending" to user
-            update_dict["status"] = "manager_approved"
+            # Other statuses (e.g., manager_approved legacy) — move to under_review
+            update_dict["status"] = "under_review"
             update_dict["manager_approved_by"] = current_user["id"]
             update_dict["manager_approved_at"] = datetime.now(timezone.utc).isoformat()
     else:
@@ -547,12 +559,12 @@ async def update_training_application_status(application_id: str, status_data: d
 
     # Notifications
     if actual_new_status and actual_new_status != old_status and application["user_id"] != current_user["id"]:
-        if actual_new_status == "manager_approved":
-            # Notify user that application is being reviewed (but don't say approved yet)
+        if actual_new_status == "under_review":
+            # Notify user — status moves to Under Review
             await notify_and_email(
                 application["user_id"],
                 "Training Application Under Review",
-                "Your training application has been reviewed by your manager and is now awaiting final approval.",
+                "Your training application has been reviewed by your Head of Department and is now under review for final approval.",
                 application_id, "training_application", f"/training-applications/{application_id}",
             )
             # Notify all hr_admin users for final approval
@@ -565,7 +577,7 @@ async def update_training_application_status(application_id: str, status_data: d
                     await notify_and_email(
                         ha["id"],
                         "Training Application Awaiting Final Approval",
-                        "A training application has been approved by a manager and requires your final approval.",
+                        "A training application has been reviewed by a Head of Department and requires your final approval.",
                         application_id, "training_application", f"/training-applications/{application_id}",
                     )
         elif actual_new_status == "approved":
@@ -579,7 +591,7 @@ async def update_training_application_status(application_id: str, status_data: d
             await notify_and_email(
                 application["user_id"],
                 "Training Application Status Updated",
-                f"Your training application status changed to: {actual_new_status}",
+                f"Your training application status changed to: {actual_new_status.replace('_', ' ').title()}",
                 application_id, "training_application", f"/training-applications/{application_id}",
             )
     return updated_app
